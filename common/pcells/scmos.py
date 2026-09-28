@@ -10,8 +10,9 @@ Load with KLayout's Python runner or through ``scripts/run_pcells.py``.
 from __future__ import annotations
 
 import math
-import sys
 from pathlib import Path
+
+from common.process_ir import load_process
 
 try:
     import pya
@@ -28,11 +29,6 @@ else:
     _PCellDeclarationHelper = pya.PCellDeclarationHelper
     _Library = pya.Library
 
-ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
-import yamlish
 
 
 class ProfileError(ValueError):
@@ -44,15 +40,10 @@ class Profile:
 
     def __init__(self, profile_dir: Path):
         self.profile_dir = Path(profile_dir)
-        self.layers_doc = yamlish.load(
-            (self.profile_dir / "layers.yaml").read_text()
-        )
-        self.rules_doc = yamlish.load(
-            (self.profile_dir / "rules.yaml").read_text()
-        )
-        self.pcells_doc = yamlish.load(
-            (self.profile_dir / "pcells.yaml").read_text()
-        )
+        self.ir = load_process(self.profile_dir)
+        self.layers_doc = self.ir.layers_doc
+        self.rules_doc = self.ir.rules_doc
+        self.pcells_doc = self.ir.pcells_doc
         self.meta = self.layers_doc["meta"]
         self.features = self.meta.get("features", {})
         self.layers = {
@@ -248,31 +239,26 @@ class MosPCell(_BasePCell):
         self.polarity = polarity
         name = "nmos" if polarity == "n" else "pmos"
         self.tech.profile.validate_pcell(name, "mos4")
-        self.param("fingers", self.TypeInt, "Gate fingers", default=1)
-        self.param("m", self.TypeInt, "Parallel multiplier", default=1)
-        self.param("w_um", self.TypeDouble, "Channel width (um)", default=1.5)
+        self.param("nf", self.TypeInt, "Physical gate fingers", default=1)
+        self.param("m", self.TypeInt, "Electrical multiplier", default=1)
+        self.param("w_um", self.TypeDouble, "Channel width per finger (um)", default=1.5)
         self.param("l_um", self.TypeDouble, "Channel length (um)", default=0.6)
 
     def display_text_impl(self):
         name = "nmos" if self.polarity == "n" else "pmos"
-        return f"{name}(W={self.w_um:g},L={self.l_um:g},f={self.fingers},m={self.m})"
+        return f"{name}(W={self.w_um:g},L={self.l_um:g},nf={self.nf},m={self.m})"
 
     def coerce_parameters_impl(self):
-        self.fingers = max(1, int(round(self.fingers)))
+        self.nf = max(1, int(round(self.nf)))
         self.m = max(1, int(round(self.m)))
         self.w_um = self.tech.snap(max(float(self.w_um), self.tech.active_min))
         self.l_um = self.tech.snap(max(float(self.l_um), self.tech.poly_min))
 
     def produce_impl(self):
-        f = max(self._positive_int("fingers", self.fingers), self._positive_int("m", self.m))
+        f = self._positive_int("nf", self.nf)
         w = self.tech.snap(max(float(self.w_um), self.tech.active_min))
         l = self.tech.snap(max(float(self.l_um), self.tech.poly_min))
-        if self.m == 1:
-            poly_pitch = l + self.tech.poly_spacing
-        else:
-            poly_pitch = l + 2 * (
-                self.tech.profile.lambda_um + self.tech.poly_contact_spacing
-            )
+        poly_pitch = l + self.tech.poly_spacing
         poly_edge = (
             self.tech.poly_contact_spacing
             + self.tech.contact_size
@@ -348,7 +334,7 @@ class MosPCell(_BasePCell):
             + self.tech.active_contact_enc
             + (active_height - 2 * self.tech.active_contact_enc - contact_height) / 2.0
         )
-        if self.m == 1:
+        if f == 1:
             contact_xs = (
                 active_left + self.tech.active_contact_enc,
                 active_right - self.tech.active_contact_enc - self.tech.contact_size,

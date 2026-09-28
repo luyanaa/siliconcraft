@@ -13,9 +13,12 @@ import argparse
 import sys
 from pathlib import Path
 
-import yamlish
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from common.process_ir import load_process  # noqa: E402
 TABLES = ("width", "spacing", "enclosure", "extension", "area", "notch", "overlap")
 
 
@@ -24,11 +27,12 @@ def main():
     ap.add_argument("--profile", required=True)
     args = ap.parse_args()
 
-    profile_dir = ROOT / "profiles" / args.profile
+    process = load_process(args.profile, ROOT)
+    profile_dir = process.profile_dir
     rules_path = profile_dir / "rules.yaml"
     if not rules_path.exists():
         raise SystemExit(f"no rules.yaml in {profile_dir}")
-    rules = yamlish.load(rules_path.read_text())
+    rules = process.rules_doc
     engine = rules.get("engine", "scmos_authoritative")
     if engine != "scmos_authoritative":
         raise SystemExit(

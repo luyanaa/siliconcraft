@@ -32,7 +32,7 @@ from common.rf.workbench import (  # noqa: E402
     parse_lumped_elements,
     validate_rf_request,
 )
-from yamlish import load  # noqa: E402
+from common.process_ir import load_process  # noqa: E402
 
 DEFAULT_LAYOUT = ROOT / "common/tests/gds/ami06_drc_test.gds"
 
@@ -48,7 +48,12 @@ def default_pex_profile(manifest: dict) -> str:
     return "none"
 
 
-def render_profile(manifest: dict, path: Path, profile_name: str) -> Path:
+def render_profile(
+    manifest: dict,
+    path: Path,
+    profile_name: str,
+    device_bindings: dict | None = None,
+) -> Path:
     spec = (manifest.get("profiles") or {}).get(profile_name)
     if not isinstance(spec, dict):
         raise SystemExit(f"unknown PEX profile {profile_name!r} in {path}")
@@ -58,9 +63,9 @@ def render_profile(manifest: dict, path: Path, profile_name: str) -> Path:
     if fragment:
         fragment_path = (path.parent / str(fragment)).resolve()
         fragment_path.parent.mkdir(parents=True, exist_ok=True)
-        fragment_path.write_text(topology_fragment(manifest))
+        fragment_path.write_text(topology_fragment(manifest, device_bindings))
     try:
-        return generate_profile(manifest, path, profile_name)
+        return generate_profile(manifest, path, profile_name, device_bindings)
     except MagicPexError as exc:
         raise SystemExit(f"PEX manifest error: {exc}") from exc
 
@@ -100,10 +105,11 @@ def main() -> int:
     parser.add_argument("--magic", default=os.environ.get("MAGIC", "magic"))
     args = parser.parse_args()
 
-    path = manifest_path(args.profile)
+    process = load_process(args.profile, ROOT)
+    path = process.profile_dir / "pex" / "manifest.yaml"
     if not path.exists():
         raise SystemExit(f"PEX manifest not found: {path}")
-    manifest = load(path.read_text())
+    manifest = process.pex_doc
     pex_profile = args.pex_profile or default_pex_profile(manifest)
     frequencies = frequencies_from_args(args)
     try:
@@ -116,7 +122,9 @@ def main() -> int:
     layout = args.layout.resolve()
     if not layout.exists():
         raise SystemExit(f"layout not found: {layout}")
-    technology = render_profile(manifest, path, pex_profile).resolve()
+    technology = render_profile(
+        manifest, path, pex_profile, process.device_bindings
+    ).resolve()
     output = (
         args.output
         or ROOT / "build" / "rf" / f"{args.profile}_{pex_profile}.json"

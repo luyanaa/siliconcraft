@@ -20,8 +20,23 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PEX_PROFILES = ("ami06", "hp06", "ami16")
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from common.process_ir import load_process, profile_names  # noqa: E402
+
+
+def capability_profiles(capability: str) -> tuple[str, ...]:
+    return tuple(
+        profile
+        for profile in profile_names(ROOT)
+        if bool(getattr(load_process(profile, ROOT).capabilities, capability, False))
+    )
+
+
+PEX_PROFILES = capability_profiles("pex_runtime")
 STATIC_GATES = (
+    "test_process_ir.py",
     "test_magic_pex.py",
     "test_ls1u_pex.py",
     "test_ls1u_devices.py",

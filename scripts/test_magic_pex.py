@@ -17,6 +17,7 @@ from common.pex.magic import (  # noqa: E402
     without_well_routing,
 )
 from yamlish import load  # noqa: E402
+from common.process_ir import load_process  # noqa: E402
 
 
 def load_manifest(profile: str) -> tuple[dict, Path]:
@@ -35,6 +36,10 @@ def main() -> int:
     ls1u, _ = load_manifest("ls1u")
     hp06, hp06_path = load_manifest("hp06")
     ami16, ami16_path = load_manifest("ami16")
+    ami06_ir = load_process("ami06", ROOT)
+    hp06_ir = load_process("hp06", ROOT)
+    ami16_ir = load_process("ami16", ROOT)
+    ls1u_ir = load_process("ls1u", ROOT)
     assert ami06["source_technology"]["legacy_backend"] == {
         "technology": "scmos-sub",
         "extraction_style": "lambda=0.30",
@@ -56,8 +61,8 @@ def main() -> int:
     assert ami16["flow"]["original_process"] == "AMI_ABN"
     assert ami16["flow"]["original_run"] == "N77H"
     assert ami16["physical"]["lambda_um"] == 0.8
-    assert ami16["topology"]["devices"]["nmos"]["model"] == "ami16N"
-    assert ami16["topology"]["devices"]["pmos"]["model"] == "ami16P"
+    assert ami16_ir.device("nmos_core").simulation_name == "ami16N"
+    assert ami16_ir.device("pmos_core").simulation_name == "ami16P"
     assert ami16["topology"]["features"] == {"elec": True, "npn": True}
     assert ami16["topology"]["device_semantics"]["mos4"] == [
         "nmos4", "pmos4", "nmos4_elec", "pmos4_elec"
@@ -75,8 +80,8 @@ def main() -> int:
     assert hp06["flow"]["original_process"] == "HP_AMOS14TB"
     assert hp06["flow"]["original_run"] == "N8AG"
     assert hp06["physical"]["lambda_um"] == 0.3
-    assert hp06["topology"]["devices"]["nmos"]["model"] == "hp14tbN"
-    assert hp06["topology"]["devices"]["pmos"]["model"] == "hp14tbP"
+    assert hp06_ir.device("nmos_core").simulation_name == "hp14tbN"
+    assert hp06_ir.device("pmos_core").simulation_name == "hp14tbP"
     assert hp06["topology"]["features"] == {
         "cwell": True,
         "sblock": True,
@@ -88,8 +93,13 @@ def main() -> int:
     assert ami06["flow"]["original_process"] == "AMI_C5N"
     assert ami06["flow"]["original_run"] == "N8BN"
     assert ami06["physical"]["lambda_um"] == 0.3
-    assert ami06["topology"]["devices"]["nmos"]["model"] == "ami06N"
-    assert ami06["topology"]["devices"]["pmos"]["model"] == "ami06P"
+    assert ami06_ir.device("nmos_core").simulation_name == "ami06N"
+    assert ami06_ir.device("pmos_core").simulation_name == "ami06P"
+    for manifest in (ami06, hp06, ami16):
+        assert "devices" not in (manifest.get("topology") or {})
+    assert ami06_ir.parasitic_ownership["gate_overlap_capacitance"] == "model"
+    assert ami06_ir.parasitic_ownership["diffusion_sheet_resistance"] == "pex"
+
 
     # Source values must convert to Magic's integer units without importing
     # a process-specific constant into the renderer.
@@ -117,10 +127,10 @@ def main() -> int:
         assert f"calma {layer} {number} *" in input_map
 
     ami06_none_technology = assemble_technology(
-        ami06, "none", ami06_path.parent
+        ami06, "none", ami06_path.parent, ami06_ir.device_bindings
     )
     ami06_reference_technology = assemble_technology(
-        ami06, "n8bn_reference", ami06_path.parent
+        ami06, "n8bn_reference", ami06_path.parent, ami06_ir.device_bindings
     )
     none = extract_section(ami06_none_technology)
     reference = extract_section(ami06_reference_technology)
@@ -152,10 +162,12 @@ def main() -> int:
     assert "layer wcap CPG" in hp_input_map
 
     hp_none = extract_section(
-        assemble_technology(hp06, "none", hp06_path.parent)
+        assemble_technology(hp06, "none", hp06_path.parent, hp06_ir.device_bindings)
     )
     hp_reference = extract_section(
-        assemble_technology(hp06, "n8ag_reference", hp06_path.parent)
+        assemble_technology(
+            hp06, "n8ag_reference", hp06_path.parent, hp06_ir.device_bindings
+        )
     )
     assert "device mosfet hp14tbN" in hp_none
     assert "device mosfet hp14tbP" in hp_none
@@ -184,10 +196,14 @@ def main() -> int:
     assert "layer electrode CEL" in ami16_input_map
 
     ami16_none = extract_section(
-        assemble_technology(ami16, "none", ami16_path.parent)
+        assemble_technology(
+            ami16, "none", ami16_path.parent, ami16_ir.device_bindings
+        )
     )
     ami16_reference = extract_section(
-        assemble_technology(ami16, "n77h_reference", ami16_path.parent)
+        assemble_technology(
+            ami16, "n77h_reference", ami16_path.parent, ami16_ir.device_bindings
+        )
     )
     assert "device mosfet ami16N" in ami16_none
     assert "device mosfet ami16P" in ami16_none
@@ -213,7 +229,7 @@ def main() -> int:
 
     # The LS1u compatibility manifest still selects the legacy topology path;
     # its existing regression covers exact historical msubcircuit syntax.
-    ls1u_extract = render_profile_extract(ls1u, "none")
+    ls1u_extract = render_profile_extract(ls1u, "none", ls1u_ir.device_bindings)
     assert "device msubcircuit LV1UNMOS" in ls1u_extract
     assert "device msubcircuit LV1UPMOS" in ls1u_extract
 

@@ -20,8 +20,8 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from yamlish import load  # noqa: E402
 from common.pex.runtime import run_magic_extract  # noqa: E402
+from common.process_ir import ProcessIRError, load_process  # noqa: E402
 
 DEFAULT_LAYOUT = ROOT / "common/tests/gds/ami06_drc_test.gds"
 
@@ -102,12 +102,12 @@ def run_ngspice(
 
 
 def default_config(profile: str) -> dict[str, str]:
-    manifest_path = ROOT / "profiles" / profile / "pex" / "manifest.yaml"
+    process = load_process(profile, ROOT)
+    manifest_path = process.profile_dir / "pex" / "manifest.yaml"
     if not manifest_path.exists():
         raise SystemExit(f"PEX manifest not found: {manifest_path}")
-    manifest = load(manifest_path.read_text())
+    manifest = process.pex_doc
     topology = manifest.get("topology") or {}
-    devices = topology.get("devices") or {}
     profiles = manifest.get("profiles") or {}
     reference_profile = next(
         (
@@ -118,10 +118,15 @@ def default_config(profile: str) -> dict[str, str]:
         "none",
     )
     try:
-        nmos = devices["nmos"]["model"]
-        pmos = devices["pmos"]["model"]
         style = topology["style"]
-    except (KeyError, TypeError) as exc:
+        if topology.get("magic_device_class") == "mosfet":
+            nmos = process.device("nmos_core").simulation_name
+            pmos = process.device("pmos_core").simulation_name
+        else:
+            models = topology["models"]
+            nmos = models["nmos"]
+            pmos = models["pmos"]
+    except (KeyError, TypeError, ProcessIRError) as exc:
         raise SystemExit(f"manifest topology is incomplete: {manifest_path}") from exc
     return {
         "style": str(style),

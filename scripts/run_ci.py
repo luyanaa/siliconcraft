@@ -25,6 +25,18 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from common.process_ir import load_process, profile_names  # noqa: E402
+
+
+def capability_profiles(capability: str) -> tuple[str, ...]:
+    return tuple(
+        profile
+        for profile in profile_names(ROOT)
+        if bool(getattr(load_process(profile, ROOT).capabilities, capability, False))
+    )
 
 
 def find_tool(env_name, store_name):
@@ -73,11 +85,18 @@ def main():
     run(f"python3 {r/'scripts/gen_drc.py'} --profile {p}", env=env)
     run(f"python3 {r/'scripts/gen_lvs.py'} --profile {p}", env=env)
 
-    # 2b. process-neutral Magic PEX contract (source/unit rendering)
-    if p == "ami06":
-        for pex_profile in ("ami06", "hp06", "ami16"):
+    pex_profiles = capability_profiles("pex_runtime")
+    if pex_profiles:
+        for pex_profile in pex_profiles:
             run(f"python3 {r/'scripts/gen_magic_pex.py'} --profile {pex_profile} --all", env=env)
         run(f"python3 {r/'scripts/test_magic_pex.py'}", env=env)
+    process = load_process(p, r)
+    if process.pcells:
+        run(
+            f"python3 {r/'scripts/test_primitive_roundtrip.py'} "
+            f"--profile {p} --klayout '{K}'",
+            env=env,
+        )
 
     # 3. DRC gates
     for name, layout in (("clean", clean), ("violations", viol)):

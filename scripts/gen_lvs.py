@@ -13,9 +13,12 @@ import argparse
 import sys
 from pathlib import Path
 
-import yamlish
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from common.process_ir import load_process  # noqa: E402
 KIND_KEYS = {
     "mos4": ("name", "channel", "diff", "bulk_net", "model_suffix"),
     "resistor": ("name", "body", "conn", "sheet"),
@@ -30,11 +33,12 @@ def main():
     ap.add_argument("--profile", required=True)
     args = ap.parse_args()
 
-    profile_dir = ROOT / "profiles" / args.profile
+    process = load_process(args.profile, ROOT)
+    profile_dir = process.profile_dir
     devices_path = profile_dir / "devices.yaml"
     if not devices_path.exists():
         raise SystemExit(f"no devices.yaml in {profile_dir}")
-    devices = yamlish.load(devices_path.read_text())
+    devices = process.devices_doc
     engine = devices.get("engine", "scmos_authoritative")
     if engine != "scmos_authoritative":
         raise SystemExit(

@@ -21,10 +21,14 @@ if str(ROOT) not in sys.path:
 
 from common.pex.magic import assemble_technology, without_well_routing  # noqa: E402
 from common.pex.runtime import run_magic_extract  # noqa: E402
-from yamlish import load  # noqa: E402
+from common.process_ir import load_process, profile_names  # noqa: E402
 
 DEFAULT_LAYOUT = ROOT / "common/tests/gds/ami06_drc_test.gds"
-DEFAULT_PROFILES = ("ami06", "hp06", "ami16")
+DEFAULT_PROFILES = tuple(
+    profile
+    for profile in profile_names(ROOT)
+    if load_process(profile, ROOT).capabilities.pex_runtime
+)
 
 
 def logical_spice_lines(text: str) -> list[str]:
@@ -54,9 +58,10 @@ def connectivity_signature(text: str) -> tuple[tuple[str, ...], ...]:
     return tuple(sorted(rows))
 
 
-def load_profile(profile: str) -> tuple[dict, Path, str]:
-    manifest_path = ROOT / "profiles" / profile / "pex" / "manifest.yaml"
-    manifest = load(manifest_path.read_text())
+def load_profile(profile: str) -> tuple[dict, Path, str, dict]:
+    process = load_process(profile, ROOT)
+    manifest_path = process.profile_dir / "pex" / "manifest.yaml"
+    manifest = process.pex_doc
     profiles = manifest.get("profiles") or {}
     reference = next(
         name
@@ -65,7 +70,7 @@ def load_profile(profile: str) -> tuple[dict, Path, str]:
         and isinstance(spec, dict)
         and spec.get("generated") is True
     )
-    return manifest, manifest_path, reference
+    return manifest, manifest_path, reference, process.device_bindings
 
 
 def check_profile(
@@ -73,8 +78,10 @@ def check_profile(
     layout: Path,
     magic: str,
 ) -> tuple[int, int]:
-    manifest, manifest_path, reference = load_profile(profile)
-    normal = assemble_technology(manifest, reference, manifest_path.parent)
+    manifest, manifest_path, reference, device_bindings = load_profile(profile)
+    normal = assemble_technology(
+        manifest, reference, manifest_path.parent, device_bindings
+    )
     diagnostic = without_well_routing(normal)
     style = str((manifest.get("topology") or {}).get("style"))
     with tempfile.TemporaryDirectory(prefix=f"{profile}-scmos-wr-") as temp:

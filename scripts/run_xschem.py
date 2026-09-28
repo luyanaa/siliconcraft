@@ -23,9 +23,12 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-import yamlish
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from common.process_ir import load_process  # noqa: E402
 
 
 def find_tool(env_name, command, store_glob):
@@ -73,9 +76,8 @@ def main():
     )
     args = ap.parse_args()
 
-    profile = ROOT / "profiles" / args.profile
-    if not profile.is_dir():
-        raise SystemExit(f"unknown profile: {args.profile}")
+    process = load_process(args.profile, ROOT)
+    profile = process.profile_dir
     schematic = args.schematic or (ROOT / "common/tests/xschem" / f"{args.profile}_nmos.sch")
     schematic = schematic.resolve()
     if not schematic.exists():
@@ -86,7 +88,7 @@ def main():
     smoke_path = profile / "xschem_smoke.yaml"
     if not smoke_path.exists():
         raise SystemExit(f"xschem smoke config not found: {smoke_path}")
-    smoke = yamlish.load(smoke_path.read_text())
+    smoke = process.xschem_smoke_doc
     expected = tuple(smoke.get("expected_netlist") or ())
     probe = smoke.get("probe")
     if not expected or not probe:
@@ -117,7 +119,7 @@ def main():
     env = os.environ.copy()
     generated = profile / "generated" / "xschem"
     env["XSCHEM_LIBRARY_PATH"] = str(generated)
-    symbols = yamlish.load((profile / "symbols.yaml").read_text()).get("symbols", {})
+    symbols = process.symbols
     missing_symbols = sorted(
         name for name in symbols if not (generated / f"{name}.sym").exists()
     )

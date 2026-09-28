@@ -51,8 +51,8 @@ def main(argv=None):
 
 
     variants = [
-        ("nmos", {"fingers": 1, "m": 1, "w_um": 1.5, "l_um": 0.6}),
-        ("pmos", {"fingers": 1, "m": 1, "w_um": 1.5, "l_um": 0.6}),
+        ("nmos", {"nf": 1, "m": 1, "w_um": 1.5, "l_um": 0.6}),
+        ("pmos", {"nf": 1, "m": 1, "w_um": 1.5, "l_um": 0.6}),
         ("ntap", {"rows": 1, "columns": 1}),
         ("ptap", {"rows": 1, "columns": 1}),
         ("via12", {"rows": 2, "columns": 2}),

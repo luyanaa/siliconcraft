@@ -21,10 +21,14 @@ if str(ROOT) not in sys.path:
 
 from common.pex.magic import assemble_technology  # noqa: E402
 from common.pex.runtime import run_magic_extract  # noqa: E402
-from yamlish import load  # noqa: E402
+from common.process_ir import load_process, profile_names  # noqa: E402
 
 DEFAULT_LAYOUT = ROOT / "common/tests/magic/scmos_crosscheck.mag"
-DEFAULT_PROFILES = ("ami06", "hp06", "ami16")
+DEFAULT_PROFILES = tuple(
+    profile
+    for profile in profile_names(ROOT)
+    if load_process(profile, ROOT).capabilities.pex_runtime
+)
 
 
 def logical_spice_lines(text: str) -> list[str]:
@@ -63,9 +67,10 @@ def terminal_signature(
     return tuple(sorted(record[:3] for record in records))
 
 
-def load_profile(profile: str) -> tuple[dict, Path, str, dict]:
-    manifest_path = ROOT / "profiles" / profile / "pex" / "manifest.yaml"
-    manifest = load(manifest_path.read_text())
+def load_profile(profile: str) -> tuple[dict, Path, str, dict, dict]:
+    process = load_process(profile, ROOT)
+    manifest_path = process.profile_dir / "pex" / "manifest.yaml"
+    manifest = process.pex_doc
     profiles = manifest.get("profiles") or {}
     reference = next(
         name
@@ -78,11 +83,11 @@ def load_profile(profile: str) -> tuple[dict, Path, str, dict]:
     legacy = source.get("legacy_backend")
     if not isinstance(legacy, dict):
         raise RuntimeError(f"{profile}: source_technology.legacy_backend is missing")
-    return manifest, manifest_path, reference, legacy
+    return manifest, manifest_path, reference, legacy, process.device_bindings
 
 
 def check_profile(profile: str, layout: Path, magic: str) -> None:
-    manifest, manifest_path, reference, legacy = load_profile(profile)
+    manifest, manifest_path, reference, legacy, device_bindings = load_profile(profile)
     expected_lambda = legacy.get("expected_lambda_um")
     actual_lambda = (manifest.get("physical") or {}).get("lambda_um")
     if expected_lambda != actual_lambda:
@@ -95,7 +100,7 @@ def check_profile(profile: str, layout: Path, magic: str) -> None:
         raise RuntimeError(f"{profile}: incomplete legacy backend selection")
     active_style = str((manifest.get("topology") or {}).get("style"))
     active_technology = assemble_technology(
-        manifest, reference, manifest_path.parent
+        manifest, reference, manifest_path.parent, device_bindings
     )
     with tempfile.TemporaryDirectory(prefix=f"{profile}-scmos-legacy-") as temp:
         workdir = Path(temp)

@@ -12,6 +12,14 @@ flow:
   topology_source: "NCSU CDK 1.6.0 techfile/divaEXT.rul extractMOS"
   capacitance_source: "NCSU CDK 1.6.0 techfile/layerDefinitions.tf"
   contact_policy: "do not emit until contactResistance semantics are validated against a chain fixture"
+  parasitic_ownership:
+    transistor_intrinsic_capacitance: model
+    gate_overlap_capacitance: model
+    junction_area_capacitance: model
+    junction_sidewall_capacitance: model
+    diffusion_sheet_resistance: pex
+    gate_sheet_resistance: pex
+    metal_interconnect_rc: pex
 physical:
   lambda_um: 0.8
   magic_lambda_centimicron: 80
@@ -63,23 +71,6 @@ topology:
     -
       - oxide
       - 5
-  devices:
-    nmos:
-      model: ami16N
-      fet_type: nfet
-      terminal_types: "ndiff,ndc"
-      substrate_types: pwell
-      substrate_node: Gnd!
-      gscap_af_per_lambda: 0
-      gccap_af_per_lambda2: 0
-    pmos:
-      model: ami16P
-      fet_type: pfet
-      terminal_types: "pdiff,pdc"
-      substrate_types: nwell
-      substrate_node: Vdd!
-      gscap_af_per_lambda: 0
-      gccap_af_per_lambda2: 0
   device_semantics:
     mos4:
       - nmos4

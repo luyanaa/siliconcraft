@@ -16,25 +16,37 @@ import re
 import sys
 from pathlib import Path
 
-LS1U_PMOS_VTH0 = -0.6
-LS1U_PMOS_U0 = 83.0
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from common.process_ir import ProcessIRError, load_process  # noqa: E402
 CORNER_DIRS = {"nom": "nom", "slow": "slow", "fast": "fast",
                "fnsp": "fnsp", "snfp": "snfp"}
-def apply_ls1u_pmos_fit(card):
+def apply_ls1u_pmos_fit(card, vth0: float, u0: float):
     """Apply the explicitly recorded low-confidence HKUST PMOS fit."""
     start = card.index(".MODEL PMOS")
     end = card.index(")", start)
     block = card[start:end]
-    block = re.sub(r"(?m)^\+ U0\s*=.*$", f"+ U0      = {LS1U_PMOS_U0}", block)
-    block = re.sub(r"(?m)^\+ VTH0\s*=.*$", f"+ VTH0    = {LS1U_PMOS_VTH0}", block)
+    block = re.sub(r"(?m)^\+ U0\s*=.*$", f"+ U0      = {u0}", block)
+    block = re.sub(r"(?m)^\+ VTH0\s*=.*$", f"+ VTH0    = {vth0}", block)
     return card[:start] + block + card[end:]
 
 
 
 
 def generate_ls1u():
+    process = load_process("ls1u", ROOT)
+    try:
+        fit_model = process.model_ir("pmos_core")
+        vth0 = float(fit_model.fit_parameter("vth0_v"))
+        u0 = float(fit_model.fit_parameter("u0_cm2_per_v_s"))
+    except (KeyError, TypeError, ValueError, ProcessIRError) as exc:
+        raise SystemExit(
+            "ls1u model_maturity.yaml is missing numeric PMOS fit parameters"
+        ) from exc
+
     profile_dir = ROOT / "profiles" / "ls1u"
     reference_dir = profile_dir / "reference"
     model_dir = profile_dir / "models"
@@ -47,7 +59,7 @@ def generate_ls1u():
             "(expected nmos1u.lib and pmos1u.lib)"
         )
     nmos = nmos_path.read_text().strip()
-    pmos = apply_ls1u_pmos_fit(pmos_path.read_text().strip())
+    pmos = apply_ls1u_pmos_fit(pmos_path.read_text().strip(), vth0, u0)
     nmos = nmos.replace(".ENDS LV1UPMOS", ".ENDS LV1UNMOS")
     out = model_dir / "ls1u.lib"
     lines = [
@@ -55,7 +67,7 @@ def generate_ls1u():
         "* source: LibreSilicon process repository simulation/nmos1u.lib and",
         "*         simulation/pmos1u.lib at the profile manifest commit",
         "* normalization: corrected the upstream NMOS .ENDS subcircuit name",
-        "* empirical PMOS fit: VTH0=-0.6 V, U0=83 cm^2/V/s",
+        f"* empirical PMOS fit: VTH0={vth0:g} V, U0={u0:g} cm^2/V/s",
         "* fit source: supplied thermally_compensated.ods; L10/W10; low confidence",
         "* fit window: corrected Id_residue, VSG=1.5..5 V, VDS=-0.5 V",
         "* caveat: NGATE/PGATE remain unmeasured in the upstream cards",
@@ -71,16 +83,10 @@ def generate_ls1u():
     out.write_text("\n".join(lines))
     print(f"wrote {out}: sections ['ls1u']")
     return 0
-
-
 def model_prefix_for(profile: str) -> str:
     """Return the CDK card prefix recorded by the normalized layer profile."""
-    layers = ROOT / "profiles" / profile / "layers.yaml"
-    if layers.exists():
-        for line in layers.read_text().splitlines():
-            if line.strip().startswith("model_prefix:"):
-                return line.split(":", 1)[1].strip().strip('"')
-    return profile
+    process = load_process(profile, ROOT)
+    return str(process.meta.get("model_prefix") or profile)
 
 def normalize_hspice_card(text: str) -> str:
     """Remove HSPICE library wrappers before nesting cards in ngspice .lib."""

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://siliconcraft.dev/schema/pdk.yaml.schema",
-  "title": "siliconcraft pdk.yaml",
-  "description": "Single source of truth for a siliconcraft process profile. Every tool file (KLayout tech/DRC/LVS, Magic tech, xschem symbols, ngspice models, LEF/Liberty, PDK roots) is generated from this file; generated collateral is never hand-edited.",
+  "title": "siliconcraft process fragment schema",
+  "description": "Schema for the normalized process fragment shape. Profiles may keep layers, rules, devices, model, PEX, and UI data in separate source files; common/process_ir.py composes them into the ProcessIR consumed by generators. Generated collateral is never hand-edited.",
   "type": "object",
   "required": ["meta", "layers"],
   "properties": {

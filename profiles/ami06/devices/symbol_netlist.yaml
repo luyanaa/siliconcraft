@@ -1,0 +1,82 @@
+# Netlist bindings for the xschem symbols; UI geometry stays in symbols.yaml.
+schema_version: 1
+symbols:
+  nmos4:
+    device_binding: nmos_core
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
+    template:
+      name: M1
+      w: "3u"
+      l: "0.6u"
+      m: "1"
+      ad: "0"
+      as: "0"
+      pd: "0"
+      ps: "0"
+  pmos4:
+    device_binding: pmos_core
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
+    template:
+      name: M1
+      w: "6u"
+      l: "0.6u"
+      m: "1"
+      ad: "0"
+      as: "0"
+      pd: "0"
+      ps: "0"
+  res:
+    spiceprefix: r
+    format: "@spiceprefix@name @pinlist @r"
+    lvs_format: "@spiceprefix@name @pinlist @model r=@r w=@w l=@l"
+    template:
+      name: R1
+      r: "1k"
+      w: "1.2u"
+      l: "10u"
+      model: res
+  cap:
+    spiceprefix: c
+    format: "@spiceprefix@name @pinlist @c"
+    lvs_format: "@spiceprefix@name @pinlist @model c=@c"
+    template:
+      name: C1
+      c: "1p"
+      model: cap
+  diode:
+    spiceprefix: d
+    format: "@spiceprefix@name @pinlist @model area=@area pj=@pj"
+    template:
+      name: D1
+      area: "1"
+      pj: "0"
+      model: ami06NP
+  vdc:
+    spiceprefix: v
+    format: "@spiceprefix@name @pinlist @value"
+    template:
+      name: V1
+      value: "3.3"
+  vsin:
+    spiceprefix: v
+    format: "@spiceprefix@name @pinlist @value"
+    template:
+      name: V1
+      value: "sin(0 1 1k)"
+  idc:
+    spiceprefix: i
+    format: "@spiceprefix@name @pinlist @value"
+    template:
+      name: I1
+      value: "1m"
+  gnd:
+    spiceprefix: ""
+    format: "*.alias @lab"
+    template:
+      name: l1
+      lab: "0"
+  lab_pin:
+    format: "*.alias @lab"
+    template:
+      name: p1
+      lab: xxx

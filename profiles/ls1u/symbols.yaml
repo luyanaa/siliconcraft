@@ -1,73 +1,39 @@
-# profiles/ls1u/symbols.yaml — normalized Xschem MOS subset
-# The upstream LibreSilicon repository contains Qucs schematics, not a native
-# Xschem symbol library. These symbols bind to the normalized subcircuit models.
-# Passive/diode symbols remain pending because no corresponding model cards are
-# supplied by the upstream process repository.
+# profiles/ls1u/symbols.yaml — normalized Xschem symbol UI definitions
+#
+# This file contains only symbol shape, pin placement, and UI type data.
+# Netlist formatting and device identity live in devices/symbol_netlist.yaml.
+
 symbols:
   nmos4:
     kind: fet
     type: nmos
-    spiceprefix: x
-    format: "@spiceprefix@name @pinlist @model W=@W L=@L PD=@PD PS=@PS"
-    lvs_format: "@spiceprefix@name @pinlist @model W=@W L=@L PD=@PD PS=@PS"
     pins:
       - {name: d, dir: inout, x1: 17.5, y1: -32.5, x2: 22.5, y2: -27.5}
       - {name: g, dir: in, x1: -22.5, y1: -2.5, x2: -17.5, y2: 2.5}
       - {name: s, dir: inout, x1: 17.5, y1: 27.5, x2: 22.5, y2: 32.5}
       - {name: b, dir: in, x1: 17.5, y1: -2.5, x2: 22.5, y2: 2.5}
-    template:
-      name: X1
-      w: "1.5u"
-      l: "1u"
-      pd: "2.5u"
-      ps: "2.5u"
-      model: LV1UNMOS
   pmos4:
     kind: fet
     type: pmos
-    spiceprefix: x
-    format: "@spiceprefix@name @pinlist @model W=@W L=@L PD=@PD PS=@PS"
-    lvs_format: "@spiceprefix@name @pinlist @model W=@W L=@L PD=@PD PS=@PS"
     pins:
       - {name: d, dir: inout, x1: 17.5, y1: -32.5, x2: 22.5, y2: -27.5}
       - {name: g, dir: in, x1: -22.5, y1: -2.5, x2: -17.5, y2: 2.5}
       - {name: s, dir: inout, x1: 17.5, y1: 27.5, x2: 22.5, y2: 32.5}
       - {name: b, dir: in, x1: 17.5, y1: -2.5, x2: 22.5, y2: 2.5}
-    template:
-      name: X1
-      w: "3u"
-      l: "1u"
-      pd: "3u"
-      ps: "3u"
-      model: LV1UPMOS
   vdc:
     kind: src
     type: vsource
-    spiceprefix: v
-    format: "@spiceprefix@name @pinlist @value"
     pins:
       - {name: p, dir: inout, x1: -2.5, y1: -32.5, x2: 2.5, y2: -27.5}
       - {name: m, dir: inout, x1: -2.5, y1: 27.5, x2: 2.5, y2: 32.5}
-    template:
-      name: V1
-      value: "5"
   gnd:
     kind: gnd
     type: label
     global: true
-    spiceprefix: ""
-    format: "*.alias @lab"
     pins:
       - {name: p, dir: inout, x1: -2.5, y1: -2.5, x2: 2.5, y2: 2.5}
-    template:
-      name: l1
-      lab: "0"
   lab_pin:
     kind: lab_pin
     type: label
-    format: "*.alias @lab"
     pins:
       - {name: p, dir: in, x1: -1.25, y1: -1.25, x2: 1.25, y2: 1.25}
-    template:
-      name: p1
-      lab: xxx

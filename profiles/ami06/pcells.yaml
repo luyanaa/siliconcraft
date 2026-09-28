@@ -8,18 +8,20 @@ pcells:
   nmos:
     kind: mos4
     polarity: n
+    canonical_device: nmos_core
     terminals:
       - D
       - G
       - S
       - B
     parameters:
-      fingers: {type: int, default: 1, min: 1}
+      nf: {type: int, default: 1, min: 1}
       m: {type: int, default: 1, min: 1}
       w_um: {type: float, default: 1.5, min: 0.9}
       l_um: {type: float, default: 0.6, min: 0.6}
   pmos:
     kind: mos4
+    canonical_device: pmos_core
     polarity: p
     terminals:
       - D
@@ -27,7 +29,7 @@ pcells:
       - S
       - B
     parameters:
-      fingers: {type: int, default: 1, min: 1}
+      nf: {type: int, default: 1, min: 1}
       m: {type: int, default: 1, min: 1}
       w_um: {type: float, default: 1.5, min: 0.9}
       l_um: {type: float, default: 0.6, min: 0.6}

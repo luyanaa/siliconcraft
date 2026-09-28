@@ -9,35 +9,47 @@ bindings:
       gate_types: nfet
       terminal_types: "ndiff,ndc"
       substrate_types: pwell
+      substrate_node: vss
       implant: nimplant
     simulation:
-      extraction_kind: subcircuit
-      subcircuit: LV1UNMOS
+      representation: subckt
+      name: LV1UNMOS
+      prefix: x
       model_library: "../models/ls1u.lib"
-      parameters:
-        - w
-        - l
-        - pd
-        - ps
+      parameter_map:
+        w: W
+        l: L
+        pd: PD
+        ps: PS
     lvs:
       extracted_class: nfet
       netgen_class: LV1UNMOS
+      permutable:
+        -
+          - d
+          - s
   pmos_core:
     canonical_variant: pmos_core
     layout:
       gate_types: pfet
       terminal_types: "pdiff,pdc"
       substrate_types: nwell
+      substrate_node: vdd
       implant: pimplant
     simulation:
-      extraction_kind: subcircuit
-      subcircuit: LV1UPMOS
+      representation: subckt
+      name: LV1UPMOS
+      prefix: x
       model_library: "../models/ls1u.lib"
-      parameters:
-        - w
-        - l
-        - pd
-        - ps
+      parameter_map:
+        w: W
+        l: L
+        pd: PD
+        ps: PS
     lvs:
       extracted_class: pfet
       netgen_class: LV1UPMOS
+      permutable:
+        -
+          - d
+          - s

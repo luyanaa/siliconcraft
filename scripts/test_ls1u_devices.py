@@ -26,10 +26,20 @@ def main() -> int:
     assert mos4["id"] == "mos4"
     assert mos4["terminals"] == ["d", "g", "s", "b"]
     assert mos4["geometry"]["required"] == ["w", "l"]
+    assert mos4["geometry"]["parameter_semantics"]["w"] == (
+        "channel width per physical gate finger"
+    )
+    assert mos4["geometry"]["parameter_semantics"]["nf"].startswith(
+        "physical gate-finger"
+    )
+    assert mos4["symmetry_groups"] == [["d", "s"]]
+    assert canonical["device"]["parasitics"]["diffusion_sheet_r"] == "pex"
     assert set(canonical["variants"]) == {"nmos_core", "pmos_core"}
 
-    assert bindings["bindings"]["nmos_core"]["simulation"]["subcircuit"] == "LV1UNMOS"
-    assert bindings["bindings"]["pmos_core"]["simulation"]["subcircuit"] == "LV1UPMOS"
+    assert bindings["bindings"]["nmos_core"]["simulation"]["name"] == "LV1UNMOS"
+    assert bindings["bindings"]["pmos_core"]["simulation"]["name"] == "LV1UPMOS"
+    assert bindings["bindings"]["nmos_core"]["simulation"]["representation"] == "subckt"
+    assert bindings["bindings"]["pmos_core"]["simulation"]["representation"] == "subckt"
     assert bindings["bindings"]["nmos_core"]["lvs"]["extracted_class"] == "nfet"
     assert bindings["bindings"]["pmos_core"]["lvs"]["extracted_class"] == "pfet"
 

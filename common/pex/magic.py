@@ -190,7 +190,37 @@ def _render_msubcircuit(spec: dict[str, Any], name: str) -> str:
     )
 
 
-def render_topology(manifest: dict[str, Any]) -> str:
+def _bound_topology_devices(
+    topology: dict[str, Any], device_bindings: dict[str, Any] | None
+) -> dict[str, Any]:
+    devices = dict(topology.get("devices") or {})
+    if not device_bindings:
+        return devices
+    if topology.get("magic_device_class") != "mosfet":
+        return devices
+    for polarity, binding_name in (("nmos", "nmos_core"), ("pmos", "pmos_core")):
+        binding = device_bindings.get(binding_name)
+        if binding is None:
+            continue
+        layout = getattr(binding, "layout", {}) or {}
+        simulation = getattr(binding, "simulation", {}) or {}
+        spec = dict(devices.get(polarity) or {})
+        for key, value in (
+            ("model", simulation.get("name")),
+            ("fet_type", layout.get("gate_types")),
+            ("terminal_types", layout.get("terminal_types")),
+            ("substrate_types", layout.get("substrate_types")),
+            ("substrate_node", layout.get("substrate_node")),
+        ):
+            if value is not None:
+                spec[key] = value
+        devices[polarity] = spec
+    return devices
+
+
+def render_topology(
+    manifest: dict[str, Any], device_bindings: dict[str, Any] | None = None
+) -> str:
     physical = _required(manifest, "physical", "manifest")
     topology = _required(manifest, "topology", "manifest")
     lam = _required(physical, "magic_lambda_centimicron", "physical")
@@ -218,7 +248,7 @@ def render_topology(manifest: dict[str, Any]) -> str:
     for plane, order in plane_order:
         lines.append(f"    planeorder {plane} {order}")
 
-    devices = topology.get("devices")
+    devices = _bound_topology_devices(topology, device_bindings)
     if devices:
         device_class = topology.get("magic_device_class", "mosfet")
         for name in ("nmos", "pmos"):
@@ -362,13 +392,17 @@ def _render_legacy_directives(
     return directives
 
 
-def render_profile_extract(manifest: dict[str, Any], profile_name: str) -> str:
+def render_profile_extract(
+    manifest: dict[str, Any],
+    profile_name: str,
+    device_bindings: dict[str, Any] | None = None,
+) -> str:
     physical = _required(manifest, "physical", "manifest")
     profiles = _required(manifest, "profiles", "manifest")
     spec = profiles.get(profile_name)
     if not isinstance(spec, dict):
         raise MagicPexError(f"unknown PEX profile {profile_name!r}")
-    lines = render_topology(manifest).rstrip("\n").splitlines()
+    lines = render_topology(manifest, device_bindings).rstrip("\n").splitlines()
     directives: list[str] = []
     if spec.get("magic_directives"):
         for item in spec["magic_directives"]:
@@ -426,7 +460,10 @@ def _validate_legacy_backend(manifest: dict[str, Any]) -> None:
 
 
 def assemble_technology(
-    manifest: dict[str, Any], profile_name: str, manifest_dir: Path
+    manifest: dict[str, Any],
+    profile_name: str,
+    manifest_dir: Path,
+    device_bindings: dict[str, Any] | None = None,
 ) -> str:
     _validate_legacy_backend(manifest)
     source = _required(manifest, "source_technology", "manifest")
@@ -443,13 +480,16 @@ def assemble_technology(
         assembled, manifest.get("technology", {}).get("description")
     )
     cif = map_path.read_text().rstrip("\n")
-    extract = render_profile_extract(manifest, profile_name).rstrip("\n")
+    extract = render_profile_extract(manifest, profile_name, device_bindings).rstrip("\n")
     assembled = _replace_section(assembled, "cifinput", "cifinput\n" + cif)
     return _replace_section(assembled, "extract", extract)
 
 
 def generate_profile(
-    manifest: dict[str, Any], manifest_path: Path, profile_name: str
+    manifest: dict[str, Any],
+    manifest_path: Path,
+    profile_name: str,
+    device_bindings: dict[str, Any] | None = None,
 ) -> Path:
     spec = manifest.get("profiles", {}).get(profile_name)
     if not isinstance(spec, dict):
@@ -459,14 +499,18 @@ def generate_profile(
     output_name = spec.get("output", f"{profile_name}.tech")
     output = manifest_path.parent / str(output_name)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(assemble_technology(manifest, profile_name, manifest_path.parent))
+    output.write_text(
+        assemble_technology(manifest, profile_name, manifest_path.parent, device_bindings)
+    )
     return output
 
 
-def topology_fragment(manifest: dict[str, Any]) -> str:
+def topology_fragment(
+    manifest: dict[str, Any], device_bindings: dict[str, Any] | None = None
+) -> str:
     return (
         GENERATED_PREFIX
         + "\n"
         + "/* Standalone extract section generated from the process manifest. */\n"
-        + render_topology(manifest)
+        + render_topology(manifest, device_bindings)
     )

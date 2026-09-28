@@ -1,0 +1,113 @@
+# Netlist bindings for the xschem symbols; UI geometry stays in symbols.yaml.
+schema_version: 1
+symbols:
+  nmos4:
+    spiceprefix: m
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m"
+    lvs_format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m"
+    template:
+      name: M1
+      w: "2u"
+      l: "1u"
+      m: "1"
+      model: or1_nmos
+  pmos4:
+    spiceprefix: m
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m"
+    lvs_format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m"
+    template:
+      name: M1
+      w: "6u"
+      l: "1u"
+      m: "1"
+      model: or1_pmos
+  res:
+    spiceprefix: r
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model r=@r w=@w l=@l"
+    template:
+      name: R1
+      r: "1k"
+      w: "2u"
+      l: "10u"
+      model: r_poly
+  hres:
+    spiceprefix: r
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model r=@r w=@w l=@l"
+    template:
+      name: R1
+      r: "1k"
+      w: "2u"
+      l: "10u"
+      model: hr_poly
+  cap:
+    spiceprefix: c
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model c=@c"
+    template:
+      name: C1
+      c: "1p"
+      w: "10"
+      l: "10"
+      model: poly_cap
+  diode:
+    spiceprefix: d
+    format: "@spiceprefix@name @pinlist @model area=@area pj=@pj"
+    lvs_format: "@spiceprefix@name @pinlist @model area=@area pj=@pj"
+    template:
+      name: D1
+      area: "1"
+      pj: "0"
+      model: or1_diode
+  ndiff_cap:
+    spiceprefix: c
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model c=@c"
+    template:
+      name: C1
+      c: "1p"
+      w: "10"
+      l: "10"
+      model: ndiff_cap
+  pdiff_cap:
+    spiceprefix: c
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model c=@c"
+    template:
+      name: C1
+      c: "1p"
+      w: "10"
+      l: "10"
+      model: pdiff_cap
+  r_nwell:
+    spiceprefix: r
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model r=@r w=@w l=@l"
+    template:
+      name: R1
+      r: "1k"
+      w: "2u"
+      l: "10u"
+      model: r_nwell
+  r_pdiff:
+    spiceprefix: r
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model r=@r w=@w l=@l"
+    template:
+      name: R1
+      r: "1k"
+      w: "2u"
+      l: "10u"
+      model: r_pdiff
+  gnd:
+    spiceprefix: ""
+    format: "*.alias @lab"
+    template:
+      name: l1
+      lab: "0"
+  lab_pin:
+    format: "*.alias @lab"
+    template:
+      name: p1
+      lab: xxx

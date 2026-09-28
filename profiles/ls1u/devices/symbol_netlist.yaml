@@ -1,0 +1,40 @@
+# Netlist bindings for the xschem symbols; UI geometry stays in symbols.yaml.
+schema_version: 1
+symbols:
+  nmos4:
+    device_binding: nmos_core
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l pd=@pd ps=@ps"
+    lvs_format: "@spiceprefix@name @pinlist @model w=@w l=@l pd=@pd ps=@ps"
+    template:
+      name: X1
+      w: "1.5u"
+      l: "1u"
+      pd: "2.5u"
+      ps: "2.5u"
+  pmos4:
+    device_binding: pmos_core
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l pd=@pd ps=@ps"
+    lvs_format: "@spiceprefix@name @pinlist @model w=@w l=@l pd=@pd ps=@ps"
+    template:
+      name: X1
+      w: "3u"
+      l: "1u"
+      pd: "3u"
+      ps: "3u"
+  vdc:
+    spiceprefix: v
+    format: "@spiceprefix@name @pinlist @value"
+    template:
+      name: V1
+      value: "5"
+  gnd:
+    spiceprefix: ""
+    format: "*.alias @lab"
+    template:
+      name: l1
+      lab: "0"
+  lab_pin:
+    format: "*.alias @lab"
+    template:
+      name: p1
+      lab: xxx

@@ -6,6 +6,14 @@ flow:
   backend: magic
   source_driven: true
   legacy_directives_are_magic_native: true
+  parasitic_ownership:
+    transistor_intrinsic_capacitance: model
+    gate_overlap_capacitance: model
+    junction_area_capacitance: model
+    junction_sidewall_capacitance: model
+    diffusion_sheet_resistance: pex
+    gate_sheet_resistance: pex
+    metal_interconnect_rc: pex
 default: none
 physical:
   lambda_um: 0.5

@@ -21,6 +21,7 @@ import yamlish  # noqa: E402
 PROFILE = ROOT / "profiles" / "openrule1um"
 MODELS = PROFILE / "models" / "openrule1um.lib"
 SYMBOLS = PROFILE / "symbols.yaml"
+SYMBOL_NETLIST = PROFILE / "devices" / "symbol_netlist.yaml"
 RULES = PROFILE / "rules.yaml"
 LAYERS = PROFILE / "layers.yaml"
 CONTRACT = PROFILE / "model_contract.yaml"
@@ -91,6 +92,7 @@ def _check_contract() -> dict:
     rules = yamlish.load(RULES.read_text())
     layers = yamlish.load(LAYERS.read_text())
     symbols = yamlish.load(SYMBOLS.read_text()).get("symbols", {})
+    symbol_netlist = yamlish.load(SYMBOL_NETLIST.read_text()).get("symbols", {})
     cells = yamlish.load(CELLS.read_text())
     _check_teg_evidence(contract)
     r_ndiff_reference = (contract.get("reference_only_models") or {}).get("r_ndiff") or {}
@@ -236,7 +238,11 @@ def _check_contract() -> dict:
     if not model_symbols.issubset(available_xschem):
         raise AssertionError("cells.yaml primitive_xschem coverage does not include every declared model symbol")
     unavailable_models = {entry["id"] for entry in contract.get("missing_models") or ()}
-    declared_symbol_models = {entry.get("model_id") for entry in symbols.values() if entry.get("model_id")}
+    declared_symbol_models = {
+        entry.get("model_id")
+        for entry in symbol_netlist.values()
+        if entry.get("model_id")
+    }
     if unavailable_models & (set(models) | available_models | declared_symbol_models):
         raise AssertionError("an unavailable model card is exposed through the primitive contract")
 
@@ -258,7 +264,7 @@ def _check_contract() -> dict:
         if entry.get("kind") == "capacitor":
             if entry.get("netlist_geometry_units") != "numeric_um":
                 raise AssertionError(f"{model_id}: capacitor geometry-unit convention is not declared")
-            template = symbols[symbol].get("template") or {}
+            template = symbol_netlist[symbol].get("template") or {}
             if any(str(template.get(parameter, "")).lower().endswith("u") for parameter in ("w", "l")):
                 raise AssertionError(f"{model_id}: passive capacitor template must use numeric micron W/L")
         parameters = entry.get("parameters") or {}
@@ -272,8 +278,8 @@ def _check_contract() -> dict:
             if value < minimum or abs(value / grid - round(value / grid)) > 1e-9:
                 raise AssertionError(f"{model_id}.{parameter} is outside lambda_rule: {value}")
 
-    for symbol_name, entry in symbols.items():
-        model_id = entry.get("model_id")
+    for symbol_name, entry in symbol_netlist.items():
+        model_id = (entry.get("template") or {}).get("model") or entry.get("model_id")
         if not model_id:
             continue
         if model_id not in models:

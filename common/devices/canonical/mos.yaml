@@ -1,5 +1,5 @@
 # Process-independent canonical MOS device contract.
-schema_version: 1
+schema_version: 2
 family: mos
 device:
   id: mos4
@@ -20,10 +20,26 @@ device:
       - l
     optional:
       - nf
+      - m
       - ad
       - as
       - pd
       - ps
+    parameter_units:
+      w: um
+      l: um
+      nf: count
+      m: count
+      ad: um2
+      as: um2
+      pd: um
+      ps: um
+    parameter_semantics:
+      w: "channel width per physical gate finger"
+      l: "channel length"
+      nf: "physical gate-finger count; controls layout geometry"
+      m: "electrical multiplicity; does not change one-instance layout geometry"
+      effective_width: "w * nf * m"
   attributes:
     polarity:
       - n
@@ -32,13 +48,26 @@ device:
     gate_stack: optional
     silicided: optional
   semantics:
-    w: "effective channel width in the declared simulation length unit"
-    l: "effective channel length in the declared simulation length unit"
-    nf: "number of parallel fingers; absent means one"
+    w: "channel width per physical gate finger"
+    l: "channel length"
+    nf: "physical gate-finger count; absent means one"
+    m: "electrical multiplicity; absent means one and does not change one-instance geometry"
+    effective_width: "w * nf * m"
     ad: "drain diffusion area when the model family consumes it"
     as: "source diffusion area when the model family consumes it"
     pd: "drain diffusion perimeter when the model family consumes it"
     ps: "source diffusion perimeter when the model family consumes it"
+  symmetry_groups:
+    -
+      - d
+      - s
+  parasitics:
+    gate_intrinsic: model
+    gate_overlap: model
+    junction_area_cap: model
+    junction_sidewall_cap: model
+    diffusion_sheet_r: pex
+    gate_sheet_r: disabled
 variants:
   nmos_core:
     polarity: n

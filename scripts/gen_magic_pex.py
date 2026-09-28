@@ -25,20 +25,22 @@ from common.pex.magic import (  # noqa: E402
     generate_profile,
     topology_fragment,
 )
-from yamlish import load  # noqa: E402
+from common.process_ir import load_process  # noqa: E402
 
 
 def manifest_path(profile: str) -> Path:
     return ROOT / "profiles" / profile / "pex" / "manifest.yaml"
 
 
-def write_topology_fragment(manifest: dict, path: Path) -> None:
+def write_topology_fragment(
+    manifest: dict, path: Path, device_bindings: dict | None = None
+) -> None:
     fragment = manifest.get("topology_fragment")
     if not fragment:
         return
     output = (path.parent / str(fragment)).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(topology_fragment(manifest))
+    output.write_text(topology_fragment(manifest, device_bindings))
 
 
 def main() -> int:
@@ -49,12 +51,13 @@ def main() -> int:
     group.add_argument("--all", action="store_true", help="generate all enabled profiles")
     args = ap.parse_args()
 
-    path = manifest_path(args.profile)
+    process = load_process(args.profile, ROOT)
+    path = process.profile_dir / "pex" / "manifest.yaml"
     if not path.exists():
         raise SystemExit(f"PEX manifest not found: {path}")
-    manifest = load(path.read_text())
+    manifest = process.pex_doc
     try:
-        write_topology_fragment(manifest, path)
+        write_topology_fragment(manifest, path, process.device_bindings)
         if args.all:
             names = [
                 name
@@ -64,7 +67,9 @@ def main() -> int:
         else:
             names = [args.profile_name]
         for name in names:
-            print(f"wrote {generate_profile(manifest, path, name)}")
+            print(
+                f"wrote {generate_profile(manifest, path, name, process.device_bindings)}"
+            )
     except MagicPexError as exc:
         raise SystemExit(f"PEX manifest error: {exc}") from exc
     return 0

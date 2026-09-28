@@ -12,6 +12,14 @@ flow:
   topology_source: "NCSU CDK 1.6.0 techfile/divaEXT.rul extractMOS"
   capacitance_source: "NCSU CDK 1.6.0 techfile/divaMultiLevel.il and layerDefinitions.tf"
   contact_policy: "do not emit until contactResistance semantics are validated against a chain fixture"
+  parasitic_ownership:
+    transistor_intrinsic_capacitance: model
+    gate_overlap_capacitance: model
+    junction_area_capacitance: model
+    junction_sidewall_capacitance: model
+    diffusion_sheet_resistance: pex
+    gate_sheet_resistance: pex
+    metal_interconnect_rc: pex
 physical:
   lambda_um: 0.3
   magic_lambda_centimicron: 30
@@ -38,23 +46,6 @@ topology:
   sidehalo: 8
   magic_device_class: mosfet
   magic_terminal_order: "drain,gate,source,bulk"
-  devices:
-    nmos:
-      model: ami06N
-      fet_type: nfet
-      terminal_types: "ndiff,ndc"
-      substrate_types: pwell
-      substrate_node: Gnd!
-      gscap_af_per_lambda: 0
-      gccap_af_per_lambda2: 0
-    pmos:
-      model: ami06P
-      fet_type: pfet
-      terminal_types: "pdiff,pdc"
-      substrate_types: nwell
-      substrate_node: Vdd!
-      gscap_af_per_lambda: 0
-      gccap_af_per_lambda2: 0
   scope: "AMI06 nmos4/pmos4 primitive MOS plus explicitly sourced L0 route RC"
 profiles:
   none:

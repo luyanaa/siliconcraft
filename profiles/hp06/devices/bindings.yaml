@@ -1,0 +1,60 @@
+# Process-specific binding of the canonical MOS contract to HP06.
+schema_version: 1
+canonical_source: "../../../common/devices/canonical/mos.yaml"
+bindings:
+  nmos_core:
+    canonical_variant: nmos_core
+    layout:
+      gate_types: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      substrate_node: Gnd!
+    simulation:
+      representation: primitive
+      name: hp14tbN
+      prefix: m
+      model_library: "../models/hp06.lib"
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+    lvs:
+      extracted_class: hp14tbN
+      netgen_class: hp14tbN
+      permutable:
+        -
+          - d
+          - s
+  pmos_core:
+    canonical_variant: pmos_core
+    layout:
+      gate_types: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      substrate_node: Vdd!
+    simulation:
+      representation: primitive
+      name: hp14tbP
+      prefix: m
+      model_library: "../models/hp06.lib"
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+    lvs:
+      extracted_class: hp14tbP
+      netgen_class: hp14tbP
+      permutable:
+        -
+          - d
+          - s

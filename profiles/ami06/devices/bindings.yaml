@@ -1,0 +1,60 @@
+# Process-specific binding of the canonical MOS contract to AMI06.
+schema_version: 1
+canonical_source: "../../../common/devices/canonical/mos.yaml"
+bindings:
+  nmos_core:
+    canonical_variant: nmos_core
+    layout:
+      gate_types: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      substrate_node: Gnd!
+    simulation:
+      representation: primitive
+      name: ami06N
+      prefix: m
+      model_library: "../models/ami06.lib"
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+    lvs:
+      extracted_class: ami06N
+      netgen_class: ami06N
+      permutable:
+        -
+          - d
+          - s
+  pmos_core:
+    canonical_variant: pmos_core
+    layout:
+      gate_types: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      substrate_node: Vdd!
+    simulation:
+      representation: primitive
+      name: ami06P
+      prefix: m
+      model_library: "../models/ami06.lib"
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+    lvs:
+      extracted_class: ami06P
+      netgen_class: ami06P
+      permutable:
+        -
+          - d
+          - s
