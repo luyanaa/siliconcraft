@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://siliconcraft.dev/schema/pdk.yaml.schema",
+  "title": "siliconcraft pdk.yaml",
+  "description": "Single source of truth for a siliconcraft process profile. Every tool file (KLayout tech/DRC/LVS, Magic tech, xschem symbols, ngspice models, LEF/Liberty, PDK roots) is generated from this file; generated collateral is never hand-edited.",
+  "type": "object",
+  "required": ["meta", "layers"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["name", "process", "grid_um"],
+      "properties": {
+        "name": { "type": "string", "description": "profile directory name, e.g. ami06" },
+        "process": { "type": "string", "description": "technology identifier, e.g. AMI_C5N" },
+        "foundry": { "type": "string" },
+        "description": { "type": "string" },
+        "mosis_code": { "type": "string" },
+        "cdk_techlib": { "type": "string" },
+        "node_um": { "type": "number", "description": "nominal process node in microns" },
+        "lambda_um": { "type": "number", "default": 0.5, "description": "SCMOS lambda in microns; defaults to 0.5 when omitted" },
+        "grid_um": { "type": "number", "description": "design grid (gridRes) in microns" },
+        "min_channel_um": { "type": "number" },
+        "min_width_um": { "type": "number" },
+        "model_prefix": { "type": "string", "description": "SPICE model name prefix, e.g. ami06" },
+        "well_type": { "enum": ["n", "p", "e"], "description": "n = n-well, p = p-well, e = epitaxial/twin-well" },
+        "submicron_rules": { "type": "boolean" },
+        "deep_rules": { "type": "boolean" },
+        "stacked_vias": { "type": "boolean" },
+        "features": {
+          "type": "object",
+          "description": "per-process feature flags (metal3Available, elecAvailable, ...)",
+          "additionalProperties": { "type": "boolean" }
+        },
+        "license": { "type": "string" },
+        "sources": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "layers": {
+      "type": "array",
+      "description": "physical (drawing) layers; the layer map is the stable cross-tool contract",
+      "items": {
+        "type": "object",
+        "required": ["name", "purpose", "gds", "role"],
+        "properties": {
+          "name": { "type": "string" },
+          "purpose": { "enum": ["drawing", "pin", "net", "label", "boundary"] },
+          "gds": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["layer", "datatype"],
+              "properties": {
+                "layer": { "type": "integer" },
+                "datatype": { "type": "integer" }
+              }
+            }
+          },
+          "cif": { "type": "array", "items": { "type": "string" } },
+          "role": { "enum": ["well", "active", "select", "gate", "cut", "metal", "resistor", "capacitor", "pad", "misc"] },
+          "available": { "type": "boolean", "description": "present in this process variant" },
+          "display": {
+            "type": "object",
+            "properties": {
+              "color": { "type": "string" },
+              "stipple": { "type": "string" },
+              "line_style": { "type": "string" }
+            }
+          },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "stackup": {
+      "type": "object",
+      "description": "PEX source data; generators emit Magic extract rules and KLayout PEX tables",
+      "properties": {
+        "metals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "thickness_um": { "type": "number" },
+              "sheet_r_ohm_sq": { "type": "number" },
+              "eps_rel": { "type": "number" },
+              "role": { "enum": ["signal", "ground", "pad"] }
+            }
+          }
+        },
+        "dielectrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "eps_rel": { "type": "number" },
+              "thickness_um": { "type": "number" }
+            }
+          }
+        },
+        "substrate": {
+          "type": "object",
+          "properties": {
+            "type": { "enum": ["bulk", "soi"] },
+            "rho_ohm_cm": { "type": "number" },
+            "eps_rel": { "type": "number" }
+          }
+        }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "description": "typed design-rule tables; DRC decks, PCells and the cell generator consume these",
+      "properties": {
+        "grid": {
+          "type": "object",
+          "required": ["x", "y"],
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" }
+          }
+        },
+        "width": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
+        "spacing": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
+        "enclosure": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
+        "extension": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
+        "area": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
+        "notch": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
+        "overlap": { "type": "array", "items": { "$ref": "#/$defs/rule" } }
+      }
+    },
+    "devices": {
+      "type": "array",
+      "description": "device recognition and netlisting contract (LVS + xschem + PCells)",
+      "items": {
+        "type": "object",
+        "required": ["name", "terminals"],
+        "properties": {
+          "name": { "type": "string" },
+          "kind": { "enum": ["mos4", "mos", "resistor", "capacitor", "diode", "bjt", "soi_mos"] },
+          "terminals": { "type": "array", "items": { "type": "string" } },
+          "recognition": {
+            "type": "object",
+            "description": "layer names used to recognize the device, e.g. {gate: poly, diff: nactive, bulk: pwell}",
+            "additionalProperties": { "type": "string" }
+          },
+          "model": { "type": "string", "description": "SPICE model name (prefix + suffix)" },
+          "params": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "models": {
+      "type": "object",
+      "description": "simulation model files and corner sections",
+      "properties": {
+        "spice": {
+          "type": "object",
+          "properties": {
+            "file": { "type": "string" },
+            "corners": { "type": "array", "items": { "type": "string" } },
+            "mismatch": { "type": "boolean" }
+          }
+        },
+        "liberty": {
+          "type": "object",
+          "properties": {
+            "file": { "type": "string" },
+            "conditions": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "cells": {
+      "type": "object",
+      "description": "standard-cell collateral (generated via LibreCell) and bootstrap libraries",
+      "properties": {
+        "digital": {
+          "type": "object",
+          "properties": {
+            "cell_height_um": { "type": "number" },
+            "rail_width_um": { "type": "number" },
+            "catalog": { "type": "array", "items": { "type": "string" } },
+            "bootstrap": {
+              "type": "object",
+              "description": "static library used as conformance oracle / initial bootstrap",
+              "properties": {
+                "name": { "type": "string" },
+                "gds": { "type": "string" },
+                "lef": { "type": "string" },
+                "liberty": { "type": "string" },
+                "license": { "type": "string" }
+              }
+            }
+          }
+        },
+        "analog": {
+          "type": "object",
+          "properties": {
+            "symbols": { "type": "array", "items": { "type": "string" } },
+            "pcells": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "rule": {
+      "type": "object",
+      "required": ["id", "layer", "value_um"],
+      "properties": {
+        "id": { "type": "string", "description": "rule reference, e.g. SCMOS 1.1" },
+        "layer": { "type": "string" },
+        "layer2": { "type": "string", "description": "second layer for spacing/enclosure/extension" },
+        "value_um": { "type": "number", "description": "limit in microns" },
+        "compare": { "enum": ["min", "max", "exact"] },
+        "nets": { "enum": ["any", "same", "diff"], "description": "sameNet/diffNet connectivity qualifier" },
+        "app": { "type": "boolean", "description": "apposition filter (Diva app > 0); approximated by opposite-edge space_check" },
+        "condition": { "type": "string", "description": "process feature condition, e.g. submicron" },
+        "source": { "type": "string", "description": "provenance: divaDRC.rul rule id, MOSIS doc, ..." },
+        "note": { "type": "string" }
+      }
+    }
+  }
+}

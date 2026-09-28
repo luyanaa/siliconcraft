@@ -1,0 +1,51 @@
+# Process-independent canonical MOS device contract.
+schema_version: 1
+family: mos
+device:
+  id: mos4
+  kind: mos
+  terminals:
+    - d
+    - g
+    - s
+    - b
+  terminal_order:
+    - d
+    - g
+    - s
+    - b
+  geometry:
+    required:
+      - w
+      - l
+    optional:
+      - nf
+      - ad
+      - as
+      - pd
+      - ps
+  attributes:
+    polarity:
+      - n
+      - p
+    isolation: optional
+    gate_stack: optional
+    silicided: optional
+  semantics:
+    w: "effective channel width in the declared simulation length unit"
+    l: "effective channel length in the declared simulation length unit"
+    nf: "number of parallel fingers; absent means one"
+    ad: "drain diffusion area when the model family consumes it"
+    as: "source diffusion area when the model family consumes it"
+    pd: "drain diffusion perimeter when the model family consumes it"
+    ps: "source diffusion perimeter when the model family consumes it"
+variants:
+  nmos_core:
+    polarity: n
+  pmos_core:
+    polarity: p
+maturity_levels:
+  - structural
+  - functional
+  - characterized
+  - signoff

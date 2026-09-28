@@ -1,0 +1,15 @@
+# No authoritative OpenRule1um DRC deck is selected in this compatibility cut.
+schema_version: 1
+profile: openrule1um
+drc:
+  available: false
+  status: disabled
+  signoff: false
+  reason: authoritative_openrule1um_rule_table_not_reconciled
+  selection: reference
+  override_slot: true
+  lambda_um: 0.5
+  geometry_scaling: none
+  notes:
+    - lambda_um is a grid/reference override, not a physical geometry scale
+    - the reference deck remains available for batch checks

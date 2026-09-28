@@ -1,0 +1,212 @@
+# profiles/ls1u/layers.yaml — normalized from LibreSilicon ls1u.xml
+# Source: leviathanch/libresiliconprocess @ ac381a1e2b76b5c8882e82978c6f594a597df616
+meta:
+  name: ls1u
+  process: LS1U
+  foundry: LibreSilicon
+  description: "LibreSilicon 1um twin-well CMOS with STI specification"
+  node_um: 1.0
+  lambda_um: 0.5
+  grid_um: 0.5
+  min_channel_um: 0.5
+  min_width_um: 1.5
+  model_prefix: ls1u
+  well_type: e
+  submicron_rules: false
+  deep_rules: false
+  stacked_vias: false
+  features:
+    twinWellAvailable: true
+    shallowTrenchIsolation: true
+    metal3Available: true
+    metal4Available: true
+    metal5Available: true
+    metal6Available: true
+    npnAvailable: false
+    pnpAvailable: false
+    sonosAvailable: false
+    pbaseAvailable: false
+    nbaseAvailable: false
+    bipolarModelsAvailable: false
+  license: "Libre Silicon public license v1-or-later (source-referenced; license text not present in upstream repository)"
+  sources:
+    - "https://github.com/leviathanch/libresiliconprocess@ac381a1e2b76b5c8882e82978c6f594a597df616/magic/ls1u.xml"
+    - "https://github.com/leviathanch/libresiliconprocess@ac381a1e2b76b5c8882e82978c6f594a597df616/process_design_rules/process_design_rules.tex"
+layers:
+  -
+    name: nwell
+    purpose: drawing
+    gds:
+      - {layer: 42, datatype: 0}
+    role: well
+    available: true
+    cif:
+      - CWN
+  -
+    name: pwell
+    purpose: drawing
+    gds:
+      - {layer: 41, datatype: 0}
+    role: well
+    available: true
+    cif:
+      - CWP
+  -
+    name: active
+    purpose: drawing
+    gds:
+      - {layer: 43, datatype: 0}
+    role: active
+    available: true
+    cif:
+      - CAA
+  -
+    name: nimplant
+    purpose: drawing
+    gds:
+      - {layer: 45, datatype: 0}
+    role: select
+    available: true
+    cif:
+      - CSN
+  -
+    name: pimplant
+    purpose: drawing
+    gds:
+      - {layer: 44, datatype: 0}
+    role: select
+    available: true
+    cif:
+      - CSP
+  -
+    name: poly
+    purpose: drawing
+    gds:
+      - {layer: 46, datatype: 0}
+    role: gate
+    available: true
+    cif:
+      - CPG
+  -
+    name: contact
+    purpose: drawing
+    gds:
+      - {layer: 25, datatype: 0}
+    role: cut
+    available: true
+    cif:
+      - CCC
+  -
+    name: metal1
+    purpose: drawing
+    gds:
+      - {layer: 49, datatype: 0}
+    role: metal
+    available: true
+    cif:
+      - CM1
+  -
+    name: via1
+    purpose: drawing
+    gds:
+      - {layer: 50, datatype: 0}
+    role: cut
+    available: true
+    cif:
+      - CV1
+  -
+    name: metal2
+    purpose: drawing
+    gds:
+      - {layer: 51, datatype: 0}
+    role: metal
+    available: true
+    cif:
+      - CM2
+  -
+    name: via2
+    purpose: drawing
+    gds:
+      - {layer: 61, datatype: 0}
+    role: cut
+    available: true
+    cif:
+      - CV2
+  -
+    name: metal3
+    purpose: drawing
+    gds:
+      - {layer: 62, datatype: 0}
+    role: metal
+    available: true
+    cif:
+      - CM3
+  -
+    name: via3
+    purpose: drawing
+    gds:
+      - {layer: 30, datatype: 0}
+    role: cut
+    available: true
+    cif:
+      - CV3
+    note: "Declared by ls1u.xml; design-rule document currently stops at metal3."
+  -
+    name: metal4
+    purpose: drawing
+    gds:
+      - {layer: 31, datatype: 0}
+    role: metal
+    available: true
+    cif:
+      - CM4
+    note: "Declared by ls1u.xml; design-rule document currently stops at metal3."
+  -
+    name: via4
+    purpose: drawing
+    gds:
+      - {layer: 32, datatype: 0}
+    role: cut
+    available: true
+    cif:
+      - CV4
+    note: "Declared by ls1u.xml; design-rule document currently stops at metal3."
+  -
+    name: metal5
+    purpose: drawing
+    gds:
+      - {layer: 33, datatype: 0}
+    role: metal
+    available: true
+    cif:
+      - CM5
+    note: "Declared by ls1u.xml; design-rule document currently stops at metal3."
+  -
+    name: via5
+    purpose: drawing
+    gds:
+      - {layer: 36, datatype: 0}
+    role: cut
+    available: true
+    cif:
+      - CV5
+    note: "Declared by ls1u.xml; design-rule document currently stops at metal3."
+  -
+    name: metal6
+    purpose: drawing
+    gds:
+      - {layer: 37, datatype: 0}
+    role: metal
+    available: true
+    cif:
+      - CM6
+    note: "Declared by ls1u.xml; design-rule document currently stops at metal3."
+  -
+    name: glass
+    purpose: drawing
+    gds:
+      - {layer: 52, datatype: 0}
+    role: misc
+    available: true
+    cif:
+      - COG

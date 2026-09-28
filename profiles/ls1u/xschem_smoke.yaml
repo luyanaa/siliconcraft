@@ -1,0 +1,6 @@
+expected_netlist:
+  - "x1 d in 0 0 LV1UNMOS"
+  - "v1 in 0 5"
+  - "v2 d 0 5"
+probe: "@m.x1.m1[id]"
+min_current: 0

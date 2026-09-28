@@ -1,0 +1,11 @@
+engine: unavailable
+authoritative: false
+reason: "Upstream LS1u supplies no native PCell implementation or stdlib-free layout API."
+pcells: []
+pending:
+  - nmos4
+  - pmos4
+  - substrate_tap
+  - well_tap
+  - contact
+  - metal_route

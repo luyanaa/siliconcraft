@@ -1,0 +1,11 @@
+# Conformance waiver ledger — profiles/ami06/waivers.yaml
+#
+# Entries document accepted violation-count deltas between decks (reference
+# vs authoritative vs official) for a rule id.  Every entry needs provenance;
+# deltas without a waiver entry FAIL scripts/conformance.py (CI gate).
+#
+# Rule ids are the Diva rule ids used by the reference deck, e.g. "3.2",
+# "6.2.b", "offgrid", "saveDerived".
+#
+# Example:
+# 5.5.b: "Diva edge-layer spacing vs KLayout polygon space_check differ on cp-inside-poly; authoritative matches MOSIS rule intent"

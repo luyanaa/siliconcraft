@@ -1,0 +1,277 @@
+# AMI16 PEX profiles.  Coefficients are sourced from the NCSU CDK
+# AMI_ABN branch; the Magic SCMOS file is only the backend grammar and
+# connectivity carrier.  This is not a signoff deck.
+schema_version: 2
+profile: ami16
+default: none
+flow:
+  backend: magic
+  source_driven: true
+  original_process: AMI_ABN
+  original_run: N77H
+  topology_source: "NCSU CDK 1.6.0 techfile/divaEXT.rul extractMOS"
+  capacitance_source: "NCSU CDK 1.6.0 techfile/layerDefinitions.tf"
+  contact_policy: "do not emit until contactResistance semantics are validated against a chain fixture"
+physical:
+  lambda_um: 0.8
+  magic_lambda_centimicron: 80
+  magic_resistance_unit: "milliohm_per_square"
+  magic_area_cap_unit: "attofarad_per_lambda2"
+  magic_edge_cap_unit: "attofarad_per_lambda"
+source_technology:
+  file: "../../ls1u/reference/magic/pearlriver-scmos.tech"
+  gds_input_map: "../reference/magic/cifin-ami16.gen"
+  legacy_backend:
+    technology: "scmos"
+    extraction_style: "lambda=0.8(scna16_ami)"
+    expected_lambda_um: 0.8
+    purpose: "runtime SCMOS geometry/connectivity cross-check only; not the AMI16 coefficient source"
+    source: "OpenCircuitDesign Magic scmos.tech / MOSIS SCMOS 8.2.8"
+  backend_aliases:
+    elec: "poly2"
+    elec_poly_cap: "cap"
+    pbase: "pbase"
+  note: "SCMOS file supplies Magic's internal plane/connect grammar only; AMI16 GDS input and extract sections replace its process semantics. The matched scmos backend is selected only by the legacy cross-check gate."
+technology:
+  description: "AMI_ABN N77H source-reference PEX (extraction scope only)"
+topology:
+  features:
+    elec: true
+    npn: true
+  style: ami16_n77h
+  cscale: 1
+  step: 100
+  sidehalo: 8
+  magic_device_class: mosfet
+  magic_terminal_order: "drain,gate,source,bulk"
+  plane_order:
+    -
+      - active
+      - 0
+    -
+      - well
+      - 1
+    -
+      - implant
+      - 2
+    -
+      - metal1
+      - 3
+    -
+      - metal2
+      - 4
+    -
+      - oxide
+      - 5
+  devices:
+    nmos:
+      model: ami16N
+      fet_type: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      substrate_node: Gnd!
+      gscap_af_per_lambda: 0
+      gccap_af_per_lambda2: 0
+    pmos:
+      model: ami16P
+      fet_type: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      substrate_node: Vdd!
+      gscap_af_per_lambda: 0
+      gccap_af_per_lambda2: 0
+  device_semantics:
+    mos4:
+      - nmos4
+      - pmos4
+      - nmos4_elec
+      - pmos4_elec
+    resistor:
+      - polyRes
+      - elecRes
+      - nwellRes
+    capacitor:
+      - CapacitorElec
+    diode:
+      - NPdiode
+      - PNdiode
+      - NwPdiode
+    npn:
+      - npnTran
+  scope: "AMI16 nmos4/pmos4 primitive MOS plus explicitly sourced tier-L0 route RC; electrode MOS/NPN semantics remain source-recorded"
+profiles:
+  none:
+    generated: true
+    status: topology_only
+    description: "AMI16 layer map and primitive MOS topology without PEX coefficients."
+    magic_directives: []
+  n77h_reference:
+    generated: true
+    status: source_reference_partial
+    description: "N77H values from the AMI_ABN NCSU CDK branch; contact/via, intrinsic junction terms, and electrode MOS/NPN model cards are intentionally withheld pending fixtures and source cards."
+    source:
+      process: AMI_ABN
+      run: N77H
+      files:
+        - "ncsu-cdk-1.6.0/techfile/layerDefinitions.tf:729-766"
+        - "ncsu-cdk-1.6.0/techfile/divaEXT.rul:34-110"
+        - "ncsu-cdk-1.6.0/techfile/ami_16.tf"
+        - "ncsu-cdk-1.6.0/models/hspice/public/publicModel/ami16N"
+        - "ncsu-cdk-1.6.0/models/hspice/public/publicModel/ami16P"
+      calibrated: false
+    magic_directives:
+      # Sheet resistance source unit: Ohms/square.
+      -
+        kind: resist
+        layers: nwell
+        value: 1465
+        unit: ohm_per_square
+        source: "layerDefinitions.tf AMI_ABN nwell"
+      -
+        kind: resist
+        layers: poly
+        value: 35
+        unit: ohm_per_square
+        source: "layerDefinitions.tf AMI_ABN poly"
+      -
+        kind: resist
+        layers: poly2
+        value: 25
+        unit: ohm_per_square
+        source: "layerDefinitions.tf AMI_ABN elec; Magic poly2 is the backend alias"
+      -
+        kind: resist
+        layers: metal1
+        value: 0.06
+        unit: ohm_per_square
+        source: "layerDefinitions.tf AMI_ABN metal1"
+      -
+        kind: resist
+        layers: metal2
+        value: 0.03
+        unit: ohm_per_square
+        source: "layerDefinitions.tf AMI_ABN metal2"
+      # Gate-oxide poly/active capacitance stays with ami16N/P BSIM cards.
+      -
+        kind: areacap
+        layers: active
+        value: 301
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_ABN active/default"
+      -
+        kind: areacap
+        layers: poly
+        value: 34
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_ABN poly/default"
+      -
+        kind: areacap
+        layers: poly2
+        value: 745
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_ABN elec/active; Magic poly2 is the backend alias"
+      -
+        kind: areacap
+        layers: cap
+        value: 617
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_ABN elec/poly; Magic cap is the derived overlap alias"
+      -
+        kind: areacap
+        layers: metal1
+        value: 20
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_ABN metal1/default"
+      -
+        kind: areacap
+        layers: metal2
+        value: 12
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_ABN metal2/default"
+      # Metal overlap coefficients are source values in aF/um^2.
+      -
+        kind: overlap
+        upper: metal1
+        lower: "ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc"
+        value: 57
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_ABN metal1/active"
+      -
+        kind: overlap
+        upper: metal1
+        lower: poly
+        value: 51
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_ABN metal1/poly"
+      -
+        kind: overlap
+        upper: metal1
+        lower: poly2
+        value: 51
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_ABN metal1/elec"
+      -
+        kind: overlap
+        upper: metal2
+        lower: "ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc"
+        value: 28
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_ABN metal2/active"
+      -
+        kind: overlap
+        upper: metal2
+        lower: poly
+        value: 24
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_ABN metal2/poly"
+      -
+        kind: overlap
+        upper: metal2
+        lower: metal1
+        value: 44
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_ABN metal2/metal1"
+      # Perimeter source unit: aF/um.
+      -
+        kind: perimc
+        layers: poly
+        outside: active
+        value: 38
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_ABN poly/active"
+      -
+        kind: perimc
+        layers: metal1
+        outside: "~metal1"
+        value: 55
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_ABN metal1/default"
+      -
+        kind: perimc
+        layers: metal2
+        outside: "~metal2"
+        value: 47
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_ABN metal2/default"
+      -
+        kind: sideoverlap
+        upper: metal1
+        edge: "space,nwell,pwell"
+        lower: poly
+        value: 65
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_ABN metal1/poly"
+      -
+        kind: sideoverlap
+        upper: metal2
+        edge: "space,nwell,pwell"
+        lower: poly
+        value: 44
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_ABN metal2/poly"
+    withheld:
+      - "metal2/elec overlap; layerDefinitions.tf has no AMI_ABN metal2/elec entry"
+      - "contactResistance values; Magic's contact unit and the CDK layer-definition semantics need a dedicated chain fixture"
+      - "junction and substrate capacitance; the AMI16 source branch does not provide a direct Magic-safe mapping here"
+      - "electrode MOS cards ami16NE/ami16PE are not shipped by the public CDK model directory"
+      - "Diva-only NPN recognition and Generic_NPN calibration in the Magic experiment"

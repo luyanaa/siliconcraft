@@ -1,0 +1,7 @@
+* Canonical OpenRule1um four-MOS LVS probe
+.subckt openrule1um_portable
+M1 n1 g1 s1 b1 or1_pmos w=6u l=1u ad=21p as=21p pd=19u ps=19u
+M2 n2 g2 s2 b2 or1_pmos w=6u l=1u ad=21p as=21p pd=19u ps=19u
+M3 n3 g3 s3 SUBSTRATE or1_nmos w=6u l=1u ad=21p as=21p pd=19u ps=19u
+M4 n4 g4 s4 SUBSTRATE or1_nmos w=6u l=1u ad=21p as=21p pd=19u ps=19u
+.ends openrule1um_portable

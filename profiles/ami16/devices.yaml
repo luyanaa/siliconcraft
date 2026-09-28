@@ -1,0 +1,23 @@
+# profiles/ami16/devices.yaml — authoritative AMI_ABN device table
+#
+# Curated from NCSU CDK 1.6.0 techfile/divaEXT.rul.  The shared SCMOS
+# extractor feature-gates the electrode and NPN entries from layers.yaml;
+# Generic_NPN intentionally follows the source Diva deck's hardcoded model.
+devices:
+  mos4:
+    - { name: nmos4, channel: nChannel, diff: nDiff, bulk_net: substrate, model_suffix: nmos }
+    - { name: pmos4, channel: pChannel, diff: pDiff, bulk_net: nBulk, model_suffix: pmos }
+    - { name: nmos4_elec, channel: nElecChannelTran, diff: nDiff, bulk_net: substrate, model_suffix: nelec }
+    - { name: pmos4_elec, channel: pElecChannelTran, diff: pDiff, bulk_net: nBulk, model_suffix: pelec }
+  resistor:
+    - { name: polyRes, body: polyRes, conn: poly, sheet: poly }
+    - { name: elecRes, body: elecRes, conn: elec, sheet: elec }
+    - { name: nwellRes, body: nwellRes, conn: nBulk, sheet: nwell }
+  capacitor:
+    - { name: CapacitorElec, region: CapacitorElec, top: elec, bottom: poly, area_cap: elec_poly }
+  diode:
+    - { name: NPdiode, region: NPdiode, plus: substrate, minus: nDiff, model_suffix: npdiode }
+    - { name: PNdiode, region: PNdiode, plus: pDiff, minus: nBulk, model_suffix: pndiode }
+    - { name: NwPdiode, region: NwPdiode, plus: substrate, minus: nBulk, model_suffix: nwpdiode }
+  npn:
+    - { name: npnTran, region: npnTran, collector: npnCollector, base: npnBaseTap, emitter: npnEmitter }

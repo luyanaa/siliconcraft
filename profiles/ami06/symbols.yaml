@@ -1,0 +1,147 @@
+# profiles/ami06/symbols.yaml — xschem symbol definitions (AMI_C5N)
+#
+# Data for scripts/gen_symbols.py: one entry per symbol. Porting to another
+# SCMOS process = editing model names, prefixes, and defaults here.
+#
+# Pins are emitted in declaration order = netlist pin order (@pinlist).
+# The lvs_format override keeps extracted-device syntax separate from the
+# simulator's primitive R/C syntax.
+
+symbols:
+  nmos4:
+    kind: fet
+    type: nmos
+    spiceprefix: m
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
+    pins:
+      - {name: d, dir: inout, x1: 17.5, y1: -32.5, x2: 22.5, y2: -27.5}
+      - {name: g, dir: in, x1: -22.5, y1: -2.5, x2: -17.5, y2: 2.5}
+      - {name: s, dir: inout, x1: 17.5, y1: 27.5, x2: 22.5, y2: 32.5}
+      - {name: b, dir: in, x1: 17.5, y1: -2.5, x2: 22.5, y2: 2.5}
+    template:
+      name: M1
+      w: "3u"
+      l: "0.6u"
+      m: "1"
+      ad: "0"
+      as: "0"
+      pd: "0"
+      ps: "0"
+      model: ami06N
+  pmos4:
+    kind: fet
+    type: pmos
+    spiceprefix: m
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
+    pins:
+      - {name: d, dir: inout, x1: 17.5, y1: -32.5, x2: 22.5, y2: -27.5}
+      - {name: g, dir: in, x1: -22.5, y1: -2.5, x2: -17.5, y2: 2.5}
+      - {name: s, dir: inout, x1: 17.5, y1: 27.5, x2: 22.5, y2: 32.5}
+      - {name: b, dir: in, x1: 17.5, y1: -2.5, x2: 22.5, y2: 2.5}
+    template:
+      name: M1
+      w: "6u"
+      l: "0.6u"
+      m: "1"
+      ad: "0"
+      as: "0"
+      pd: "0"
+      ps: "0"
+      model: ami06P
+  res:
+    kind: two_pin
+    type: resistor
+    shape: res
+    spiceprefix: r
+    format: "@spiceprefix@name @pinlist @r"
+    lvs_format: "@spiceprefix@name @pinlist @model r=@r w=@w l=@l"
+    pins:
+      - {name: PLUS, dir: inout, x1: -12.5, y1: -2.5, x2: -7.5, y2: 2.5}
+      - {name: MINUS, dir: inout, x1: 7.5, y1: -2.5, x2: 12.5, y2: 2.5}
+    template:
+      name: R1
+      r: "1k"
+      w: "1.2u"
+      l: "10u"
+      model: res
+  cap:
+    kind: two_pin
+    type: capacitor
+    shape: cap
+    spiceprefix: c
+    format: "@spiceprefix@name @pinlist @c"
+    lvs_format: "@spiceprefix@name @pinlist @model c=@c"
+    pins:
+      - {name: PLUS, dir: inout, x1: -12.5, y1: -2.5, x2: -7.5, y2: 2.5}
+      - {name: MINUS, dir: inout, x1: 7.5, y1: -2.5, x2: 12.5, y2: 2.5}
+    template:
+      name: C1
+      c: "1p"
+      model: cap
+  diode:
+    kind: two_pin
+    type: diode
+    shape: diode
+    spiceprefix: d
+    format: "@spiceprefix@name @pinlist @model area=@area pj=@pj"
+    pins:
+      - {name: PLUS, dir: inout, x1: -12.5, y1: -2.5, x2: -7.5, y2: 2.5}
+      - {name: MINUS, dir: inout, x1: 7.5, y1: -2.5, x2: 12.5, y2: 2.5}
+    template:
+      name: D1
+      area: "1"
+      pj: "0"
+      model: ami06NP
+  vdc:
+    kind: src
+    type: vsource
+    spiceprefix: v
+    format: "@spiceprefix@name @pinlist @value"
+    pins:
+      - {name: p, dir: inout, x1: -2.5, y1: -32.5, x2: 2.5, y2: -27.5}
+      - {name: m, dir: inout, x1: -2.5, y1: 27.5, x2: 2.5, y2: 32.5}
+    template:
+      name: V1
+      value: "3.3"
+  vsin:
+    kind: src
+    type: vsource
+    spiceprefix: v
+    format: "@spiceprefix@name @pinlist @value"
+    pins:
+      - {name: p, dir: inout, x1: -2.5, y1: -32.5, x2: 2.5, y2: -27.5}
+      - {name: m, dir: inout, x1: -2.5, y1: 27.5, x2: 2.5, y2: 32.5}
+    template:
+      name: V1
+      value: "sin(0 1 1k)"
+  idc:
+    kind: src
+    type: isource
+    spiceprefix: i
+    format: "@spiceprefix@name @pinlist @value"
+    pins:
+      - {name: p, dir: inout, x1: -2.5, y1: -32.5, x2: 2.5, y2: -27.5}
+      - {name: m, dir: inout, x1: -2.5, y1: 27.5, x2: 2.5, y2: 32.5}
+    template:
+      name: I1
+      value: "1m"
+  gnd:
+    kind: gnd
+    type: label
+    global: true
+    spiceprefix: ""
+    format: "*.alias @lab"
+    pins:
+      - {name: p, dir: inout, x1: -2.5, y1: -2.5, x2: 2.5, y2: 2.5}
+    template:
+      name: l1
+      lab: "0"
+  lab_pin:
+    kind: lab_pin
+    type: label
+    format: "*.alias @lab"
+    pins:
+      - {name: p, dir: in, x1: -1.25, y1: -1.25, x2: 1.25, y2: 1.25}
+    template:
+      name: p1
+      lab: xxx

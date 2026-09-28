@@ -1,0 +1,54 @@
+# OpenRule1um reference decks; not foundry signoff.
+# The default batch LVS adapter is self-contained. The upstream GUI deck
+# remains provenance-only and requires AnagixLoader/MinedaCommon.
+technology:
+  lambda_um: 0.5
+  grid_um: 0.05
+  source: "../layers.yaml"
+  rule_units: microns
+  note: "DRC/LVS reference decks use direct micron geometry; lambda_um is shared profile metadata."
+
+drc:
+  available: true
+
+  format: klayout-drc
+  file: drc_batch.lydrc
+  args:
+    - "-rd"
+    - "input=$LAYOUT"
+    - "-rd"
+    - "report=$REPORT"
+  provenance: "OpenRule1um master 85dbacfb05351c5116158f4d8e0d5c995d3b4ad1, tech/tech/drc/drc.lydrc; batch adapter adds source($input) and report($report)"
+  license: "Apache-2.0"
+  signoff: false
+  notes: "Reference deck only; no authoritative siliconcraft rule-table port yet."
+  top_cell_override: supported
+  lambda_policy:
+    lambda_um: 0.5
+    geometry_scaling: none
+    override_required: false
+lvs:
+  available: true
+  format: klayout-lvs
+  file: lvs_batch.lylvs
+  args:
+    - "-rd"
+    - "input=$LAYOUT"
+    - "-rd"
+    - "output=$EXTRACTED"
+    - "-rd"
+    - "schematic=$SCHEMATIC"
+  netgen_circuit: auto
+  provenance: "Anagix-free batch adapter derived from OpenRule1um master 85dbacfb05351c5116158f4d8e0d5c995d3b4ad1 tech/tech/lvs/lvs.lylvs"
+  upstream_file: lvs.lylvs
+  upstream_source_sha256: "5216ddd2d183d860fc504d3a970582504ebe5ae23a10a9fc6a212aa90ab2aae7"
+  adapter_sha256: "11fc8ae7ea2d71ca32d1b07e90406554a46563a6463b5cf2a66ed21e9ef2cf66"
+  upstream_dependency_commit: "ca2da6795c4e216bae44cfd76b8fafeabff5c6b4"
+  license: "Apache-2.0"
+  signoff: false
+  notes: "Default flow uses lvs_batch.lylvs; upstream GUI/Anagix deck is retained for provenance and source comparison."
+  top_cell_override: supported
+  lambda_policy:
+    lambda_um: 0.5
+    geometry_scaling: none
+    override_required: false

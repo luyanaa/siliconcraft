@@ -1,0 +1,87 @@
+# profiles/ls1u/reference/manifest.yaml
+# Executable SCMOS references are adapted, not signoff-qualified LS1u decks.
+technology:
+  file: ls1u.tech
+  format: magic-tech
+  source: magic/ls1u.tech
+  lambda_um: 0.5
+  grid_um: 0.5
+  extraction_lambda_selector: 9
+  note: "Magic extract lambda 9 is a technology selector; physical LS1u lambda is 0.5um."
+
+magic_reference:
+  file: magic/pearlriver-scmos.tech
+  format: magic-tech
+  source: "https://github.com/chipforge/PearlRiver/blob/ffedbbb87d908e728d3c35eb37775839b9277ba4/scmos.tech"
+  executable: true
+  compatible_scope: "PearlRiver native Magic SCMOS layouts only"
+  gds_layer_map_aligned: false
+  note: "PearlRiver CIF output uses its own 2..20 map; do not use it as the LS1u XML GDS map."
+  extraction:
+    file: magic/LibreSiliconExt1um.tech.in
+    supporting_templates:
+      - magic/scmos.tech.in
+      - magic/scmosExt.tech.in
+    format: magic-extraction-template
+    source: "https://github.com/libresilicon/magic-8.2/blob/0b62d8fbca119934565f4396fb47121999f65955/scmos/extract_template/LibreSiliconExt1um.tech.in"
+    executable_scope: "first-order Magic extraction/PEX reference"
+    calibrated: false
+
+decision:
+  layout_drc_lvs_engine: klayout
+  source: "VLSIDA/OpenRAM scn4m_subm reference decks"
+  rationale: "OpenRAM core inputs use the LS1u XML GDS IDs; PearlRiver's executable Magic deck uses a separate CIF 2..20 map."
+
+drc:
+  available: true
+  authoritative: false
+  calibrated: false
+  format: klayout-drc
+  file: klayout/ls1u.lydrc
+  source: openram/scn4m_subm.lydrc
+  source_commit: b2b069ce119d1488cbe6883b2240bceb5c7ce29a
+  args:
+    - "-rd"
+    - "input=$LAYOUT"
+    - "-rd"
+    - "output=$REPORT"
+  scope: "provisional LS1u three-metal DRC overlay using the OpenRAM KLayout engine"
+  note: "The source layer derivation matches LS1u XML GDS IDs; source SCMOS rule checks are disabled to avoid false positives, and only the LS1u overlay is active. Upstream XML M4-M6 mappings remain unvalidated and are outside this adapter."
+
+lvs:
+  available: true
+  authoritative: false
+  calibrated: false
+  format: klayout-lvs
+  file: klayout/ls1u.lylvs
+  source: openram/scn4m_subm.lylvs
+  source_commit: b2b069ce119d1488cbe6883b2240bceb5c7ce29a
+  args:
+    - "-rd"
+    - "input=$LAYOUT"
+    - "-rd"
+    - "report=$REPORT"
+    - "-rd"
+    - "schematic=$SCHEMATIC"
+    - "-rd"
+    - "target_netlist=$EXTRACTED"
+  netgen_setup: klayout/ls1u.setup.tcl
+  scope: "provisional NMOS/PMOS extraction and three-metal connectivity"
+  note: "OpenRAM Netgen setup is adapted for LV1UNMOS/LV1UPMOS; no signoff claim."
+
+pex:
+  available: true
+  runnable: true
+  authoritative: false
+  calibrated: false
+  format: magic-tech-profiles
+  default_profile: none
+  profile_manifest: ../pex/manifest.yaml
+  topology_fragment: magic/extract_topology.tech.in
+  profiles:
+    - ../pex/none.tech
+    - ../pex/scmos_legacy.tech
+    - ../pex/ls1u_hkust_dry_est.tech
+    - ../pex/ls1u_hkust_wet_est.tech
+  scope: "four-terminal MOS topology plus explicitly selected L0 sheet/overlap coefficients"
+  note: "none is topology-only; dry is a low-confidence HKUST seed without contact/via, fringe, diffusion, junction, or substrate coefficients; wet is an unparameterized separate slot."

@@ -1,0 +1,43 @@
+# LS1u process binding for the process-independent common MOS contract.
+schema_version: 1
+profile: ls1u
+canonical_source: "../../../common/devices/canonical/mos.yaml"
+bindings:
+  nmos_core:
+    canonical_variant: nmos_core
+    layout:
+      gate_types: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      implant: nimplant
+    simulation:
+      extraction_kind: subcircuit
+      subcircuit: LV1UNMOS
+      model_library: "../models/ls1u.lib"
+      parameters:
+        - w
+        - l
+        - pd
+        - ps
+    lvs:
+      extracted_class: nfet
+      netgen_class: LV1UNMOS
+  pmos_core:
+    canonical_variant: pmos_core
+    layout:
+      gate_types: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      implant: pimplant
+    simulation:
+      extraction_kind: subcircuit
+      subcircuit: LV1UPMOS
+      model_library: "../models/ls1u.lib"
+      parameters:
+        - w
+        - l
+        - pd
+        - ps
+    lvs:
+      extracted_class: pfet
+      netgen_class: LV1UPMOS

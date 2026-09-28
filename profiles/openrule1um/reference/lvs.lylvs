@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description>LVS for OpenRule1um</description>
+ <version/>
+ <category>lvs</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <priority>0</priority>
+ <shortcut/>
+ <show-in-menu>true</show-in-menu>
+ <group-name>lvs_scripts</group-name>
+ <menu-path>tools_menu.lvs.end</menu-path>
+ <interpreter>dsl</interpreter>
+ <dsl-interpreter-name>lvs-dsl-xml</dsl-interpreter-name>
+ <text># LVS for OpenRule1um v1.43 Aug. 16th, 2024 copy left by S. Moriyama (Anagix Corporation) and C.Takahashhi
+#        previous version: v1.3 July 16th, 2022
+#  v1.43: 2024/08/16  Mpoly_cap adds
+deep
+report_lvs
+
+mi = MinedaCommon::MinedaInput::new source
+reference, output, settings = mi.start(input)
+if File.exist? reference
+  schematic reference
+end
+
+# Drawing layers
+
+nwl = input(*mi.index('NWL'))
+nwl_dp = input(*mi.index('NWL_dp'))
+diff = input(*mi.index('DIFF'))
+pol = input(*mi.index('POL'))
+hpol = input(*mi.index('HPOL'))
+cnt = input(*mi.index('CNT'))
+ml1 = input(*mi.index('ML1'))
+via1 = input(*mi.index('VIA1'))
+ml2 = input(*mi.index('ML2'))
+via2 = input(*mi.index('VIA2'))
+ml3 = input(*mi.index('ML3'))
+text = input(*mi.index('TEXT'))
+frame = input(*mi.index('FRAME'))
+res = input(*mi.index('RES'))
+cap = input(*mi.index('CAP'))
+dio = input(*mi.index('DIO'))
+parea = input(*mi.index('Parea'))
+narea = input(*mi.index('Narea'))
+pad = input(*mi.index('PAD'))
+dm_dcn = input(*mi.index('DM_dcn'))
+dm_pcn = input(*mi.index('DM_pcn'))
+dm_nscn = input(*mi.index('DM_nscn'))
+dm_pscn = input(*mi.index('DM_pscn'))
+dm_via1 = input(*mi.index('DM_via1'))
+dm_via2 = input(*mi.index('DM_via1'))
+
+# Special layer for bulk terminals
+
+bulk        = polygon_layer
+
+# Computed layers
+pol_in_hpol = pol &amp; hpol
+pol_not_hpol = pol - hpol
+pol_not_res  = pol_not_hpol - res
+pol_in_res   = pol_not_hpol &amp; res
+
+hpol_not_res  = pol_in_hpol - res
+hpol_in_res   = pol_in_hpol &amp; res
+
+cnt_in_cap = cnt &amp; cap
+pol_overlapping_cap = pol_not_res.overlapping(cap) - pol_not_res.inside(cap)
+
+diff_overlapping_cap = diff.overlapping(cap) - diff.inside(cap)
+
+#diff_in_cap = diff &amp; cap
+#diff_not_cap = diff - cap
+
+diff_in_nwl = diff &amp; nwl
+pdiff       = diff_in_nwl - narea
+#pdiff       = diff_in_nwl &amp; parea
+pgate       = pdiff &amp; pol_not_res - cap
+psd         = pdiff - pgate
+ntie        = diff_in_nwl &amp; narea
+# hv_pgate    = pgate &amp; thickox
+# lv_pgate    = pgate - hv_pgate
+lv_pgate = pgate
+# hv_psd      = psd &amp; thickox
+# lv_psd      = psd - thickox
+
+diff_outside_nwl = diff - nwl
+ndiff      = diff_outside_nwl - parea
+#ndiff      = diff_outside_nwl &amp; narea
+ngate      = ndiff &amp; pol_not_res - cap 
+nsd        = ndiff - ngate
+ptie       = diff_outside_nwl &amp; dm_pscn #&amp; parea
+# hv_ngate   = ngate &amp; thickox
+# lv_ngate   = ngate - hv_ngate
+lv_ngate = ngate
+# hv_nsd     = nsd &amp; thickox
+# lv_nsd     = nsd - thickox
+
+# Device extraction  
+# Capacitor extraction
+area_cap = 0.028e-15 # TO BE REVISITED!
+model_name = 'CAP'
+cap_ml1 = ml1 &amp; cap
+extract_devices(capacitor(model_name, area_cap), {'P1'=&gt;pol_not_res, 'P2'=&gt; cap_ml1}) 
+
+area_cap = 0.045e-15 # TO BE REVISITED!
+model_name = 'CAP'
+cap_ml2 = ml2 &amp; cap
+extract_devices(capacitor(model_name, area_cap), {'P1'=&gt;cap_ml1, 'P2'=&gt; cap_ml2}) 
+
+=begin
+area_cap = 0.042e-15 # TO BE REVISITED!
+# ML2-ML3 CAP(Must not use in OpenRule1um)
+model_name = 'CAP'
+cap_ml3 = ml3 &amp; cap
+extract_devices(capacitor(model_name, area_cap), {'P1'=&gt;cap_ml2, 'P2'=&gt; cap_ml3}) 
+=end
+# model_name = 'DCAP'
+area_cap = 2.60e-15
+cap_pol = pol &amp; cap
+#cap2.output(101)
+extract_devices(capacitor(model_name, area_cap), {'P1'=&gt;diff, 'P2'=&gt; cap_pol})                    
+
+# resistance extraction
+
+model_name = "D"
+pplus = (pdiff - pdiff.interacting(pgate)) &amp; dio 
+extract_devices(diode(model_name), { "P" =&gt; pplus, "N" =&gt; nwl })
+
+sheet_rho = 20.0
+model_name = "RES"
+bbox = (res | cnt).extents
+cap_layer = bbox - res
+extract_devices(resistor(model_name, sheet_rho), {"R" =&gt;  pol_in_res, "C" =&gt; cap_layer,
+                                                                'tA' =&gt; pol_not_res, 'tB'=&gt;pol_not_res  })# &amp; pol &amp; via1 &amp; ml1})
+sheet_rho = 7000.0
+model_name = "HRES"
+#bbox = (res | cnt).extents
+#cap_layer = bbox - res
+#cap_layer = phd2 &amp; pol
+cap_layer = hpol_not_res
+extract_devices(resistor(model_name, sheet_rho), {"R" =&gt;  hpol_in_res, "C" =&gt;cap_layer,  'tA' =&gt; hpol_not_res, 'tB'=&gt;hpol_not_res  })
+
+### R_ndiff and R_pdiff need to be ADDED HERE!
+
+# PMOS transistor device extraction
+extract_devices(mos4("PMOS"), { "SD" =&gt; psd, "G" =&gt; lv_pgate, "W" =&gt; nwl, 
+                                "tS" =&gt; psd, "tD" =&gt; psd, "tG" =&gt;pol_not_res, "tW" =&gt; nwl })
+# NMOS transistor device extraction
+extract_devices(mos4("NMOS"), { "SD" =&gt; nsd, "G" =&gt; lv_ngate, "W" =&gt; bulk, 
+                                "tS" =&gt; nsd, "tD" =&gt; nsd, "tG" =&gt;pol_not_res, "tW" =&gt; bulk })
+
+# Define connectivity for netlist extraction
+
+# Inter-layer
+connect(psd,     cnt)
+connect(nsd,     cnt)
+# connect(pol,    cnt)
+connect(pol_not_res, cnt)
+connect(hpol_not_res, cnt)
+connect(pol_overlapping_cap, pol_not_res)
+connect(diff_overlapping_cap, diff)
+#connect(cap, cnt)
+connect(cap_ml1, ml1)
+connect(cap_ml2, ml2)
+#connect(cap_ml3, ml3)
+connect(cap_pol, pol_not_res)
+
+connect(pplus, cnt)
+
+connect(cnt, ntie)
+connect(nwl,   ntie)
+connect(cnt, ptie)
+connect(cnt, ml1)
+connect(ml1,  via1)
+connect(via1,     ml2)
+connect(ml2, via2)
+connect(via2, ml3)
+
+# Global connections
+connect_global(ptie, "SUBSTRATE")
+connect_global(bulk, "SUBSTRATE")
+
+# -------------------------------------------------------------------
+# Netlist and compare
+
+netlist.purge
+# Hierarchy alignment (flatten out unmatched cells)
+
+target_netlist(output, write_spice, "Created by KLayout")
+
+mi.lvs(reference, output, lvs_data, l2n_data, is_deep?) {
+  if settings
+    lvs_settings
+  end
+  compare
+}
+mi.make_symlink output
+</text>
+</klayout-macro>

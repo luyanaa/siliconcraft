@@ -1,0 +1,15 @@
+* OpenRule1um mixed primitive LVS fixture
+.subckt openrule1um_portable
+M1 p1 pg1 ps1 pb1 or1_pmos W=6U L=1U AD=21P AS=21P PD=19U PS=19U
+M2 p2 pg2 ps2 pb2 or1_pmos W=6U L=1U AD=21P AS=21P PD=19U PS=19U
+M3 n1 ng1 ns1 SUBSTRATE or1_nmos W=6U L=1U AD=21P AS=21P PD=19U PS=19U
+M4 n2 ng2 ns2 SUBSTRATE or1_nmos W=6U L=1U AD=21P AS=21P PD=19U PS=19U
+C1 cap_m1_p cap_m1_n 146.88f poly_cap
+C2 cap_m2_p cap_m2_n 2.16f lvs_cap_metal2
+C3 cap_p1 cap_p2 192.24f pdiff_cap
+C4 cap_n1 cap_n2 195.12f ndiff_cap
+R1 res1 res2 80 r_poly
+R2 res_p1 res_p2 166.8 r_pdiff
+R3 res_nw1 res_nw2 4400 r_nwell
+D1 diode_p diode_n or1_diode area=36p pj=24u
+.ends openrule1um_portable

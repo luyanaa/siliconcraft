@@ -1,0 +1,18 @@
+# profiles/hp06/devices.yaml — authoritative HP06/HP_AMOS14TB device table
+#
+# The device kinds mirror the NCSU CDK divaEXT.rul contract.  Feature-gated
+# regions are skipped by the shared SCMOS layer derivation when unavailable.
+devices:
+  mos4:
+    - { name: nmos4, channel: nChannel, diff: nDiff, bulk_net: substrate, model_suffix: nmos }
+    - { name: pmos4, channel: pChannel, diff: pDiff, bulk_net: nBulk, model_suffix: pmos }
+  resistor:
+    - { name: polyRes, body: polyRes, conn: poly, sheet: poly }
+    - { name: polySRes, body: polySRes, conn: poly, sheet: sblock }
+    - { name: nwellRes, body: nwellRes, conn: nBulk, sheet: nwell }
+  capacitor:
+    - { name: lcCap, region: lcCap, top: poly, bottom: lcDiff, area_cap: poly_cwell }
+  diode:
+    - { name: NPdiode, region: NPdiode, plus: substrate, minus: nDiff, model_suffix: npdiode }
+    - { name: PNdiode, region: PNdiode, plus: pDiff, minus: nBulk, model_suffix: pndiode }
+    - { name: NwPdiode, region: NwPdiode, plus: substrate, minus: nBulk, model_suffix: nwpdiode }

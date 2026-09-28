@@ -1,0 +1,335 @@
+# HP06 PEX profiles.  Coefficients are sourced from the NCSU CDK
+# HP_AMOS14TB branch; the Magic SCMOS file is only the backend grammar and
+# connectivity carrier.  This is not a signoff deck.
+schema_version: 2
+profile: hp06
+default: none
+flow:
+  backend: magic
+  source_driven: true
+  original_process: HP_AMOS14TB
+  original_run: N8AG
+  topology_source: "NCSU CDK 1.6.0 techfile/divaEXT.rul extractMOS"
+  capacitance_source: "NCSU CDK 1.6.0 techfile/layerDefinitions.tf"
+  contact_policy: "do not emit until contactResistance semantics are validated against a chain fixture"
+physical:
+  lambda_um: 0.3
+  magic_lambda_centimicron: 30
+  magic_resistance_unit: "milliohm_per_square"
+  magic_area_cap_unit: "attofarad_per_lambda2"
+  magic_edge_cap_unit: "attofarad_per_lambda"
+source_technology:
+  file: "../../ls1u/reference/magic/pearlriver-scmos.tech"
+  gds_input_map: "../reference/magic/cifin-hp06.gen"
+  legacy_backend:
+    technology: "scmos-sub"
+    extraction_style: "lambda=0.30"
+    expected_lambda_um: 0.3
+    purpose: "runtime SCMOS geometry/connectivity cross-check only; not the HP06 coefficient source"
+    source: "OpenCircuitDesign Magic scmos-sub.tech / MOSIS SCMOS 8.2.8"
+  backend_aliases:
+    sblock: "rpoly"
+    cwell_cap: "wcap"
+  note: "SCMOS file supplies Magic's internal plane/connect grammar only; HP06 GDS input and extract sections replace its process semantics. The matched scmos-sub backend is selected only by the legacy cross-check gate."
+topology_fragment: "../reference/magic/extract_topology.tech.in"
+technology:
+  description: "HP_AMOS14TB N8AG source-reference PEX (extraction scope only)"
+topology:
+  features:
+    cwell: true
+    sblock: true
+    metal3: true
+    stacked_vias: true
+  style: hp06_n8ag
+  cscale: 1
+  step: 100
+  sidehalo: 8
+  magic_device_class: mosfet
+  magic_terminal_order: "drain,gate,source,bulk"
+  plane_order:
+    -
+      - active
+      - 0
+    -
+      - well
+      - 1
+    -
+      - implant
+      - 2
+    -
+      - metal1
+      - 3
+    -
+      - metal2
+      - 4
+    -
+      - metal3
+      - 5
+    -
+      - oxide
+      - 6
+  devices:
+    nmos:
+      model: hp14tbN
+      fet_type: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      substrate_node: Gnd!
+      gscap_af_per_lambda: 0
+      gccap_af_per_lambda2: 0
+    pmos:
+      model: hp14tbP
+      fet_type: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      substrate_node: Vdd!
+      gscap_af_per_lambda: 0
+      gccap_af_per_lambda2: 0
+  device_semantics:
+    mos4:
+      - nmos4
+      - pmos4
+    resistor:
+      - polyRes
+      - polySRes
+      - nwellRes
+    capacitor:
+      - lcCap
+    diode:
+      - NPdiode
+      - PNdiode
+      - NwPdiode
+  scope: "HP06 nmos4/pmos4 primitive MOS plus explicitly sourced tier-L0 route RC"
+profiles:
+  none:
+    generated: true
+    status: topology_only
+    description: "HP06 layer map and primitive MOS topology without PEX coefficients."
+    magic_directives: []
+  n8ag_reference:
+    generated: true
+    status: source_reference_partial
+    description: "N8AG values from the HP_AMOS14TB NCSU CDK branch; contact/via and intrinsic junction terms are intentionally withheld pending fixtures."
+    source:
+      process: HP_AMOS14TB
+      run: N8AG
+      files:
+        - "ncsu-cdk-1.6.0/techfile/layerDefinitions.tf:676-728"
+        - "ncsu-cdk-1.6.0/techfile/divaEXT.rul"
+        - "ncsu-cdk-1.6.0/models/hspice/public/publicModel/hp14tbN"
+        - "ncsu-cdk-1.6.0/models/hspice/public/publicModel/hp14tbP"
+      calibrated: false
+    magic_directives:
+      # Sheet resistance source unit: Ohms/square.
+      -
+        kind: resist
+        layers: nwell
+        value: 728
+        unit: ohm_per_square
+        source: "layerDefinitions.tf HP_AMOS14TB nwell"
+      -
+        kind: resist
+        layers: poly
+        value: 2
+        unit: ohm_per_square
+        source: "layerDefinitions.tf HP_AMOS14TB poly"
+      -
+        kind: resist
+        layers: rpoly
+        value: 130
+        unit: ohm_per_square
+        source: "layerDefinitions.tf HP_AMOS14TB sblock; Magic rpoly is the backend alias"
+      -
+        kind: resist
+        layers: metal1
+        value: 0.07
+        unit: ohm_per_square
+        source: "layerDefinitions.tf HP_AMOS14TB metal1"
+      -
+        kind: resist
+        layers: metal2
+        value: 0.07
+        unit: ohm_per_square
+        source: "layerDefinitions.tf HP_AMOS14TB metal2"
+      -
+        kind: resist
+        layers: metal3
+        value: 0.05
+        unit: ohm_per_square
+        source: "layerDefinitions.tf HP_AMOS14TB metal3"
+      # Gate-oxide poly/active capacitance stays with hp14tbN/P BSIM cards.
+      -
+        kind: areacap
+        layers: poly
+        value: 91
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB poly/default"
+      -
+        kind: areacap
+        layers: metal1
+        value: 51
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB metal1/default"
+      -
+        kind: areacap
+        layers: metal2
+        value: 18
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB metal2/default"
+      -
+        kind: areacap
+        layers: metal3
+        value: 9
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB metal3/default"
+      -
+        kind: areacap
+        layers: wcap
+        value: 2300
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB poly/cwell; Magic wcap is the backend alias"
+      # Metal overlap coefficients are source values in aF/um^2.
+      -
+        kind: overlap
+        upper: metal1
+        lower: "ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc"
+        value: 0
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB metal1/active"
+      -
+        kind: overlap
+        upper: metal1
+        lower: "poly,pc"
+        value: 82
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB metal1/poly"
+      -
+        kind: overlap
+        upper: metal2
+        lower: "ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc"
+        value: 0
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB metal2/active"
+      -
+        kind: overlap
+        upper: metal2
+        lower: "poly,pc"
+        value: 21
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB metal2/poly"
+      -
+        kind: overlap
+        upper: metal2
+        lower: metal1
+        value: 31
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB metal2/metal1"
+      -
+        kind: overlap
+        upper: metal3
+        lower: "ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc"
+        value: 0
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB metal3/active"
+      -
+        kind: overlap
+        upper: metal3
+        lower: "poly,pc"
+        value: 12
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB metal3/poly"
+      -
+        kind: overlap
+        upper: metal3
+        lower: metal1
+        value: 18
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB metal3/metal1"
+      -
+        kind: overlap
+        upper: metal3
+        lower: metal2
+        value: 48
+        unit: af_per_um2
+        source: "layerDefinitions.tf HP_AMOS14TB metal3/metal2"
+      # Perimeter source unit: aF/um.
+      -
+        kind: perimc
+        layers: poly
+        outside: "~poly"
+        value: 39
+        unit: af_per_um
+        source: "layerDefinitions.tf HP_AMOS14TB poly/default"
+      -
+        kind: perimc
+        layers: metal1
+        outside: "~metal1"
+        value: 36
+        unit: af_per_um
+        source: "layerDefinitions.tf HP_AMOS14TB metal1/default"
+      -
+        kind: perimc
+        layers: metal2
+        outside: "~metal2"
+        value: 10
+        unit: af_per_um
+        source: "layerDefinitions.tf HP_AMOS14TB metal2/default"
+      -
+        kind: perimc
+        layers: metal3
+        outside: "~metal3"
+        value: 11
+        unit: af_per_um
+        source: "layerDefinitions.tf HP_AMOS14TB metal3/default"
+      -
+        kind: sideoverlap
+        upper: metal1
+        edge: "space,nwell,pwell,cwell"
+        lower: "poly,pc"
+        value: 37
+        unit: af_per_um
+        source: "layerDefinitions.tf HP_AMOS14TB metal1/poly"
+      -
+        kind: sideoverlap
+        upper: metal2
+        edge: "space,nwell,pwell,cwell"
+        lower: "poly,pc"
+        value: 12
+        unit: af_per_um
+        source: "layerDefinitions.tf HP_AMOS14TB metal2/poly"
+      -
+        kind: sideoverlap
+        upper: metal2
+        edge: "space,nwell,pwell,cwell"
+        lower: metal1
+        value: 24
+        unit: af_per_um
+        source: "layerDefinitions.tf HP_AMOS14TB metal2/metal1"
+      -
+        kind: sideoverlap
+        upper: metal3
+        edge: "space,nwell,pwell,cwell"
+        lower: "poly,pc"
+        value: 12
+        unit: af_per_um
+        source: "layerDefinitions.tf HP_AMOS14TB metal3/poly"
+      -
+        kind: sideoverlap
+        upper: metal3
+        edge: "space,nwell,pwell,cwell"
+        lower: metal1
+        value: 17
+        unit: af_per_um
+        source: "layerDefinitions.tf HP_AMOS14TB metal3/metal1"
+      -
+        kind: sideoverlap
+        upper: metal3
+        edge: "space,nwell,pwell,cwell"
+        lower: metal2
+        value: 36
+        unit: af_per_um
+        source: "layerDefinitions.tf HP_AMOS14TB metal3/metal2"
+    withheld:
+      - "contactResistance values; Magic's contact unit and the CDK layer-definition semantics need a dedicated chain fixture"
+      - "junction and substrate capacitance; the HP06 source branch does not provide a direct Magic-safe mapping here"
+      - "Diva-only diode recognition and detailed polySRes body reconstruction in the Magic experiment"

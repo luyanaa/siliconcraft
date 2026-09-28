@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description>OpenRule1um Anagix-free batch LVS</description>
+ <version/>
+ <category>lvs</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <priority>0</priority>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name>lvs_scripts</group-name>
+ <menu-path>tools_menu.lvs.end</menu-path>
+ <interpreter>dsl</interpreter>
+ <dsl-interpreter-name>lvs-dsl-xml</dsl-interpreter-name>
+ <text># Anagix-free OpenRule1um batch LVS reference adapter.
+# Layer numbers are the pinned OpenRule1um GDS contract.  Device extraction
+# follows the upstream lvs.lylvs recognition/connectivity contract while using
+# normalized siliconcraft model names.
+if $topcell
+  source($input, $topcell)
+else
+  source($input)
+end
+schematic($schematic)
+
+nwl = input(1, 0)
+nwl_dp = input(2, 0)
+diff = input(3, 0)
+pol = input(5, 0)
+hpol = input(6, 0)
+cnt = input(7, 0)
+ml1 = input(8, 0)
+via1 = input(9, 0)
+ml2 = input(10, 0)
+via2 = input(11, 0)
+ml3 = input(12, 0)
+text = input(13, 0)
+frame = input(14, 0)
+res = input(15, 0)
+cap = input(16, 0)
+dio = input(17, 0)
+parea = input(18, 0)
+narea = input(19, 0)
+pad = input(20, 0)
+dm_dcn = input(101, 0)
+dm_pcn = input(102, 0)
+dm_nscn = input(103, 0)
+dm_pscn = input(104, 0)
+dm_via1 = input(105, 0)
+dm_via2 = input(106, 0)
+
+bulk = polygon_layer
+pol_in_hpol = pol &amp; hpol
+pol_not_hpol = pol - hpol
+pol_not_res = pol_not_hpol - res
+pol_in_res = pol_not_hpol &amp; res
+hpol_not_res = pol_in_hpol - res
+hpol_in_res = pol_in_hpol &amp; res
+
+cap_ml1 = ml1 &amp; cap
+cap_ml2 = ml2 &amp; cap
+cap_pol = pol &amp; cap
+pol_overlapping_cap = pol_not_res.overlapping(cap) - pol_not_res.inside(cap)
+diff_overlapping_cap = diff.overlapping(cap) - diff.inside(cap)
+
+diff_in_nwl = diff &amp; nwl
+pdiff = diff_in_nwl - narea
+pgate = (pdiff &amp; pol_not_res) - cap
+psd = pdiff - pgate
+ntie = diff_in_nwl &amp; narea
+
+diff_outside_nwl = diff - nwl
+ndiff = diff_outside_nwl - parea
+ngate = (ndiff &amp; pol_not_res) - cap
+nsd = ndiff - ngate
+ptie = diff_outside_nwl &amp; dm_pscn
+pplus = (pdiff - pdiff.interacting(pgate)) &amp; dio
+pdiff_in_res = pdiff &amp; res
+pdiff_res_terminals = pdiff - res
+nwell_in_res = (nwl &amp; res) - diff
+nwell_res_terminals = nwl - res
+
+# Primitive devices. Recognition and terminal geometry mirror the upstream
+# deck; the calibrated nwell resistor extension is local profile logic.
+extract_devices(mos4("or1_pmos"), { "SD" =&gt; psd, "G" =&gt; pgate, "W" =&gt; nwl,
+                                      "tS" =&gt; psd, "tD" =&gt; psd, "tG" =&gt; pol_not_res, "tW" =&gt; nwl })
+extract_devices(mos4("or1_nmos"), { "SD" =&gt; nsd, "G" =&gt; ngate, "W" =&gt; bulk,
+                                      "tS" =&gt; nsd, "tD" =&gt; nsd, "tG" =&gt; pol_not_res, "tW" =&gt; bulk })
+cap_pdiff = cap_pol &amp; parea
+cap_ndiff = cap_pol &amp; narea
+cap_untyped = cap_pol - parea - narea
+extract_devices(capacitor("poly_cap", 3.06e-15), { "P1" =&gt; pol_not_res, "P2" =&gt; cap_ml1 })
+extract_devices(capacitor("lvs_cap_metal2", 0.045e-15), { "P1" =&gt; cap_ml1, "P2" =&gt; cap_ml2 })
+
+extract_devices(capacitor("pdiff_cap", 5.34e-15), { "P1" =&gt; diff &amp; parea, "P2" =&gt; cap_pdiff })
+extract_devices(capacitor("ndiff_cap", 5.42e-15), { "P1" =&gt; diff &amp; narea, "P2" =&gt; cap_ndiff })
+extract_devices(capacitor("lvs_cap_poly_untyped", 2.60e-15), { "P1" =&gt; diff - parea - narea, "P2" =&gt; cap_untyped })
+extract_devices(resistor("r_poly", 20.0), { "R" =&gt; pol_in_res, "C" =&gt; (res | cnt).extents - res,
+                                             "tA" =&gt; pol_not_res, "tB" =&gt; pol_not_res })
+extract_devices(resistor("hr_poly", 7000.0), { "R" =&gt; hpol_in_res, "C" =&gt; hpol_not_res,
+                                             "tA" =&gt; hpol_not_res, "tB" =&gt; hpol_not_res })
+extract_devices(resistor("r_pdiff", 41.7), { "R" =&gt; pdiff_in_res, "C" =&gt; (res | cnt).extents - res,
+                                              "tA" =&gt; pdiff_res_terminals, "tB" =&gt; pdiff_res_terminals })
+extract_devices(resistor("r_nwell", 1100.0), { "R" =&gt; nwell_in_res, "C" =&gt; (res | cnt).extents - res,
+                                               "tA" =&gt; nwell_res_terminals, "tB" =&gt; nwell_res_terminals })
+extract_devices(diode("or1_diode"), { "P" =&gt; pplus, "N" =&gt; nwl })
+
+# Inter-layer connectivity mirrors the upstream contract.
+connect(psd, cnt)
+connect(nsd, cnt)
+connect(pol_not_res, cnt)
+connect(hpol_not_res, cnt)
+connect(pol_overlapping_cap, pol_not_res)
+connect(diff_overlapping_cap, diff)
+connect(cap_ml1, ml1)
+connect(cap_ml2, ml2)
+connect(cap_pol, pol_not_res)
+connect(pplus, cnt)
+connect(cnt, ntie)
+connect(nwl, ntie)
+connect(cnt, ptie)
+connect(cnt, ml1)
+connect(ml1, via1)
+connect(via1, ml2)
+connect(ml2, via2)
+connect(via2, ml3)
+connect_global(ptie, "SUBSTRATE")
+connect_global(bulk, "SUBSTRATE")
+
+netlist.purge
+target_netlist($output, write_spice, "OpenRule1um Anagix-free batch LVS")
+</text>
+</klayout-macro>

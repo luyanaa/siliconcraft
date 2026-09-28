@@ -1,0 +1,81 @@
+# profiles/openrule1um/rules.yaml — reference DRC plus portable envelope
+#
+# The upstream deck remains the target legality oracle.  The portable section
+# is a conservative geometry contract; it is not an authoritative replacement
+# for the process-specific KLayout DSL semantics.
+engine: klayout_dsl_reference
+authoritative: false
+authoritative_policy:
+  status: disabled
+  reason: "The SCMOS authoritative generator is not a valid OpenRule1um rule-table source."
+  selection: reference
+  override:
+    status: available
+    lambda_um: 0.5
+    geometry_scaling: none
+source_deck: reference/drc.lydrc
+source: "https://github.com/mineda-support/OpenRule1um/blob/85dbacfb05351c5116158f4d8e0d5c995d3b4ad1/tech/tech/drc/drc.lydrc"
+notes:
+  - "The upstream deck is the current target DRC oracle for this profile."
+  - "Do not run scripts/gen_drc.py for this profile; its interpreter is SCMOS-only."
+  - "Legality uses synthetic canonical layer geometry, not the upstream Basic GDS."
+  - "Nominal cut geometry, marker containment, and DRC thresholds are separate semantics."
+  - "The upstream family is a 1um design-rule envelope for a nominal PTS 0.6um CMOS process; these labels are not a conversion factor for physical geometry."
+  - "TEG L/W and capacitor dimensions are physical microns; lambda_um=0.5 is the grid/reference baseline, not a multiplier."
+portable:
+  policy: scmos_lambda_envelope
+  lambda_um: 0.5
+  scmos_variant: non_submicron
+  base_source: common/drc/scmos_reference.py
+  target_drc: reference/drc.lydrc
+  legality:
+    canonical_input: synthetic_minimum_geometry
+    upstream_basic_gds: optional_reference_input
+    acceptance: zero_markers
+  well_tightenings:
+    - {id: "OR1-WELL-SPACE", kind: spacing, layer: nwell, base_um: 4.5, value_um: 5.0, target_rule: "NWL space < 5.0", source: "reference/drc.lydrc:84"}
+    - {id: "OR1-WELL-NDIFF", kind: spacing, layer: nwell, layer2: nactive, base_um: 2.5, value_um: 3.0, target_rule: "NWL-Ndiff space < 3.0", source: "reference/drc.lydrc:89"}
+  beol:
+    policy: native_override
+    source: "reference/drc.lydrc:99-115,131-140,167-188"
+    rules:
+      - {id: "OR1-M1-W", kind: width, layer: metal1, value_um: 1.0}
+      - {id: "OR1-M1-S", kind: spacing, layer: metal1, value_um: 1.0}
+      - {id: "OR1-M1-DCONT-S", kind: marker_spacing, layer: metal1, layer2: dcont_marker, value_um: 0.5}
+      - {id: "OR1-M1-PCONT-S", kind: marker_spacing, layer: metal1, layer2: pcont_marker, value_um: 0.5}
+      - {id: "OR1-V1-S", kind: spacing, layer: via1_marker, value_um: 0.5}
+      - {id: "OR1-M1-V1-S", kind: marker_spacing, layer: metal1, layer2: via1_marker, value_um: 0.5}
+      - {id: "OR1-M2-V1-S", kind: marker_spacing, layer: metal2, layer2: via1_marker, value_um: 0.5}
+      - {id: "OR1-M2-W", kind: width, layer: metal2, value_um: 1.0}
+      - {id: "OR1-M2-S", kind: spacing, layer: metal2, value_um: 1.0}
+      - {id: "OR1-V2-S", kind: spacing, layer: via2_marker, value_um: 0.5}
+      - {id: "OR1-M2-V2-S", kind: marker_spacing, layer: metal2, layer2: via2_marker, value_um: 0.5}
+      - {id: "OR1-M3-V2-S", kind: marker_spacing, layer: metal3, layer2: via2_marker, value_um: 0.5}
+      - {id: "OR1-M3-W", kind: width, layer: metal3, value_um: 1.0}
+      - {id: "OR1-M3-S", kind: spacing, layer: metal3, value_um: 1.0}
+    nominal_geometry:
+      contact_cut_um: 1.0
+      via1_cut_um: 1.0
+      via2_cut_um: 1.0
+      note: "Nominal cut sizes are Basic-library geometry, not target DRC width checks."
+  semantic_tests:
+    legality: "Run target DRC on synthetic canonical geometry; require zero markers."
+    efficiency: "Report SCMOS(lambda=.5) ratio before native BEOL overrides."
+    semantic: "Compare only rules with the same physical constraint and keep marker/cut semantics separate."
+lambda_rule:
+  name: openrule1um_lambda_rule
+  lambda_um: 0.5
+  grid_um: 0.05
+  min_width_um: 1.0
+  min_channel_um: 1.0
+  units: microns
+  lvs:
+    geometry_policy: "preserve existing PCells; permit W/L adjustment on the model-card boundary"
+    quantization: grid
+    model_binding: exact_model_id
+  cells:
+    pcell_policy: preserve_existing
+    standard_cell_policy: conformance_only
+    replacement_required: false
+    acceptance: "grid-aligned, lambda-rule legal, and LVS/model bindings remain intact"
+rules: {}

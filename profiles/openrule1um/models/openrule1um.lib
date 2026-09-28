@@ -1,0 +1,325 @@
+* profiles/openrule1um/models/openrule1um.lib — normalized upstream primitive models
+* source: OpenRule1um master 85dbacfb05351c5116158f4d8e0d5c995d3b4ad1, tech/tech/models/ishi-kai-lib
+* license: Apache-2.0 repository license; preserve source notices
+* model names normalized to avoid collisions across loaded PDK profiles.
+.lib openrule1um
+
+** Phenitec Mos spice model
+** ver1.01 by arugak and keikawa (220313)
+*
+.MODEL or1_nmos NMOS
++ LEVEL    = 8
++ VERSION  = 3.3.0
++ PARAMCHK = 1
++ A0      = 1.0134      
++ A1      = -0.0226611  
++ A2      = 0.453771    
++ AGS     = 0.139783    
++ ALPHA0  = 0           
++ ALPHA1  = 0           
++ B0      = 1.13147E-07 
++ B1      = 1.85715E-22 
++ BETA0   = 30          
++ BINUNIT = 1           
++ CDSC    = 0.00024     
++ CDSCB   = 1E-10       
++ CDSCD   = 6.55278E-05 
++ CIT     = 0           
++ DELTA   = 0.028024    
++ DLC     = 0           
++ DROUT   = 0.56        
++ DSUB    = 1.00361     
++ DVT0    = 1.51785     
++ DVT0W   = 0           
++ DVT1    = 0.306938    
++ DVT1W   = 530000      
++ DVT2    = -0.209166   
++ DVT2W   = -0.032      
++ DWB     = 1.21418E-08 
++ DWC     = 0           
++ DWG     = -1.52762E-08
++ ETA0    = 0.345408    
++ ETAB    = -5.47344E-05
++ K1      = 1.05345     
++ K2      = -0.0397858  
++ K3      = 8.20637     
++ K3B     = -2.38992    
++ KETA    = -0.00687819 
++ LA0     = 0           
++ LAGS    = 0           
++ LETAB   = 0           
++ LINT    = 3.3134E-08  
++ LKETA   = 0           
++ LL      = 0           
++ LLC     = 0           
++ LLN     = 1           
++ LU0     = 0           
++ LUA     = 0           
++ LUB     = 0           
++ LVSAT   = 0           
++ LVTH0   = 0           
++ LW      = 0           
++ LWC     = 0           
++ LWL     = 0           
++ LWLC    = 0           
++ LWN     = 1           
++ MOBMOD  = 1           
++ NCH     = 1.7E+17     
++ NFACTOR = 1           
++ NLX     = 2.89116E-07 
++ PA0     = 0           
++ PAGS    = 0           
++ PCLM    = 1.55544     
++ PDIBLC1 = 0           
++ PDIBLC2 = 0.0001      
++ PDIBLCB = 0           
++ PETAB   = 0           
++ PKETA   = 0           
++ PRWB    = -0.0628065  
++ PRWG    = -0.0663711  
++ PSCBE1  = 4.24E+08    
++ PSCBE2  = 1E-05       
++ PU0     = 0           
++ PUA     = 0           
++ PUB     = 0           
++ PVAG    = 0           
++ PVSAT   = 0           
++ PVTH0   = 0           
++ RDSW    = 1323.03     
+*+ TEMP    = 25          
++ TNOM    = 25          
++ TOX     = 1.40307E-08 
++ U0      = 420.668     
++ UA      = -9.30408E-10
++ UB      = 3.47223E-18 
++ UC      = 1.0023E-10  
++ VOFF    = -0.153542   
++ VSAT    = 167631      
++ VTH0    = 0.71559     
++ W0      = 2.5E-06     
++ WA0     = 0           
++ WAGS    = 0           
++ WETAB   = 0           
++ WINT    = 2.99053E-07 
++ WKETA   = 0           
++ WL      = 0           
++ WLC     = 0           
++ WLN     = 1           
++ WR      = 1           
++ WU0     = 0           
++ WUA     = 0           
++ WUB     = 0           
++ WVSAT   = 0           
++ WVTH0   = 0           
++ WW      = 0           
++ WWC     = 0           
++ WWL     = 0           
++ WWLC    = 0           
++ WWN     = 1           
++ XJ      = 2.1E-07     
++ CGSO    = 3.62836E-10 
++ CGDO    = 3.62836E-10 
+* + TOX     = 1.40307E-08 
++ CJ      = 0.000678126 
++ CF      = 0           
++ CJSW    = 2.61022E-10 
++ KT1     = -0.27
+*
+
+.MODEL or1_pmos PMOS
++ LEVEL    = 8
++ VERSION  = 3.3.0
++ PARAMCHK = 1
++ A0      = 0.946351    
++ A1      = 0           
++ A2      = 1           
++ AGS     = 0.0354948   
++ ALPHA0  = 0           
++ ALPHA1  = 0           
++ B0      = 9.83143E-14 
++ B1      = 2.48834E-07 
++ BETA0   = 30          
++ BINUNIT = 1           
++ CDSC    = 0.00024     
++ CDSCB   = 0           
++ CDSCD   = 0           
++ CIT     = 0           
++ DELTA   = 0.01        
++ DLC     = 0           
++ DROUT   = 0.56        
++ DSUB    = 0.055638    
++ DVT0    = 1.89407     
++ DVT0W   = 0           
++ DVT1    = 0.471961    
++ DVT1W   = 530000      
++ DVT2    = -0.164329   
++ DVT2W   = -0.032      
++ DWB     = 2.11793E-08 
++ DWC     = 0           
++ DWG     = 2.23352E-09 
++ ETA0    = 2.06363E-21 
++ ETAB    = -0.00495858 
++ K1      = 0.582512    
++ K2      = 0.0357547   
++ K3      = 288.348     
++ K3B     = -20.2655    
++ KETA    = -0.00439324 
++ LA0     = -0.774962   
++ LAGS    = 0           
++ LETAB   = 0           
++ LINT    = -7.84054E-09
++ LKETA   = 0           
++ LL      = 0           
++ LLC     = 0           
++ LLN     = 1           
++ LU0     = 0           
++ LUA     = 0           
++ LUB     = 0           
++ LVSAT   = 0           
++ LVTH0   = 0.997522    
++ LW      = 0           
++ LWC     = 0           
++ LWL     = 0           
++ LWLC    = 0           
++ LWN     = 1           
++ MOBMOD  = 1           
++ NCH     = 4.5E+16     
++ NFACTOR = 5.12052     
++ NLX     = 9.87949E-06 
++ PA0     = 0           
++ PAGS    = 0           
++ PCLM    = 2.01384     
++ PDIBLC1 = 0           
++ PDIBLC2 = 0.0001      
++ PDIBLCB = 0           
++ PETAB   = 0           
++ PKETA   = 0           
++ PRWB    = 0.0245211   
++ PRWG    = 0           
++ PSCBE1  = 4.24E+08    
++ PSCBE2  = 1E-05       
++ PU0     = 0           
++ PUA     = 0           
++ PUB     = 0           
++ PVAG    = 0           
++ PVSAT   = 0           
++ PVTH0   = -0          
++ RDSW    = 142.021     
+*+ TEMP    = 25          
++ TNOM    = 25          
++ TOX     = 1.4554E-08  
++ U0      = 180.763     
++ UA      = 1.67661E-09 
++ UB      = 2.13016E-19 
++ UC      = -3.54781E-11
++ VOFF    = -0.344175   
++ VSAT    = 72567.6     
++ VTH0    = -1.12761    
++ W0      = 0.00999623  
++ WA0     = 0           
++ WAGS    = 0           
++ WETAB   = 0           
++ WINT    = 5.06564E-07 
++ WKETA   = 0           
++ WL      = 0           
++ WLC     = 0           
++ WLN     = 1           
++ WR      = 0.000843577 
++ WU0     = 85.552      
++ WUA     = 0           
++ WUB     = 0           
++ WVSAT   = 0           
++ WVTH0   = -0.043272   
++ WW      = 0           
++ WWC     = 0           
++ WWL     = 0           
++ WWLC    = 0           
++ WWN     = 1           
++ XJ      = 2.1E-07     
++ CGSO    = 2.94469E-10 
++ CGDO    = 2.94469E-10 
+* + TOX     = 1.4554E-08  
++ CJ      = 0.000584938 
++ CF      = 0           
++ CJSW    = 2.95827E-10
+
+** Phenitec Diode spice model
+** ver1.00 by akita11 (170803)
+** - PTS_NP_B    = ACTEG03
+** - PTS_NP_SIDE = ACTEG04
+.model PTS_NP_B D(Is=5f IKF=0 RS=20 N=1)
+.model PTS_NP_SIDE D(Is=5f IKF=0 RS=20 N=1)
+
+** Resistor & Capacitor model
+** 3zki (github.com/3zki)
+** Fixme!
+*
+* Poly-Metal (ACTEG15) 3.06fF/um^2 (44pF, 120um/120um)
+.MODEL poly_cap C
++ tc1 = 0 
++ tc2 = 0
++ cox = 3.06e-15
++ capsw = 0
++ w = 0
++ l = 0
+*+ temp = 25.0
+*
+* nMOS Cap (ACTEG14) 5.42fF/um^2
+.MODEL ndiff_cap C
++ tc1 = 0 
++ tc2 = 0
++ cox = 5.42e-15
++ capsw = 0
++ w = 0
++ l = 0
+*+ temp = 25.0
+*
+* pMOS Cap (ACTEG07) 5.34fF/um^2
+.MODEL pdiff_cap C
++ tc1 = 0 
++ tc2 = 0
++ cox = 5.34e-15
++ capsw = 0
++ w = 0
++ l = 0
+*+ temp = 25.0
+*
+* Poly 20ohm/sq
+.MODEL r_poly R
++ tc1 = 0
++ tc2 = 0
++ rsh = 20
++ w = 0
++ l = 0
+*+ temp = 25.0
+*
+* Nwell 1.1kohm/sq
+.MODEL r_nwell R
++ tc1 = 0
++ tc2 = 0
++ rsh = 1100
++ w = 0
++ l = 0
+*+ temp = 25.0
+*
+* Pact 42ohm/sq
+.MODEL r_pdiff R
++ tc1 = 0
++ tc2 = 0
++ rsh = 41.7
++ w = 0
++ l = 0
+*+ temp = 25.0
+*
+* HPoly 7000ohm/sq?
+.MODEL hr_poly R
++ tc1 = 0
++ tc2 = 0
++ rsh = 7000
++ w = 0
++ l = 0
+*+ temp = 25.0
+*
+
+.model or1_diode D(Is=5f IKF=0 RS=20 N=1)
+.endl openrule1um

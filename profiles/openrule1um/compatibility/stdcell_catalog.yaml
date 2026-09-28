@@ -1,0 +1,72 @@
+# Reference-only standard-cell catalog from the pinned OpenRule1um bundle.
+schema_version: 1
+profile: openrule1um
+status: materialized_reference_catalog
+source:
+  repository: "https://github.com/mineda-support/OpenRule1um"
+  commit: "85dbacfb05351c5116158f4d8e0d5c995d3b4ad1"
+  gds: reference/upstream/OpenRule1um_StdCell.gds
+  gds_sha256: "70475875d87d77ed776b72cf31d31e8ed06e418e0fc9d84d8891c6c03262662e"
+views:
+  gds:
+    status: available
+    top_cell_count: 45
+  xschem:
+    status: available
+    directory: compatibility/xschem/stdcells
+    symbol_count: 38
+  lef:
+    status: not_supplied_upstream
+  liberty:
+    status: not_supplied_upstream
+cells:
+  - FILL
+  - Via2
+  - an21
+  - an31
+  - an41
+  - buf1
+  - buf2
+  - buf4
+  - buf8
+  - cinv
+  - dff1
+  - dff1_r
+  - dff1m2
+  - dff1m2_r
+  - exnr
+  - exor
+  - inv1
+  - inv2
+  - inv4
+  - inv8
+  - na21
+  - na212
+  - na222
+  - na31
+  - na41
+  - nch
+  - nchOR1
+  - nchOR1ex
+  - nr21
+  - nr212
+  - nr222
+  - nr31
+  - or21
+  - or31
+  - pch
+  - pchOR1
+  - pchOR1ex
+  - rff1
+  - rff1_r
+  - rff1m2
+  - rff1m2_r
+  - sff1
+  - sff1_r
+  - sff1m2
+  - sff1m2_r
+compatibility_boundary:
+  primitive_lvs_dependency: false
+  placement_routing_views: unavailable
+  timing_signoff: unavailable
+  xschem_reference_symbols: true

@@ -1,0 +1,75 @@
+# profiles/openrule1um/sources.yaml — upstream provenance and scope
+source:
+  repository: "https://github.com/mineda-support/OpenRule1um"
+  commit: "85dbacfb05351c5116158f4d8e0d5c995d3b4ad1"
+  license: "Apache-2.0"
+  description: "OpenRule1um technology package for KLayout"
+  required_external_dependency: "https://github.com/mineda-support/AnagixLoader"
+  required_external_dependency_license: "Apache-2.0"
+  required_external_dependency_commit: "ca2da6795c4e216bae44cfd76b8fafeabff5c6b4"
+
+assets:
+  layer_map: "tech/tech/OpenRule1um.lyp"
+  technology: "tech/tech/tech.lyt"
+  drc: "tech/tech/drc/drc.lydrc"
+  lvs: "tech/tech/lvs/lvs.lylvs"
+  pcells: "tech/tech/macros/pcells_v2.lym"
+  basic_library: "Basic/libraries/OpenRule1um_Basic.gds"
+  support_macros:
+    - "tech/tech/macros/get_reference.lym"
+    - "tech/tech/macros/Backannotate device parasitics.lym"
+    - "tech/tech/macros/autoplace.lym"
+    - "tech/tech/macros/change PCell defaults.lym"
+    - "tech/tech/macros/convert library cells.lym"
+    - "tech/tech/macros/force_ongrid.lym"
+  frontend_symbols:
+    xschem: "tech/tech/symbols/Xschem/Ishi-kai-OR1"
+    ltspice: "tech/tech/symbols/LTspice"
+    eeschema: "tech/tech/symbols/EEschema"
+    qucs: "tech/tech/symbols/Qucs-S"
+  models:
+    - "tech/tech/models/BSIM3V3N.mod"
+    - "tech/tech/models/BSIM3V3P.mod"
+    - "tech/tech/models/OR1_mos"
+    - "tech/tech/models/ishi-kai-lib/mos.lib"
+    - "tech/tech/models/ishi-kai-lib/diode.lib"
+    - "tech/tech/models/ishi-kai-lib/passive.lib"
+  primitive_symbols: "tech/tech/symbols/Xschem/Ishi-kai-OR1/primitives"
+
+scope:
+  include:
+    - "process layer map and technology metadata"
+    - "primitive DRC/LVS rules as reference inputs"
+    - "primitive SPICE models"
+    - "primitive xschem symbol semantics"
+    - "selected primitive PCell geometry after dependency removal"
+  integrated:
+    - "Xschem/ngspice primitive model family from ishi-kai-lib/*.lib, with namespaced MOS, diode, resistor, and capacitor models"
+    - "generated primitive Xschem symbols for the normalized profile subset, including numeric-micron passive capacitor W/L templates"
+    - "Anagix-free primitive batch LVS adapter derived from the pinned upstream lvs.lylvs source"
+    - "measurement-calibrated R_nwell, R_pdiff, metal1-poly, nactive-poly, and pactive-poly LVS extraction values"
+    - "explicit LVS-only identifiers for uncalibrated M2-on-M1 and untyped poly-active extraction"
+    - "explicit read-only analog support-library boundary in support_cells.yaml"
+    - "materialized LTspice, KiCad, Qucs-S, KLayout technology/macro, and stdcell reference compatibility views"
+    - "reference top-cell override for multi-root Basic and StdCell GDS; lambda_um=0.5 remains grid/reference metadata only"
+  cell_policy:
+    name: lambda_rule
+    pcell_policy: preserve_existing
+    standard_cell_policy: conformance_only
+    replacement_required: false
+    model_card_portability: "reuse existing cards with declared W/L adjustment"
+  pending:
+    - "calibration/model-equivalence decision for R_ndiff, untyped poly-active, and M2-on-M1 variants; R_ndiff currently follows the upstream PCell reference only"
+  reference_only:
+    - "Basic/libraries/OpenRule1um_Basic.gds"
+    - "Basic/libraries/OpenRule1um_StdCell.gds"
+    - "tech/tech/models/ishi-kai-lib/stdcells_sim"
+    - "tech/tech/models/ishi-kai-lib/stdcells_lvs"
+    - "tech/tech/symbols/Xschem/Ishi-kai-OR1/stdcells"
+  signoff: false
+  notes:
+    - "The upstream KLayout decks are reference inputs, not foundry signoff."
+    - "Generated siliconcraft collateral must retain this provenance."
+    - "Deferred: Phenitec NDA multi-level-cell conversion staging is outside the current local final-GDS path; revisit only when the external converter and target-PDK signoff flow are supplied"
+    - "PEX is explicitly deferred; profiles/openrule1um/pex/manifest.yaml selects none."
+    - "Upstream GUI macros and the pinned AnagixLoader/Mineda runtime sources are materialized; KLayout salt registration remains explicit and no local reimplementation is claimed."

@@ -1,0 +1,106 @@
+# profiles/ls1u/sources.yaml — LibreSilicon LS1u provenance and scope
+source:
+  repository: "https://github.com/leviathanch/libresiliconprocess"
+  branch: "master"
+  commit: "ac381a1e2b76b5c8882e82978c6f594a597df616"
+  license: "Libre Silicon public license v1-or-later (as referenced by process_abstract.tex)"
+  license_text_status: "not present in upstream repository; preserve source notice and audit before redistribution"
+  description: "LibreSilicon 1um twin-well CMOS process specification"
+related_sources:
+  pearlriver_magic:
+    repository: "https://github.com/chipforge/PearlRiver"
+    commit: "ffedbbb87d908e728d3c35eb37775839b9277ba4"
+    asset: "scmos.tech"
+  openram_klayout:
+    repository: "https://github.com/VLSIDA/OpenRAM"
+    branch: "stable"
+    commit: "b2b069ce119d1488cbe6883b2240bceb5c7ce29a"
+    assets:
+      - "scn4m_subm.lydrc"
+      - "scn4m_subm.lylvs"
+      - "setup.tcl"
+  libresilicon_magic:
+    repository: "https://github.com/libresilicon/magic-8.2"
+    commit: "0b62d8fbca119934565f4396fb47121999f65955"
+    assets:
+      - "scmos/extract_template/LibreSiliconExt1um.tech.in"
+      - "scmos/extract_template/scmos.tech.in"
+      - "scmos/extract_template/scmosExt.tech.in"
+
+assets:
+  magic_technology: "magic/ls1u.tech"
+  magic_layer_metadata: "magic/ls1u.xml"
+  magic_converter: "magic/generate_tech.py"
+  magic_mosis_converter: "magic/mosis2libresilicon.sh"
+  design_rules: "process_design_rules/process_design_rules.tex"
+  process_testing: "process_testing/testing_overview.tex"
+  simulation:
+    nmos: "simulation/nmos1u.lib"
+    pmos: "simulation/pmos1u.lib"
+    inverter_netlist: "simulation/1xinv.cir"
+    inverter_schematic: "simulation/1xinv.sch"
+  pex:
+    manifest: "pex/manifest.yaml"
+    topology_fragment: "reference/magic/extract_topology.tech.in"
+    profiles:
+      - "pex/none.tech"
+      - "pex/scmos_legacy.tech"
+      - "pex/ls1u_hkust_dry_est.tech"
+      - "pex/ls1u_hkust_wet_est.tech"
+    hkust_dry_recipe: "https://github.com/leviathanch/libresiliconprocess/blob/ac381a1e2b76b5c8882e82978c6f594a597df616/process_implementations/hkust/steps_dry.yaml"
+    hkust_wet_recipe: "https://github.com/leviathanch/libresiliconprocess/blob/ac381a1e2b76b5c8882e82978c6f594a597df616/process_implementations/hkust/steps_wet.yaml"
+  layout_fixtures:
+    - "magic/T6_INV.ls1u.mag"
+    - "test_layouts/poly.mag"
+    - "test_layouts/testwafer.mag"
+  executable_references:
+    magic_scmos: "reference/magic/pearlriver-scmos.tech"
+    magic_extraction: "reference/magic/LibreSiliconExt1um.tech.in"
+    magic_extraction_templates:
+      - "reference/magic/scmos.tech.in"
+      - "reference/magic/scmosExt.tech.in"
+    openram_drc: "reference/openram/scn4m_subm.lydrc"
+    openram_lvs: "reference/openram/scn4m_subm.lylvs"
+    openram_netgen: "reference/openram/setup.tcl"
+    derived_klayout: "reference/klayout"
+
+scope:
+  include:
+    - "normalized LS1u layer map and 0.5um physical lambda grid"
+    - "published 1um design-rule tables as reference data"
+    - "normalized NMOS/PMOS compact-model subcircuits"
+    - "source Magic technology and layout fixtures"
+    - "pinned executable SCMOS DRC/LVS references adapted to LS1u"
+    - "generated Xschem MOS symbols for the normalized model family"
+    - "profiled Magic topology and explicitly selected LS1u PEX coefficients"
+  integrated:
+    - "layer map from magic/ls1u.xml"
+    - "reference Magic technology from magic/ls1u.tech"
+    - "sectioned ngspice model library from simulation/nmos1u.lib and pmos1u.lib"
+    - "reference MOS device contract and Xschem subset"
+    - "profile Xschem MOS smoke fixture and runner contract"
+    - "provisional KLayout DRC/LVS decks derived from OpenRAM SCMOS"
+    - "profile-specific Netgen model-class setup"
+    - "canonical process-independent MOS contract with LS1u bindings"
+    - "low-confidence HKUST PMOS fit recorded in model_maturity.yaml"
+  pending:
+    - "authoritative/signoff DRC calibration"
+    - "validated LS1u LVS device semantics and corner coverage"
+    - "native analog PCells and support-cell library"
+    - "calibrated parasitic extraction stackup and coefficients"
+    - "passive, diode, bipolar, SONOS, and corner model cards"
+    - "additional native Xschem fixtures beyond the MOS smoke path"
+  exclude:
+    - "PearlRiver CIF output as an LS1u XML GDS writer; its layer map is different"
+    - "optional pbase/nbase/bipolar features until models and layout rules exist"
+    - "optional SONOS flash features until models and layout rules exist"
+    - "circdia submodule until its license and interface are audited"
+  signoff: false
+  notes:
+    - "The thin upstream ls1u.tech has an empty drc section; the process-rule document is not executable."
+    - "The upstream 1um rule table defines physical lambda=0.5um and a 1-lambda=0.5um grid."
+    - "OpenRAM SCMOS core GDS IDs match ls1u.xml; adapted decks are provisional and not signoff."
+    - "PearlRiver native Magic DRC/extraction is retained as a compatibility reference, not the LS1u GDS deck."
+    - "LibreSiliconExt1um extraction coefficients are geometry-compatible references and remain uncalibrated."
+    - "The upstream NMOS library terminator is normalized from LV1UPMOS to LV1UNMOS."
+    - "The upstream model cards contain NGATE/PGATE measurement caveats; no calibration is implied."

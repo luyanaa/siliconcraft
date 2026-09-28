@@ -1,0 +1,75 @@
+# profiles/ami06/pcells.yaml — KLayout analog PCell contract
+#
+# Geometry is generated in microns and snapped to meta.grid_um.  Layer names
+# resolve through layers.yaml; rule values come from rules.yaml. Magic
+# extraction is intentionally outside this contract.
+
+pcells:
+  nmos:
+    kind: mos4
+    polarity: n
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      fingers: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 1.5, min: 0.9}
+      l_um: {type: float, default: 0.6, min: 0.6}
+  pmos:
+    kind: mos4
+    polarity: p
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      fingers: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 1.5, min: 0.9}
+      l_um: {type: float, default: 0.6, min: 0.6}
+  ntap:
+    kind: tap
+    polarity: n
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  ptap:
+    kind: tap
+    polarity: p
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via12:
+    kind: via
+    cut: via
+    lower: metal1
+    upper: metal2
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via23:
+    kind: via
+    cut: via2
+    lower: metal2
+    upper: metal3
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  cap_elec:
+    kind: capacitor
+    top: elec
+    bottom: poly
+    terminals:
+      - TOP
+      - BOTTOM
+    parameters:
+      width_um: {type: float, default: 6.3, min: 6.3}
+      height_um: {type: float, default: 6.3, min: 6.3}

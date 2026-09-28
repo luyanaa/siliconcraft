@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  conformance:
+    name: AMI06 DRC/LVS conformance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: DeterminateSystems/magic-nix-cache-action@v9
+      - name: Run siliconcraft conformance gates
+        run: >
+          nix-shell -p klayout netgen python3 --run
+          "python3 scripts/run_ci.py --profile ami06"
+
+  pex:
+    name: Magic PEX contract and runtime gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: DeterminateSystems/magic-nix-cache-action@v9
+      - name: Run source-reference PEX gates
+        run: >
+          nix-shell -p magic ngspice python3 --run
+          "python3 scripts/run_pex_ci.py"
+      - name: Run L0 RF workbench
+        run: >
+          nix-shell -p magic python3 --run
+          "python3 scripts/test_rf_workbench.py &&
+          python3 scripts/run_rf_workbench.py
+          --profile ami06 --pex-profile n8bn_reference --require-rc
+          --output /tmp/siliconcraft-ami06-rf.json
+          --extracted-output /tmp/siliconcraft-ami06-rf.spice"

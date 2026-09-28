@@ -1,0 +1,60 @@
+# Evidence maturity for LS1u simulation model families.
+# This file records the explicit low-confidence PMOS refit; it is not signoff.
+schema_version: 1
+profile: ls1u
+source:
+  thread_url: "https://list.libresilicon.com/hyperkitty/list/libresilicon-developers%40list.libresilicon.com/thread/SPC5F4XBC63FEBJZ25IU5POIZ67ZFR2Q/"
+  evidence:
+    - "PMOS L=10, W=10 characterization is reported with leakage-conductance correction."
+    - "Corrected quadratic Id-Vgs data reports threshold voltage near 0.6 V."
+    - "NMOS measurement is reported as instrument off-scale around Vgs=0 V."
+  attachment: "thermally_compensated.ods"
+  note: "The supplied evidence is device-level characterization, not a complete corner or signoff data set."
+models:
+  nmos_core:
+    subcircuit: LV1UNMOS
+    library: models/ls1u.lib
+    maturity:
+      structural: true
+      functional: true
+      characterized: theoretical_wip
+      signoff: false
+    confidence: low
+    evidence_status: insufficient_for_fit
+    limitations:
+      - "No stable NMOS transfer curve is established by the supplied measurement."
+      - "No geometry sweep, output curve, temperature sweep, or corner set is supplied."
+  pmos_core:
+    subcircuit: LV1UPMOS
+    library: models/ls1u.lib
+    maturity:
+      structural: true
+      functional: true
+      characterized: partial
+      signoff: false
+    confidence: low
+    evidence_status: partial_characterization
+    measured_geometry:
+      l_um: 10
+      w_um: 10
+    threshold_voltage_abs_v: 0.6
+    fit:
+      source_attachment_url: "https://list.libresilicon.com/hyperkitty/list/libresilicon-developers%40list.libresilicon.com/message/SPC5F4XBC63FEBJZ25IU5POIZ67ZFR2Q/attachment/6/thermally_compensated.ods"
+      correction: "Use the spreadsheet Id_residue after leakage-conductance subtraction."
+      geometry: "L10/W10, interpreted as L=10um and W=10um."
+      bias: "VDS=-0.5V, VSB=0V."
+      fit_window_vsg_v: [1.5, 5.0]
+      method: "Fix |VTH0| to the reported 0.6V; least-squares fit BSIM U0 to Id_residue."
+      parameters:
+        vth0_v: -0.6
+        u0_cm2_per_v_s: 83.0
+      rmse_ua: 0.467
+      confidence: low
+    limitations:
+      - "The threshold estimate comes from a corrected single geometry."
+      - "Leakage-conductance correction and suspected nitride sidewall effects require independent confirmation."
+      - "No full geometry, bias, temperature, or process-corner data set is supplied."
+      - "Do not use this status as a signoff qualification."
+next_evidence:
+  - "Replicate the PMOS fit across independent geometries, temperatures, and bias points."
+  - "Measure contact/via chains and metal/dielectric PCM structures before activating those PEX terms."

@@ -1,0 +1,47 @@
+# profiles/openrule1um/support_cells.yaml — explicit analog support-library boundary
+schema_version: 1
+profile: openrule1um
+status: explicit_read_only_reference
+source:
+  repository: "https://github.com/mineda-support/OpenRule1um"
+  commit: "85dbacfb05351c5116158f4d8e0d5c995d3b4ad1"
+  path: "Basic/libraries/OpenRule1um_Basic.gds"
+  git_blob_sha: "bfa1ab5bb739fb94a8ff96731bef95ee8760dc04"
+  source_size_bytes: 23476256
+  materialized_sha256: "6c809608ea0373abb1611d0a711dfb97605b08252c2d41ddf17d5ba59c181b98"
+library:
+  id: openrule1um_basic
+  path: reference/upstream/OpenRule1um_Basic.gds
+  mode: read_only
+  implicit_lookup: forbidden
+  caller_must_declare: true
+  dbu: 0.001
+roles:
+  contact:
+    cells: [dcont, pcont]
+    required_layers: [contact, active, nactive, pactive]
+  substrate_tap:
+    cells: [nsubcont, psubcont]
+    required_layers: [active, nwell, nactive, pactive, contact]
+  via:
+    cells: [Via, Via2]
+    required_layers: [metal1, via1, metal2, via2, metal3]
+  diode_helper:
+    cells: [DIODE_COMMON, ndio_min, pdio_min]
+    required_layers: [active, nwell, nactive, pactive, diode]
+  primitive_reference:
+    cells: [nchOR1, rpolyOR1_ex, PadFrame80]
+    use: reference_only
+resolution:
+  native_pcell_replacement: forbidden
+  pcell_dependency: explicit_library_instance
+  primitive_simulation_dependency: false
+  primitive_lvs_dependency: false
+  upstream_pcell_dependency: true
+acceptance:
+  source_present: true
+  source_hash_pinned: true
+  read_only: true
+  layer_map: profiles/openrule1um/layers.yaml
+  drc: profiles/openrule1um/reference/drc_batch.lydrc
+  lvs: profiles/openrule1um/reference/lvs_batch.lylvs

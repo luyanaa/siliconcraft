@@ -1,0 +1,43 @@
+# profiles/ami06/devices.yaml — authoritative LVS device table (SCMOS/AMI_C5N)
+#
+# Curated from the NCSU CDK 1.6.0 Diva deck (techfile/divaEXT.rul).  Single
+# source of truth for the authoritative LVS extractor
+# (common/lvs/scmos_authoritative_lvs.py): scripts/gen_lvs.py emits
+# generated/lvs/run.py from it, and scripts/lvs_conformance.py compares the
+# extracted netlist against the reference (oracle) extractor.  Porting to
+# another SCMOS process = editing this table.
+#
+# Kind-specific fields:
+#   mos4:      channel, diff (derived layers), bulk_net (substrate | derived
+#              layer name), model_suffix (index into MODEL_SUFFIX in
+#              common/lvs/scmos_lvs_core.py)
+#   resistor:  body, conn (derived layers), sheet (sheet-resistance key)
+#   capacitor: region, top, bottom (derived layers), area_cap (key)
+#   diode:     region, plus (derived layer | substrate), minus (derived
+#              layer), model_suffix
+#   npn:       region, collector, base, emitter (derived layers)
+#
+# Device kinds absent from the table are not extracted.  Regions that are
+# empty for the process (feature-gated in scmos_layers.derive) are skipped.
+
+devices:
+  mos4:
+    - { name: nmos4, channel: nChannel, diff: nDiff, bulk_net: substrate, model_suffix: nmos }
+    - { name: pmos4, channel: pChannel, diff: pDiff, bulk_net: nBulk, model_suffix: pmos }
+  resistor:
+    - { name: polyRes, body: polyRes, conn: poly, sheet: poly }
+    - { name: polySRes, body: polySRes, conn: poly, sheet: sblock }
+    - { name: elecRes, body: elecRes, conn: elec, sheet: elec }
+    - { name: elecHighres, body: elecHighres, conn: elec, sheet: highres }
+    - { name: nwellRes, body: nwellRes, conn: nBulk, sheet: nwell }
+  capacitor:
+    - { name: CapacitorElec, region: CapacitorElec, top: elec, bottom: poly, area_cap: elec_poly }
+    - { name: polycapCap, region: polycapCap, top: poly, bottom: polycap, area_cap: poly_polycap }
+    - { name: metalcapCap, region: metalcapCap, top: metalcap, bottom: metalcap_bottom, area_cap: metalcap }
+    - { name: lcCap, region: lcCap, top: poly, bottom: lcDiff, area_cap: poly_cwell }
+  diode:
+    - { name: NPdiode, region: NPdiode, plus: substrate, minus: nDiff, model_suffix: npdiode }
+    - { name: PNdiode, region: PNdiode, plus: pDiff, minus: nBulk, model_suffix: pndiode }
+    - { name: NwPdiode, region: NwPdiode, plus: substrate, minus: nBulk, model_suffix: nwpdiode }
+  npn:
+    - { name: npnTran, region: npnTran, collector: npnCollector, base: npnBaseTap, emitter: npnEmitter }

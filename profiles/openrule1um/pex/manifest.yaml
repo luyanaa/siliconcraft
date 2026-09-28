@@ -1,0 +1,14 @@
+# PEX is intentionally outside this OpenRule1um compatibility cut.
+schema_version: 2
+profile: openrule1um
+default: none
+status: deferred
+signoff: false
+reason: user_directed_pex_skip
+profiles:
+  none:
+    status: unavailable
+    reason: no_openrule1um_parasitic_extraction_deck_or_calibrated_rule_contract
+selection:
+  automatic: forbidden
+  explicit_required: true

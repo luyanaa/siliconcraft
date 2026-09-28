@@ -1,0 +1,31 @@
+# profiles/openrule1um/devices.yaml — primitive device contract
+#
+# This is a normalized profile description of the upstream lvs.lylvs device
+# extraction. The self-contained reference/lvs_batch.lylvs adapter executes
+# this primitive contract; the upstream deck remains the provenance source.
+engine: klayout_lvs_reference
+authoritative: false
+
+devices:
+  mos4:
+    - { name: nmos4, channel: nmos_channel, diff: nmos_diff, bulk_net: substrate, model_suffix: nmos, model_id: or1_nmos }
+    - { name: pmos4, channel: pmos_channel, diff: pmos_diff, bulk_net: nwell, model_suffix: pmos, model_id: or1_pmos }
+  resistor:
+    - { name: res, body: resistor, conn: contact, sheet: 20.0, model_suffix: res, model_id: r_poly }
+    - { name: hres, body: hpoly, conn: contact, sheet: 7000.0, model_suffix: hres, model_id: hr_poly }
+    - { name: r_pdiff, body: pdiff_resistor, conn: contact, sheet: 41.7, model_suffix: r_pdiff, model_id: r_pdiff }
+  capacitor:
+    - { name: cap_metal1, region: capacitor, top: metal1, bottom: poly, area_cap: 3.06e-15, model_suffix: cap, model_id: poly_cap, lvs_model_id: poly_cap }
+    - { name: cap_metal2, region: capacitor, top: metal2, bottom: metal1, area_cap: 0.045e-15, model_suffix: cap, model_id: lvs_cap_metal2, lvs_model_id: lvs_cap_metal2 }
+    - { name: cap_nactive_poly, region: capacitor, top: poly, bottom: nactive, area_cap: 5.42e-15, model_suffix: cap, model_id: ndiff_cap, lvs_model_id: ndiff_cap }
+    - { name: cap_pactive_poly, region: capacitor, top: poly, bottom: pactive, area_cap: 5.34e-15, model_suffix: cap, model_id: pdiff_cap, lvs_model_id: pdiff_cap }
+    - { name: cap_poly_untyped, region: capacitor, top: poly, bottom: active, area_cap: 2.60e-15, model_suffix: cap, model_id: lvs_cap_poly_untyped, lvs_model_id: lvs_cap_poly_untyped }
+  diode:
+    - { name: diode, region: diode, plus: pactive, minus: nwell, model_suffix: diode, model_id: or1_diode }
+
+recognition:
+  nmos_channel: "active - nwell - pactive"
+  pmos_channel: "active & nwell - nactive"
+  substrate: "global SUBSTRATE"
+  pdiff_resistor: "(diff & nwell - narea) & res"
+  source: "https://github.com/mineda-support/OpenRule1um/blob/85dbacfb05351c5116158f4d8e0d5c995d3b4ad1/tech/tech/lvs/lvs.lylvs"

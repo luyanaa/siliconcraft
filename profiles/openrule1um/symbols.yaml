@@ -1,0 +1,199 @@
+# profiles/openrule1um/symbols.yaml — normalized Xschem primitive subset
+#
+# Ported from the upstream primitive symbol intent. Every symbol binds to an
+# exact model_id in the integrated ishi-kai-lib/ngspice family; W/L values are
+# lambda-rule defaults and may be adjusted without replacing the PCell flow.
+# Standard cells are optional lambda-rule conformance inputs, not primitive
+# replacements or implicit dependencies.
+symbols:
+  nmos4:
+    kind: fet
+    type: nmos
+    spiceprefix: m
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m"
+    lvs_format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m"
+    pins:
+      - {name: d, dir: inout, x1: 17.5, y1: -32.5, x2: 22.5, y2: -27.5}
+      - {name: g, dir: in, x1: -22.5, y1: -2.5, x2: -17.5, y2: 2.5}
+      - {name: s, dir: inout, x1: 17.5, y1: 27.5, x2: 22.5, y2: 32.5}
+      - {name: b, dir: in, x1: 17.5, y1: -2.5, x2: 22.5, y2: 2.5}
+    template:
+      name: M1
+      w: "2u"
+      l: "1u"
+      m: "1"
+      model: or1_nmos
+    model_id: or1_nmos
+  pmos4:
+    kind: fet
+    type: pmos
+    spiceprefix: m
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m"
+    lvs_format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m"
+    pins:
+      - {name: d, dir: inout, x1: 17.5, y1: -32.5, x2: 22.5, y2: -27.5}
+      - {name: g, dir: in, x1: -22.5, y1: -2.5, x2: -17.5, y2: 2.5}
+      - {name: s, dir: inout, x1: 17.5, y1: 27.5, x2: 22.5, y2: 32.5}
+      - {name: b, dir: in, x1: 17.5, y1: -2.5, x2: 22.5, y2: 2.5}
+    template:
+      name: M1
+      w: "6u"
+      l: "1u"
+      m: "1"
+      model: or1_pmos
+    model_id: or1_pmos
+  res:
+    kind: two_pin
+    type: resistor
+    shape: res
+    spiceprefix: r
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model r=@r w=@w l=@l"
+    pins:
+      - {name: PLUS, dir: inout, x1: -12.5, y1: -2.5, x2: -7.5, y2: 2.5}
+      - {name: MINUS, dir: inout, x1: 7.5, y1: -2.5, x2: 12.5, y2: 2.5}
+    template:
+      name: R1
+      r: "1k"
+      w: "2u"
+      l: "10u"
+      model: r_poly
+    model_id: r_poly
+  hres:
+    kind: two_pin
+    type: resistor
+    shape: res
+    spiceprefix: r
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model r=@r w=@w l=@l"
+    pins:
+      - {name: PLUS, dir: inout, x1: -12.5, y1: -2.5, x2: -7.5, y2: 2.5}
+      - {name: MINUS, dir: inout, x1: 7.5, y1: -2.5, x2: 12.5, y2: 2.5}
+    template:
+      name: R1
+      r: "1k"
+      w: "2u"
+      l: "10u"
+      model: hr_poly
+    model_id: hr_poly
+  cap:
+    kind: two_pin
+    type: capacitor
+    shape: cap
+    spiceprefix: c
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model c=@c"
+    pins:
+      - {name: PLUS, dir: inout, x1: -12.5, y1: -2.5, x2: -7.5, y2: 2.5}
+      - {name: MINUS, dir: inout, x1: 7.5, y1: -2.5, x2: 12.5, y2: 2.5}
+    template:
+      name: C1
+      c: "1p"
+      w: "10"
+      l: "10"
+      model: poly_cap
+    model_id: poly_cap
+  diode:
+    kind: two_pin
+    type: diode
+    shape: diode
+    spiceprefix: d
+    format: "@spiceprefix@name @pinlist @model area=@area pj=@pj"
+    lvs_format: "@spiceprefix@name @pinlist @model area=@area pj=@pj"
+    pins:
+      - {name: PLUS, dir: inout, x1: -12.5, y1: -2.5, x2: -7.5, y2: 2.5}
+      - {name: MINUS, dir: inout, x1: 7.5, y1: -2.5, x2: 12.5, y2: 2.5}
+    template:
+      name: D1
+      area: "1"
+      pj: "0"
+      model: or1_diode
+    model_id: or1_diode
+  ndiff_cap:
+    kind: two_pin
+    type: capacitor
+    shape: cap
+    spiceprefix: c
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model c=@c"
+    pins:
+      - {name: PLUS, dir: inout, x1: -12.5, y1: -2.5, x2: -7.5, y2: 2.5}
+      - {name: MINUS, dir: inout, x1: 7.5, y1: -2.5, x2: 12.5, y2: 2.5}
+    template:
+      name: C1
+      c: "1p"
+      w: "10"
+      l: "10"
+      model: ndiff_cap
+    model_id: ndiff_cap
+  pdiff_cap:
+    kind: two_pin
+    type: capacitor
+    shape: cap
+    spiceprefix: c
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model c=@c"
+    pins:
+      - {name: PLUS, dir: inout, x1: -12.5, y1: -2.5, x2: -7.5, y2: 2.5}
+      - {name: MINUS, dir: inout, x1: 7.5, y1: -2.5, x2: 12.5, y2: 2.5}
+    template:
+      name: C1
+      c: "1p"
+      w: "10"
+      l: "10"
+      model: pdiff_cap
+    model_id: pdiff_cap
+  r_nwell:
+    kind: two_pin
+    type: resistor
+    shape: res
+    spiceprefix: r
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model r=@r w=@w l=@l"
+    pins:
+      - {name: PLUS, dir: inout, x1: -12.5, y1: -2.5, x2: -7.5, y2: 2.5}
+      - {name: MINUS, dir: inout, x1: 7.5, y1: -2.5, x2: 12.5, y2: 2.5}
+    template:
+      name: R1
+      r: "1k"
+      w: "2u"
+      l: "10u"
+      model: r_nwell
+    model_id: r_nwell
+  r_pdiff:
+    kind: two_pin
+    type: resistor
+    shape: res
+    spiceprefix: r
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    lvs_format: "@spiceprefix@name @pinlist @model r=@r w=@w l=@l"
+    pins:
+      - {name: PLUS, dir: inout, x1: -12.5, y1: -2.5, x2: -7.5, y2: 2.5}
+      - {name: MINUS, dir: inout, x1: 7.5, y1: -2.5, x2: 12.5, y2: 2.5}
+    template:
+      name: R1
+      r: "1k"
+      w: "2u"
+      l: "10u"
+      model: r_pdiff
+    model_id: r_pdiff
+  gnd:
+    kind: gnd
+    type: label
+    global: true
+    spiceprefix: ""
+    format: "*.alias @lab"
+    pins:
+      - {name: p, dir: inout, x1: -2.5, y1: -2.5, x2: 2.5, y2: 2.5}
+    template:
+      name: l1
+      lab: "0"
+  lab_pin:
+    kind: lab_pin
+    type: label
+    format: "*.alias @lab"
+    pins:
+      - {name: p, dir: in, x1: -1.25, y1: -1.25, x2: 1.25, y2: 1.25}
+    template:
+      name: p1
+      lab: xxx

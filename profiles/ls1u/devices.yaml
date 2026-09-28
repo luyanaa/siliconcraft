@@ -1,0 +1,59 @@
+# profiles/ls1u/devices.yaml — reference LVS recognition contract
+# The process-independent terminal/geometry contract lives in
+# common/devices/canonical/mos.yaml; process bindings live in devices/bindings.yaml.
+# No LS1u extraction deck is present upstream; this table is not authoritative.
+engine: ls1u_reference
+authoritative: false
+canonical_source: common/devices/canonical/mos.yaml
+binding_source: devices/bindings.yaml
+
+devices:
+  mos4:
+    -
+      name: nmos4
+      kind: mos4
+      terminals:
+        - d
+        - g
+        - s
+        - b
+      recognition:
+        gate: poly
+        diff: "active & nimplant"
+        bulk: pwell
+      model: LV1UNMOS
+      params:
+        - w
+        - l
+        - pd
+        - ps
+      source: "simulation/nmos1u.lib"
+    -
+      name: pmos4
+      kind: mos4
+      terminals:
+        - d
+        - g
+        - s
+        - b
+      recognition:
+        gate: poly
+        diff: "active & pimplant"
+        bulk: nwell
+      model: LV1UPMOS
+      params:
+        - w
+        - l
+        - pd
+        - ps
+      source: "simulation/pmos1u.lib"
+
+recognition:
+  nmos_channel: "active & nimplant & pwell - poly"
+  pmos_channel: "active & pimplant & nwell - poly"
+  source: "No upstream LS1u LVS deck; recognition is a future adapter contract."
+
+pending:
+  - "passive and diode model cards"
+  - "profile-specific LVS extraction"
+  - "junction and parasitic parameter semantics"

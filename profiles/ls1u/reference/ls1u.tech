@@ -1,0 +1,101 @@
+tech
+	format 33
+	ls1u
+end
+
+version
+	version 8.2.8
+	description "LibreSilicon CMOS Technology for 1um"
+end
+
+planes
+	active,a
+	well,w
+	implant,i
+	via,v
+	metal,m
+	oxide,o
+end
+
+types
+	well nwell
+	well pwell
+	active active
+	implant nimplant
+	implant pimplant
+	active poly
+	via contact
+	metal metal1
+	via via1
+	metal metal2
+	via via2
+	metal metal3
+	via via3
+	metal metal4
+	via via4
+	metal metal5
+	via via5
+	metal metal6
+end
+
+contact
+end
+
+styles
+	styletype mos
+	nwell 12
+	pwell 13
+	nimplant 2
+	pimplant 4
+	poly 1
+	contact 26
+	metal1 20
+	via1 81
+	metal2 21
+	via2 37
+	metal3 22
+	via3 38
+	metal4 23
+	via4 39
+	metal5 24
+	metal6 64
+end
+
+compose
+end
+
+connect
+end
+
+cifoutput
+	style generic
+	scalefactor 1
+end
+
+cifinput
+	style generic
+	scalefactor 1
+end
+
+drc
+end
+
+extract
+	style standard
+	cscale 1
+	lambda 9
+	step   100
+	sidehalo 8
+	planeorder active 0
+	planeorder well 1
+	planeorder implant 2
+	planeorder via 3
+	planeorder metal 4
+	planeorder oxide 5
+end
+
+plot
+end
+
+aliases
+end

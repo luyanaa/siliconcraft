@@ -1,0 +1,119 @@
+style lambda=0.8(ami16_n77h)
+    scalefactor 80 5
+    layer nwell CWN
+        labels CWN
+    layer pwell CWP
+        labels CWP
+    layer pbase CBA
+        labels CBA
+    layer poly CPG
+        labels CPG
+    layer pdiff CAA
+        and CSP
+        and CWN
+    layer ndiff CAA
+        and CSN
+        and-not CWN
+    layer nsd CAA
+        and CSN
+        and CWN
+    layer psd CAA
+        and CSP
+        and-not CWN
+    layer nfet CPG
+        and CAA
+        and CSN
+        and-not CWN
+    layer pfet CAA
+        and CPG
+        and CSP
+        and CWN
+    layer ndc CCC
+        or CCA
+        or CCP
+        or CCE
+        grow 50
+        and CAA
+        and CSN
+        and-not CWN
+        and CMF
+    layer pdc CCC
+        or CCA
+        or CCP
+        or CCE
+        grow 50
+        and CAA
+        and CSP
+        and CWN
+        and CMF
+    layer nsc CCC
+        or CCA
+        or CCP
+        or CCE
+        grow 50
+        and CAA
+        and CSN
+        and CWN
+        and CMF
+    layer psc CCC
+        or CCA
+        or CCP
+        or CCE
+        grow 50
+        and CAA
+        and CSP
+        and-not CWN
+        and CMF
+    layer pc CCC
+        or CCA
+        or CCP
+        or CCE
+        grow 50
+        and CPG
+        and CMF
+    layer electrode CEL
+        labels CEL
+    layer ec CCE
+        grow 50
+        and CMF
+        and CEL
+    layer cap CPG
+        and CEL
+        and-not CAA
+    layer m2c CVA
+        grow 50
+        and CMS
+        and CMF
+    layer glass COG
+    layer pad CMF
+        shrink 50
+        and CMS
+        shrink 250
+        and CVA
+        shrink 50
+        and XP
+        and COG
+        grow 300
+    layer m1 CMF
+        labels CMF
+    layer m2 CMS
+        labels CMS
+    calma CCC 25 *
+    calma XP 26 *
+    calma CWP 41 *
+    calma CWN 42 *
+    calma CBA 58 *
+    calma CAA 43 *
+    calma CSP 44 *
+    calma CSN 45 *
+    calma CPG 46 *
+    calma CMF 49 *
+    calma CVA 50 *
+    calma CMS 51 *
+    calma COG 52 *
+    calma CCE 55 *
+    calma CEL 56 *
+    calma COG 64 *
+    calma COG 65 *
+    calma COG 90 *
+end

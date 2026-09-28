@@ -1,0 +1,305 @@
+# profiles/openrule1um/model_contract.yaml — primitive model/symbol/LVS closure
+#
+# W/L values are physical microns. The pinned passive C cards use unitless
+# numeric micron W/L in their upstream Xschem templates; appending an ngspice
+# `u` suffix would scale the computed area by 1e-12.
+# 
+# The measured values below are simulation authority only where the extracted
+# geometry maps to the corresponding TEG structure. Uncalibrated layout-only
+# geometries use explicit lvs_only model IDs.
+family:
+  id: openrule1um.ishi_kai.ngspice
+  backend: ngspice
+  library: models/openrule1um.lib
+  section: openrule1um
+  source:
+    repository: "https://github.com/mineda-support/OpenRule1um"
+    commit: "85dbacfb05351c5116158f4d8e0d5c995d3b4ad1"
+    path: "tech/tech/models/ishi-kai-lib"
+  physical_geometry_units: microns
+  nominal_process_um: 0.6
+  design_rule_um: 1.0
+  lambda_is_geometry_scaling: false
+
+lambda_rule:
+  source: rules.yaml:lambda_rule
+  lambda_um: 0.5
+  grid_um: 0.05
+  units: microns
+  geometry_scaling: none
+  min_width_um: 1.0
+  min_channel_um: 1.0
+  pcell_policy: preserve_existing
+  standard_cell_policy: conformance_only
+  wl_adjustment: allowed
+source_policy:
+  simulator:
+    authority: model_card
+    rule: "Use the exact ishi-kai-lib/ngspice card and model_id for simulation."
+  layout_lvs:
+    authority: calibrated_model_card_or_explicit_lvs_reference
+    rule: "Use the measured model-card coefficient when the extracted geometry maps to its TEG; assign every uncalibrated geometry a separate lvs_only model ID."
+  pcell:
+    authority: upstream_pcell_reference
+    rule: "Preserve PCell geometry and displayed parameters as provenance; do not replace the PCell flow or silently rewrite its stale sheet references."
+  wl_adjustment:
+    allowed: true
+    rule: "Adjust physical W/L only on the lambda_rule grid; never use W/L adjustment to hide a sheet/capacitance conflict."
+  numeric_equivalence:
+    required_before_clean_claim: true
+    unresolved_policy: "Claim simulator/LVS numeric equivalence only for calibrated geometry; keep PCell display values and uncalibrated extraction values separate."
+
+
+measurement_evidence:
+  source:
+    kind: TEG_readout
+    author: akita11
+    date: "2017-09-23"
+    title: "Phenitec shuttle PDK TEG resistance and capacitance readout"
+    url: "https://github.com/KeiSakam/OpenRule1umPDK_setupEDA/blob/master/README.md"
+    description: "The source records raw TEG resistance/C-f results and the derived sheet/area coefficients."
+  unit_policy: "All TEG L/W and capacitor dimensions are physical microns; do not multiply them by lambda_um or by the nominal 0.6um process label."
+  resistors:
+    r_poly: {sheet_ohm_per_square: 20.0, model_card_sheet_ohm_per_square: 20.0, measured_ohm: 500.0, l_um: 45.0, w_um: 1.8, teg_name: Poly}
+    r_nwell: {sheet_ohm_per_square: 1100.0, model_card_sheet_ohm_per_square: 1100.0, measured_ohm: 10000.0, l_um: 45.0, w_um: 4.8, teg_name: Nwell}
+    r_pdiff: {sheet_ohm_per_square: 42.0, model_card_sheet_ohm_per_square: 41.7, measured_ohm: 625.0, l_um: 45.0, w_um: 3.0, teg_name: Pact}
+    r_ndiff: {status: not_measurable, l_um: 45.0, w_um: 3.0, teg_name: Nact, reason: "Nact TEG behaves as a diode"}
+  capacitors:
+    poly_cap: {area_cap_f_per_um2: 3.06e-15, measured_pf: 44.0, area_um2: 14400.0, teg_name: "Poly-Metal ACTEG15"}
+    ndiff_cap:
+      accumulation_f_per_um2: 5.42e-15
+      weak_inversion_f_per_um2: 3.82e-15
+      accumulation_measured_pf: 78.0
+      weak_inversion_measured_pf: 55.0
+      area_um2: 14400.0
+      teg_name: "nMOS Cap ACTEG14"
+    pdiff_cap:
+      accumulation_f_per_um2: 5.34e-15
+      weak_inversion_f_per_um2: 3.54e-15
+      accumulation_measured_pf: 77.0
+      weak_inversion_measured_pf: 51.0
+      area_um2: 14400.0
+      teg_name: "pMOS Cap ACTEG07"
+  policy: "Use accumulation/strong-inversion values for the constant-C simulation cards; preserve weak-inversion readouts as evidence, not as a second bias-independent model."
+models:
+  or1_nmos:
+    kind: mos4
+    symbol: nmos4
+    source: "tech/tech/models/ishi-kai-lib/mos.lib"
+    parameters:
+      w_um: {default: 2.0, min: 1.0, adjustable: true}
+      l_um: {default: 1.0, min: 1.0, adjustable: true}
+  or1_pmos:
+    kind: mos4
+    symbol: pmos4
+    source: "tech/tech/models/ishi-kai-lib/mos.lib"
+    parameters:
+      w_um: {default: 6.0, min: 1.0, adjustable: true}
+      l_um: {default: 1.0, min: 1.0, adjustable: true}
+  poly_cap:
+    kind: capacitor
+    symbol: cap
+    source: "tech/tech/models/ishi-kai-lib/passive.lib"
+    coefficient: {value: 3.06e-15, unit: F_per_um2}
+    netlist_geometry_units: numeric_um
+    parameters:
+      w_um: {default: 10.0, min: 1.0, adjustable: true}
+      l_um: {default: 10.0, min: 1.0, adjustable: true}
+  ndiff_cap:
+    kind: capacitor
+    symbol: ndiff_cap
+    source: "tech/tech/models/ishi-kai-lib/passive.lib"
+    coefficient: {value: 5.42e-15, unit: F_per_um2}
+    netlist_geometry_units: numeric_um
+    parameters:
+      w_um: {default: 10.0, min: 1.0, adjustable: true}
+      l_um: {default: 10.0, min: 1.0, adjustable: true}
+  pdiff_cap:
+    kind: capacitor
+    symbol: pdiff_cap
+    source: "tech/tech/models/ishi-kai-lib/passive.lib"
+    coefficient: {value: 5.34e-15, unit: F_per_um2}
+    netlist_geometry_units: numeric_um
+    parameters:
+      w_um: {default: 10.0, min: 1.0, adjustable: true}
+      l_um: {default: 10.0, min: 1.0, adjustable: true}
+  r_poly:
+    kind: resistor
+    symbol: res
+    source: "tech/tech/models/ishi-kai-lib/passive.lib"
+    coefficient: {value: 20.0, unit: ohm_per_square}
+    parameters:
+      w_um: {default: 2.0, min: 1.0, adjustable: true}
+      l_um: {default: 10.0, min: 1.0, adjustable: true}
+  r_nwell:
+    kind: resistor
+    symbol: r_nwell
+    source: "tech/tech/models/ishi-kai-lib/passive.lib"
+    coefficient: {value: 1100.0, unit: ohm_per_square}
+    parameters:
+      w_um: {default: 2.0, min: 1.0, adjustable: true}
+      l_um: {default: 10.0, min: 1.0, adjustable: true}
+  r_pdiff:
+    kind: resistor
+    symbol: r_pdiff
+    source: "tech/tech/models/ishi-kai-lib/passive.lib"
+    coefficient: {value: 41.7, unit: ohm_per_square}
+    parameters:
+      w_um: {default: 2.0, min: 1.0, adjustable: true}
+      l_um: {default: 10.0, min: 1.0, adjustable: true}
+  hr_poly:
+    kind: resistor
+    symbol: hres
+    source: "tech/tech/models/ishi-kai-lib/passive.lib"
+    coefficient: {value: 7000.0, unit: ohm_per_square}
+    parameters:
+      w_um: {default: 2.0, min: 1.0, adjustable: true}
+      l_um: {default: 10.0, min: 1.0, adjustable: true}
+  or1_diode:
+    kind: diode
+    symbol: diode
+    source: "tech/tech/models/ishi-kai-lib/diode.lib"
+    parameters:
+      area_um2: {default: 1.0, min: 0.0, adjustable: true}
+      perimeter_um: {default: 0.0, min: 0.0, adjustable: true}
+
+lvs_only_models:
+  lvs_cap_metal2:
+    kind: capacitor
+    coefficient: {value: 0.045e-15, unit: F_per_um2}
+    source: "tech/tech/lvs/lvs.lylvs"
+    status: provisional
+    reason: "The upstream M2-on-M1 extraction coefficient is marked TO BE REVISITED and has no matching passive.lib or TEG card."
+  lvs_cap_poly_untyped:
+    kind: capacitor
+    coefficient: {value: 2.60e-15, unit: F_per_um2}
+    source: "tech/tech/lvs/lvs.lylvs"
+    status: provisional
+    reason: "The upstream untyped poly-active extraction coefficient has no identified nactive/pactive TEG mapping."
+reference_only_models:
+  r_ndiff:
+    kind: resistor
+    coefficient:
+      value: 40.0
+      unit: ohm_per_square
+      authority: upstream_pcell_reference
+    source: "tech/tech/macros/pcells_v2.lym"
+    status: upstream_reference_only
+    simulator: unavailable
+    lvs: unavailable
+    xschem_symbol: unavailable
+    policy: "Use 40 ohm/square only as the upstream R_ndiff PCell reference; do not treat it as a calibrated simulator or LVS model."
+
+missing_models:
+  - id: r_ndiff
+    kind: resistor
+    source: "tech/tech/models/ishi-kai-lib/passive.lib"
+    pcell_reference_value: 40.0
+    pcell_reference_unit: ohm_per_square
+    status: simulator_unavailable
+    reason: "The upstream PCell reference is 40 ohm/square, but passive.lib has no R_ndiff model card."
+    policy: "Use reference_only_models.r_ndiff for upstream reference reporting; do not expose an Xschem, simulator, or LVS model ID."
+
+conflicts:
+  - id: r_nwell_sheet
+    model_id: r_nwell
+    model_card_value: 1100.0
+    model_card_unit: ohm_per_square
+    lvs_reference_values:
+      - {geometry: nwell_resistor, value: 1100.0, unit: ohm_per_square}
+    status: simulator_lvs_calibrated
+    policy: "Use 1100 ohm/square for simulation and the local nwell-strip LVS adapter; the pinned upstream PCell/LVS source has no native R_nwell extractor."
+  - id: r_pdiff_sheet
+    model_id: r_pdiff
+    model_card_value: 41.7
+    model_card_unit: ohm_per_square
+    pcell_reference_value: 90.0
+    pcell_reference_unit: ohm_per_square
+    lvs_reference_values:
+      - {geometry: pdiff_resistor, value: 41.7, unit: ohm_per_square}
+    status: simulator_lvs_calibrated_pcell_unresolved
+    policy: "Use 41.7 ohm/square for simulation and LVS because it matches the measured Pact TEG; retain 90 ohm/square only as the upstream PCell display reference until that PCell is reconciled."
+  - id: poly_cap_sheet
+    model_id: poly_cap
+    model_card_value: 3.06e-15
+    model_card_unit: F_per_um2
+    lvs_reference_values:
+      - {geometry: metal1_poly, value: 3.06e-15, unit: F_per_um2}
+    status: simulator_lvs_calibrated_for_metal1_poly
+    policy: "Use 3.06 fF/um2 for the measured Poly-Metal geometry; do not reuse it for M2-on-M1 or untyped poly-active extraction."
+  - id: ndiff_cap_sheet
+    model_id: ndiff_cap
+    model_card_value: 5.42e-15
+    model_card_unit: F_per_um2
+    lvs_reference_values:
+      - {geometry: nactive_poly, value: 5.42e-15, unit: F_per_um2}
+    status: simulator_lvs_calibrated_for_accumulation
+    policy: "Use the measured ACTEG14 accumulation/strong-inversion value for constant-C simulation and typed LVS extraction; weak-inversion C-V is not represented by this constant card."
+  - id: pdiff_cap_sheet
+    model_id: pdiff_cap
+    model_card_value: 5.34e-15
+    model_card_unit: F_per_um2
+    lvs_reference_values:
+      - {geometry: pactive_poly, value: 5.34e-15, unit: F_per_um2}
+    status: simulator_lvs_calibrated_for_accumulation
+    policy: "Use the measured ACTEG07 accumulation/strong-inversion value for constant-C simulation and typed LVS extraction; weak-inversion C-V is not represented by this constant card."
+  - id: metal2_cap_lvs
+    model_id: lvs_cap_metal2
+    lvs_reference_values:
+      - {geometry: metal2_metal1, value: 0.045e-15, unit: F_per_um2}
+    status: extraction_only_provisional
+    policy: "Keep the upstream M2-on-M1 value as an explicit LVS-only reference; no simulator model is claimed without a measured card."
+  - id: untyped_poly_cap_lvs
+    model_id: lvs_cap_poly_untyped
+    lvs_reference_values:
+      - {geometry: untyped_poly_active, value: 2.60e-15, unit: F_per_um2}
+    status: extraction_only_provisional
+    policy: "Keep the upstream untyped poly-active value as an explicit LVS-only reference; typed nactive/pactive structures use their measured cards."
+variant_status:
+  r_ndiff:
+    simulator: unavailable
+    xschem: unavailable
+    pcell: available_reference_only
+    lvs: unavailable
+    pcell_sheet_reference: 40.0
+    simulator_lvs_equivalence: unavailable
+    reason: "The upstream PCell reference is 40 ohm/square; Nact TEG is not measurable as a resistor and passive.lib has no simulator card."
+  r_nwell:
+    simulator: available
+    xschem: available
+    pcell: unavailable_in_pinned_upstream
+    lvs: available
+    lvs_authority: local_profile_adapter
+    lvs_sheet_reference: 1100.0
+    simulator_lvs_equivalence: calibrated
+    reason: "The pinned upstream PCell/LVS source lacks a native R_nwell extractor, but the local adapter recognizes an nwell strip marked RES with narea/contact terminals and uses the measured 1100 ohm/square card."
+  r_pdiff:
+    simulator: available
+    xschem: available
+    pcell: available
+    lvs: available
+    lvs_sheet_reference: 41.7
+    pcell_sheet_reference: 90.0
+    simulator_lvs_equivalence: calibrated
+    pcell_equivalence: unresolved
+    reason: "41.7 ohm/square matches the Pact TEG and passive.lib; the upstream PCell display value remains 90 ohm/square."
+  poly_cap:
+    simulator: available
+    xschem: available
+    lvs: calibrated_for_metal1_poly
+    simulator_lvs_equivalence: calibrated_for_metal1_poly
+    reason: "3.06 fF/um2 is the measured ACTEG15 Poly-Metal value; M2-on-M1 and untyped poly-active are separate provisional LVS-only variants."
+  ndiff_cap:
+    simulator: available
+    xschem: available
+    lvs: calibrated_for_nactive_poly
+    simulator_lvs_equivalence: calibrated_for_accumulation
+    weak_inversion: evidence_only_not_modelled
+    reason: "5.42 fF/um2 is the measured ACTEG14 accumulation/strong-inversion value."
+  pdiff_cap:
+    simulator: available
+    xschem: available
+    lvs: calibrated_for_pactive_poly
+    simulator_lvs_equivalence: calibrated_for_accumulation
+    weak_inversion: evidence_only_not_modelled
+    reason: "5.34 fF/um2 is the measured ACTEG07 accumulation/strong-inversion value."

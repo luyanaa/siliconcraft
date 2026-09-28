@@ -1,0 +1,118 @@
+# profiles/openrule1um/cells.yaml — cell scope and lambda-rule policy
+#
+# This is a coverage contract, not a request to replace every upstream PCell.
+policy:
+  name: lambda_rule
+  source: rules.yaml:lambda_rule
+  pcell_policy: preserve_existing
+  standard_cell_policy: conformance_only
+  replacement_required: false
+  model_card_portability: "reuse existing model cards; allow physical W/L adjustment on the declared grid"
+  acceptance: "lambda-rule legal geometry, grid alignment, and intact primitive model/LVS bindings"
+gds_export:
+  source: "user_report: Phenitec NDA conversion tool does not support multi-level cells"
+  source_hierarchy: preserve_until_primitive_conversion
+  converter_compatibility:
+    multi_level_cells: unsupported
+    preferred_order: convert_leaves_then_selectively_flatten_affected_cells
+    flatten_before_primitive_conversion: forbidden
+    full_chip_flatten: fallback_only
+  acceptance:
+    pre_conversion: "Preserve the OpenRule1um hierarchy and PCell/library identity."
+    post_conversion: "Run target-PDK DRC/LVS and verify top-level pins, labels, layer/datatype, and database units."
+  preflight:
+    input_artifact: immutable_hierarchical_source
+    output_artifact: staging_copy_only
+    top_cell_selection: explicit
+    ambiguous_top_cells: reject
+    flatten_scope: reachable_affected_cells_only
+    prune_orphan_cells: true
+  equivalence_checks:
+    instance_transforms: required
+    pin_text_and_properties: required
+    geometry_and_database_units: required
+analog_support:
+  status: explicit_read_only_reference
+  manifest: support_cells.yaml
+  library: reference/upstream/OpenRule1um_Basic.gds
+  source_path: "Basic/libraries/OpenRule1um_Basic.gds"
+  lookup: explicit_instance_only
+  implicit_pcell_dependency: forbidden
+  required_for_upstream_pcell_support: true
+  required_for_primitive_simulation: false
+  required_for_primitive_lvs: false
+standard_cell_conformance:
+  status: materialized_reference_input
+  catalog: compatibility/stdcell_catalog.yaml
+  required_for_primitive_lvs: false
+  inputs:
+    - "reference/upstream/OpenRule1um_StdCell.gds"
+    - "compatibility/xschem/stdcells"
+    - "tech/tech/models/ishi-kai-lib/stdcells_sim"
+    - "tech/tech/models/ishi-kai-lib/stdcells_lvs"
+    - "tech/tech/symbols/Xschem/Ishi-kai-OR1/stdcells"
+  checks:
+    grid_um: 0.05
+    geometry: "run the pinned OpenRule1um reference DRC on selected cells"
+    connectivity: "preserve pin order and cell-level LVS topology"
+    model_binding: "require exact declared model IDs where a cell exposes a model"
+  policy: "catalog and conform selected cells; do not make the whole upstream stdcell set a runtime dependency"
+  placement_routing_views: not_supplied_upstream
+  timing_views: not_supplied_upstream
+
+
+available:
+  primitive_xschem:
+    - nmos4
+    - pmos4
+    - res
+    - hres
+    - r_nwell
+    - r_pdiff
+    - cap
+    - ndiff_cap
+    - pdiff_cap
+    - diode
+  primitive_models:
+    - or1_nmos
+    - or1_pmos
+    - r_poly
+    - r_nwell
+    - r_pdiff
+    - hr_poly
+    - poly_cap
+    - ndiff_cap
+    - pdiff_cap
+    - or1_diode
+  lvs_reference:
+    - nmos4
+    - pmos4
+    - r_poly
+    - r_nwell
+    - r_pdiff
+    - cap_metal1
+    - cap_metal2
+    - cap_poly
+    - ndiff_cap
+    - pdiff_cap
+    - diode
+reference_only_models:
+  - r_ndiff
+
+missing:
+  - id: native_pcell_registration
+    reason: "The shared SCMOS PCell implementation cannot consume OpenRule1um layer/rule names directly."
+    policy: "Add an adapter or preserve the existing upstream PCell; do not replace all PCells."
+  - id: stdcell_placement_timing_views
+    reason: "The upstream bundle supplies reference GDS and Xschem symbols but no local LEF or Liberty views."
+    policy: "Keep stdcells conformance-only; do not make placement, routing, or timing signoff claims."
+  - id: lvs_variant_extraction
+    reason: "R_pdiff, R_nwell, and typed capacitor extraction are calibrated to measured model-card values; R_ndiff is upstream-reference-only, while M2-on-M1 and untyped poly-active variants remain provisional."
+    policy: "Advertise calibrated primitive variants only; keep R_ndiff as an explicit upstream PCell reference without simulator/LVS binding, and keep provisional capacitor variants behind explicit reference-only identifiers."
+
+reference_only:
+  - "Basic/libraries/OpenRule1um_Basic.gds"
+  - "Basic/libraries/OpenRule1um_StdCell.gds"
+  - "tech/tech/models/ishi-kai-lib/stdcells_sim"
+  - "tech/tech/models/ishi-kai-lib/stdcells_lvs"
+  - "tech/tech/symbols/Xschem/Ishi-kai-OR1/stdcells"

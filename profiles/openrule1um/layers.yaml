@@ -1,0 +1,239 @@
+# profiles/openrule1um/layers.yaml — OpenRule1um process layer contract
+#
+# Derived from the upstream KLayout layer properties file:
+#   https://github.com/mineda-support/OpenRule1um/blob/master/tech/tech/OpenRule1um.lyp
+# Physical rules in the upstream deck are expressed directly in microns.
+# lambda_um=0.5 is the portable SCMOS-envelope baseline; the target reference
+# deck does not consume it directly.
+meta:
+  name: openrule1um
+  process: OpenRule1um
+  description: "OpenRule1um 1 um bulk CMOS (KLayout-native upstream profile)"
+  nominal_process_um: 0.6
+  design_rule_um: 1.0
+  physical_units: microns
+  lambda_is_geometry_scaling: false
+  lambda_um: 0.5
+  grid_um: 0.05
+  min_channel_um: 1.0
+  min_width_um: 1.0
+  model_prefix: or1
+  well_type: n
+  submicron_rules: false
+  deep_rules: false
+  stacked_vias: true
+  features:
+    metal3Available: true
+    hpolyAvailable: true
+    resistorAvailable: true
+    capacitorAvailable: true
+    diodeAvailable: true
+    padAvailable: true
+  license: "Apache-2.0 (upstream OpenRule1um; preserve per-file notices)"
+  sources:
+    - "https://github.com/mineda-support/OpenRule1um@85dbacfb05351c5116158f4d8e0d5c995d3b4ad1"
+    - "tech/tech/OpenRule1um.lyp"
+    - "tech/tech/drc/drc.lydrc"
+    - "tech/tech/lvs/lvs.lylvs"
+
+layers:
+  -
+    name: nwell
+    purpose: drawing
+    gds:
+      - {layer: 1, datatype: 0}
+    role: well
+    available: true
+    note: "Upstream name NWL"
+  -
+    name: nwell_dp
+    purpose: drawing
+    gds:
+      - {layer: 2, datatype: 0}
+    role: well
+    available: true
+    note: "Upstream name NWL_dp"
+  -
+    name: active
+    purpose: drawing
+    gds:
+      - {layer: 3, datatype: 0}
+    role: active
+    available: true
+    note: "Upstream name DIFF"
+  -
+    name: poly
+    purpose: drawing
+    gds:
+      - {layer: 5, datatype: 0}
+    role: gate
+    available: true
+    note: "Upstream name POL"
+  -
+    name: hpoly
+    purpose: drawing
+    gds:
+      - {layer: 6, datatype: 0}
+    role: gate
+    available: true
+    note: "Upstream name HPOL"
+  -
+    name: contact
+    purpose: drawing
+    gds:
+      - {layer: 7, datatype: 0}
+    role: cut
+    available: true
+    note: "Upstream name CNT"
+  -
+    name: metal1
+    purpose: drawing
+    gds:
+      - {layer: 8, datatype: 0}
+    role: metal
+    available: true
+    note: "Upstream name ML1"
+  -
+    name: via1
+    purpose: drawing
+    gds:
+      - {layer: 9, datatype: 0}
+    role: cut
+    available: true
+    note: "Upstream name VIA1"
+  -
+    name: metal2
+    purpose: drawing
+    gds:
+      - {layer: 10, datatype: 0}
+    role: metal
+    available: true
+    note: "Upstream name ML2"
+  -
+    name: via2
+    purpose: drawing
+    gds:
+      - {layer: 11, datatype: 0}
+    role: cut
+    available: true
+    note: "Upstream name VIA2"
+  -
+    name: metal3
+    purpose: drawing
+    gds:
+      - {layer: 12, datatype: 0}
+    role: metal
+    available: true
+    note: "Upstream name ML3"
+  -
+    name: text
+    purpose: label
+    gds:
+      - {layer: 13, datatype: 0}
+    role: misc
+    available: true
+    note: "Upstream name TEXT"
+  -
+    name: frame
+    purpose: boundary
+    gds:
+      - {layer: 14, datatype: 0}
+    role: misc
+    available: true
+    note: "Upstream name FRAME"
+  -
+    name: resistor
+    purpose: drawing
+    gds:
+      - {layer: 15, datatype: 0}
+    role: resistor
+    available: true
+    note: "Upstream name RES"
+  -
+    name: capacitor
+    purpose: drawing
+    gds:
+      - {layer: 16, datatype: 0}
+    role: capacitor
+    available: true
+    note: "Upstream name CAP"
+  -
+    name: diode
+    purpose: drawing
+    gds:
+      - {layer: 17, datatype: 0}
+    role: misc
+    available: true
+    note: "Upstream name DIO"
+  -
+    name: pactive
+    purpose: drawing
+    gds:
+      - {layer: 18, datatype: 0}
+    role: select
+    available: true
+    note: "Upstream name Parea"
+  -
+    name: nactive
+    purpose: drawing
+    gds:
+      - {layer: 19, datatype: 0}
+    role: select
+    available: true
+    note: "Upstream name Narea"
+  -
+    name: pad
+    purpose: drawing
+    gds:
+      - {layer: 20, datatype: 0}
+    role: pad
+    available: true
+    note: "Consumed by the upstream deck; absent from the current layer-properties display list"
+  -
+    name: dcont_marker
+    purpose: drawing
+    gds:
+      - {layer: 101, datatype: 0}
+    role: misc
+    available: true
+    note: "Upstream derived layer DM_dcn"
+  -
+    name: pcont_marker
+    purpose: drawing
+    gds:
+      - {layer: 102, datatype: 0}
+    role: misc
+    available: true
+    note: "Upstream derived layer DM_pcn"
+  -
+    name: nsubcont_marker
+    purpose: drawing
+    gds:
+      - {layer: 103, datatype: 0}
+    role: misc
+    available: true
+    note: "Upstream derived layer DM_nscn"
+  -
+    name: psubcont_marker
+    purpose: drawing
+    gds:
+      - {layer: 104, datatype: 0}
+    role: misc
+    available: true
+    note: "Upstream derived layer DM_pscn"
+  -
+    name: via1_marker
+    purpose: drawing
+    gds:
+      - {layer: 105, datatype: 0}
+    role: misc
+    available: true
+    note: "Upstream derived layer DM_via1"
+  -
+    name: via2_marker
+    purpose: drawing
+    gds:
+      - {layer: 106, datatype: 0}
+    role: misc
+    available: true
+    note: "Upstream derived layer DM_via2"

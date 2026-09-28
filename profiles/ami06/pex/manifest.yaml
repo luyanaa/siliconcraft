@@ -1,0 +1,308 @@
+# AMI06 PEX profiles.  Values are sourced from the original NCSU CDK process;
+# the Magic SCMOS technology is used only as a backend grammar and connectivity
+# carrier.  This is not a signoff deck.
+schema_version: 2
+profile: ami06
+default: none
+flow:
+  backend: magic
+  source_driven: true
+  original_process: AMI_C5N
+  original_run: N8BN
+  topology_source: "NCSU CDK 1.6.0 techfile/divaEXT.rul extractMOS"
+  capacitance_source: "NCSU CDK 1.6.0 techfile/divaMultiLevel.il and layerDefinitions.tf"
+  contact_policy: "do not emit until contactResistance semantics are validated against a chain fixture"
+physical:
+  lambda_um: 0.3
+  magic_lambda_centimicron: 30
+  magic_resistance_unit: "milliohm_per_square"
+  magic_area_cap_unit: "attofarad_per_lambda2"
+  magic_edge_cap_unit: "attofarad_per_lambda"
+source_technology:
+  file: "../../ls1u/reference/magic/pearlriver-scmos.tech"
+  gds_input_map: "../reference/magic/cifin-ami06.gen"
+  legacy_backend:
+    technology: "scmos-sub"
+    extraction_style: "lambda=0.30"
+    expected_lambda_um: 0.3
+    purpose: "runtime SCMOS geometry/connectivity cross-check only; not the AMI06 coefficient source"
+    source: "OpenCircuitDesign Magic scmos-sub.tech / MOSIS SCMOS 8.2.8"
+  note: "SCMOS file supplies Magic's internal plane/connect grammar only; AMI06 GDS input and extract sections replace its process semantics. The matched scmos-sub backend is selected only by the legacy cross-check gate."
+topology_fragment: "../reference/magic/extract_topology.tech.in"
+technology:
+  description: "AMI_C5N N8BN source-reference PEX (extraction scope only)"
+topology:
+  style: ami06_n8bn
+  cscale: 1
+  step: 100
+  sidehalo: 8
+  magic_device_class: mosfet
+  magic_terminal_order: "drain,gate,source,bulk"
+  devices:
+    nmos:
+      model: ami06N
+      fet_type: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      substrate_node: Gnd!
+      gscap_af_per_lambda: 0
+      gccap_af_per_lambda2: 0
+    pmos:
+      model: ami06P
+      fet_type: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      substrate_node: Vdd!
+      gscap_af_per_lambda: 0
+      gccap_af_per_lambda2: 0
+  scope: "AMI06 nmos4/pmos4 primitive MOS plus explicitly sourced L0 route RC"
+profiles:
+  none:
+    generated: true
+    status: topology_only
+    description: "AMI06 layer map and primitive MOS topology without PEX coefficients."
+    magic_directives: []
+  n8bn_reference:
+    generated: true
+    status: source_reference_partial
+    description: "N8BN values from the AMI_C5N NCSU CDK branch; contact/via and intrinsic junction terms are intentionally withheld pending fixtures."
+    source:
+      process: AMI_C5N
+      run: N8BN
+      files:
+        - "ncsu-cdk-1.6.0/techfile/layerDefinitions.tf:813-863"
+        - "ncsu-cdk-1.6.0/techfile/divaEXT.rul"
+        - "ncsu-cdk-1.6.0/techfile/divaMultiLevel.il"
+        - "ncsu-cdk-1.6.0/models/MOSIS_reports/n8bn-params.txt"
+      calibrated: false
+    magic_directives:
+      # Sheet resistance source unit: Ohms/square.
+      -
+        kind: resist
+        layers: nwell
+        value: 819
+        unit: ohm_per_square
+        source: "layerDefinitions.tf AMI_C5N nwell"
+      -
+        kind: resist
+        layers: poly
+        value: 25
+        unit: ohm_per_square
+        source: "layerDefinitions.tf AMI_C5N poly"
+      -
+        kind: resist
+        layers: poly2
+        value: 26
+        unit: ohm_per_square
+        source: "layerDefinitions.tf AMI_C5N elec; Magic poly2 is the backend alias"
+      -
+        kind: resist
+        layers: metal1
+        value: 0.09
+        unit: ohm_per_square
+        source: "layerDefinitions.tf AMI_C5N metal1"
+      -
+        kind: resist
+        layers: metal2
+        value: 0.09
+        unit: ohm_per_square
+        source: "layerDefinitions.tf AMI_C5N metal2"
+      -
+        kind: resist
+        layers: metal3
+        value: 0.05
+        unit: ohm_per_square
+        source: "layerDefinitions.tf AMI_C5N metal3"
+
+      # Area capacitance source unit: aF/um^2.  Gate-oxide poly/active
+      # capacitance is excluded because ami06N/ami06P BSIM cards own it.
+      -
+        kind: areacap
+        layers: poly
+        value: 93
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N poly/default"
+      -
+        kind: areacap
+        layers: metal1
+        value: 36
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N metal1/default"
+      -
+        kind: areacap
+        layers: metal2
+        value: 21
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N metal2/default"
+      -
+        kind: areacap
+        layers: metal3
+        value: 12
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N metal3/default"
+
+      # Intentional electrode/poly overlap.  The 2400 aF/um^2 poly/active
+      # value is not emitted here because it would duplicate BSIM intrinsic
+      # gate capacitance in the normal MOS path.
+      -
+        kind: areacap
+        layers: cap
+        value: 798
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N elec/poly; Magic cap is the derived inside(elec,poly) tile"
+      -
+        kind: overlap
+        upper: metal1
+        lower: "ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc"
+        value: 60
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N metal1/active"
+      -
+        kind: overlap
+        upper: metal1
+        lower: "poly,pc/a"
+        value: 55
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N metal1/poly"
+      -
+        kind: overlap
+        upper: metal1
+        lower: "poly2,ec/a,cap"
+        value: 57
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N metal1/elec"
+      -
+        kind: overlap
+        upper: metal2
+        lower: "ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc"
+        value: 27
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N metal2/active"
+      -
+        kind: overlap
+        upper: metal2
+        lower: "poly,pc/a"
+        value: 22
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N metal2/poly"
+      -
+        kind: overlap
+        upper: metal2
+        lower: metal1
+        value: 34
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N metal2/metal1"
+      -
+        kind: overlap
+        upper: metal3
+        lower: "ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc"
+        value: 19
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N metal3/active"
+      -
+        kind: overlap
+        upper: metal3
+        lower: "poly,pc/a"
+        value: 14
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N metal3/poly"
+      -
+        kind: overlap
+        upper: metal3
+        lower: metal1
+        value: 18
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N metal3/metal1"
+      -
+        kind: overlap
+        upper: metal3
+        lower: metal2
+        value: 35
+        unit: af_per_um2
+        source: "layerDefinitions.tf AMI_C5N metal3/metal2"
+
+      # Perimeter source unit: aF/um.  These are emitted as Magic's
+      # perimc/sideoverlap terms after lambda conversion.
+      -
+        kind: perimc
+        layers: poly
+        outside: "~poly"
+        value: 93
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_C5N poly/default"
+      -
+        kind: perimc
+        layers: metal1
+        outside: "~metal1"
+        value: 77
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_C5N metal1/default"
+      -
+        kind: perimc
+        layers: metal2
+        outside: "~metal2"
+        value: 50
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_C5N metal2/default"
+      -
+        kind: perimc
+        layers: metal3
+        outside: "~metal3"
+        value: 55
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_C5N metal3/default"
+      -
+        kind: sideoverlap
+        upper: metal1
+        edge: "space,nwell,pwell"
+        lower: "poly,pc/a"
+        value: 64
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_C5N metal1/poly"
+      -
+        kind: sideoverlap
+        upper: metal2
+        edge: "space,nwell,pwell"
+        lower: "poly,pc/a"
+        value: 47
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_C5N metal2/poly"
+      -
+        kind: sideoverlap
+        upper: metal2
+        edge: "space,nwell,pwell"
+        lower: metal1
+        value: 56
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_C5N metal2/metal1"
+      -
+        kind: sideoverlap
+        upper: metal3
+        edge: "space,nwell,pwell"
+        lower: "poly,pc/a"
+        value: 35
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_C5N metal3/poly"
+      -
+        kind: sideoverlap
+        upper: metal3
+        edge: "space,nwell,pwell"
+        lower: metal1
+        value: 39
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_C5N metal3/metal1"
+      -
+        kind: sideoverlap
+        upper: metal3
+        edge: "space,nwell,pwell"
+        lower: metal2
+        value: 48
+        unit: af_per_um
+        source: "layerDefinitions.tf AMI_C5N metal3/metal2"
+
+    withheld:
+      - "ca/ce/cp/via/via2 contactResistance values until Magic contact geometry is calibrated against chains"
+      - "poly/active intrinsic gate capacitance; ami06N/ami06P BSIM cards own it"
+      - "junction and substrate capacitance; the AMI06 source branch does not provide a direct Magic-safe mapping here"
+      - "highres resistor body mapping; GDS CHR is recorded but not silently aliased"
+      - "Diva-only diode/NPN recognition in the Magic experiment"

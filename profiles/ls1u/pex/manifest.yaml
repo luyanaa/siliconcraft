@@ -1,0 +1,154 @@
+# LS1u PEX profiles.  These are extraction profiles, not signoff decks.
+# Manifest v2 is consumed by the process-neutral Magic PEX flow.
+schema_version: 2
+profile: ls1u
+flow:
+  backend: magic
+  source_driven: true
+  legacy_directives_are_magic_native: true
+default: none
+physical:
+  lambda_um: 0.5
+  magic_lambda_centimicron: 50
+  magic_resistance_unit: "milliohm_per_square"
+  magic_area_cap_unit: "attofarad_per_lambda2"
+  magic_edge_cap_unit: "attofarad_per_lambda"
+source_technology:
+  file: "../reference/magic/pearlriver-scmos.tech"
+  source_commit: "ffedbbb87d908e728d3c35eb37775839b9277ba4"
+  gds_input_map: "../reference/magic/cifin-ls1u.gen"
+  note: "The generated technology replaces PearlRiver's input map with the LS1u XML map and replaces its extract section."
+  topology_fragment: "../reference/magic/extract_topology.tech.in"
+topology:
+  style: ls1u_topology
+  models:
+    nmos: LV1UNMOS
+    pmos: LV1UPMOS
+  gate_types:
+    nmos: nfet
+    pmos: pfet
+  terminal_types:
+    nmos: "ndiff,ndc"
+    pmos: "pdiff,pdc"
+  magic_device_class: msubcircuit
+  magic_terminal_order: "drain,gate,source,bulk"
+  magic_drain_disambiguator: active
+  substrate_types:
+    nmos: pwell
+    pmos: nwell
+  substrate_nodes:
+    nmos: vss
+    pmos: vdd
+  scope: "four-terminal MOS topology only; no inherited parasitic coefficients"
+profiles:
+  none:
+    generated: true
+    status: topology_only
+    description: "Default profile; explicitly emits no resistance or capacitance directives."
+    metal_sheet_resistance_ohm_sq: {}
+    overlap_capacitance_ff_per_um2: {}
+    contact_resistance_mohm: {}
+    via_resistance_mohm: {}
+  scmos_legacy:
+    generated: true
+    status: legacy_reference
+    description: "Isolated coefficients copied from the LibreSilicon SCMOS extraction template; not an LS1u calibration."
+    source: "../reference/magic/LibreSiliconExt1um.tech.in"
+    metal_sheet_resistance_ohm_sq:
+      metal1: 0.06
+      metal2: 0.04
+    contact_resistance_mohm:
+      poly_m1: 16210
+      ndiff_m1: 77000
+      pdiff_m1: 44260
+      via1_m1_m2: 150
+    legacy_directives:
+      - "contact pc 4 16210"
+      - "contact ndc,nsc 4 77000"
+      - "contact pdc,psc 4 44260"
+      - "contact m2c 4 150"
+      - "areacap nwell 35"
+      - "perimc nwell ~(nwell) 47"
+      - "areacap ndiff,nsd,ndc/a,nsc/a 0"
+      - "areacap pdiff,psd,pdc/a,psc/a 0"
+      - "perimc ndiff,nsd,ndc/a,nsc/a space,pwell 0"
+      - "perimc pdiff,psd,pdc/a,psc/a space,nwell 0"
+      - "areacap poly 28"
+      - "overlap poly nwell,pwell 28"
+      - "perimc poly ~poly 38"
+      - "areacap metal1 18"
+      - "overlap metal1 nwell,pwell 18"
+      - "overlap metal1 pdiff,ndiff 46"
+      - "perimc metal1 ~metal1 33"
+      - "areacap metal2 9"
+      - "overlap metal2 nwell,pwell 9"
+      - "overlap metal2 pdiff,ndiff 12 metal1"
+      - "overlap metal2 poly 14 metal1"
+      - "overlap metal2 metal1 30"
+      - "perimc metal2 ~metal2 22"
+      - "fetresis nfet linear 9700"
+      - "fetresis pfet linear 35700"
+      - "resist ndiff,nsd,ndc/a,nsc/a 99630"
+      - "resist pdiff,psd,pdc/a,psc/a 120000"
+      - "resist poly 25000"
+      - "resist nwell 1500000"
+  ls1u_hkust_dry_est:
+    generated: true
+    status: physics_estimate
+    description: "HKUST dry-stack seed; sheet resistance and parallel overlap only."
+    source: "HKUST process stack plus supplied PMOS characterization thread"
+    source_url: "https://list.libresilicon.com/hyperkitty/list/libresilicon-developers%40list.libresilicon.com/thread/SPC5F4XBC63FEBJZ25IU5POIZ67ZFR2Q/"
+    process_recipe_url: "https://github.com/leviathanch/libresiliconprocess/blob/ac381a1e2b76b5c8882e82978c6f594a597df616/process_implementations/hkust/steps_dry.yaml"
+    stack:
+      metal1: "Ni 50nm / Al 100nm / Ni 50nm"
+      metal2: "Al 100nm / Ni 50nm"
+      metal3: "Al 100nm / Ni 50nm"
+      intermetal_dielectric_um: 1.0
+      dielectric_eps_rel_assumption: 3.9
+      dielectric_cap_source: "parallel-plate estimate; overlap only"
+    confidence: low
+    metal_sheet_resistance_ohm_sq:
+      metal1: 0.19
+      metal2: 0.22
+      metal3: 0.22
+    overlap_capacitance_ff_per_um2:
+      metal1_metal2: 0.03
+      metal2_metal3: 0.03
+    contact_resistance_mohm:
+      poly_m1: null
+      active_m1: null
+    via_resistance_mohm:
+      via1_m1_m2: null
+      via2_m2_m3: null
+    missing_measurements:
+      - "poly/active contact-chain resistance"
+      - "M1-M2 via-chain resistance"
+      - "M2-M3 via-chain resistance"
+      - "fringe and sidewall capacitance"
+      - "diffusion, junction, and substrate capacitance"
+  ls1u_hkust_wet_est:
+    generated: true
+    status: unparameterized
+    description: "Separate wet-stack slot; no dry-stack electrical coefficients are inherited."
+    source: "HKUST wet process variant; electrical sheet/contact/cap data is not characterized in the supplied evidence"
+    process_recipe_url: "https://github.com/leviathanch/libresiliconprocess/blob/ac381a1e2b76b5c8882e82978c6f594a597df616/process_implementations/hkust/steps_wet.yaml"
+    stack:
+      metal1: "Al 100nm / Ti 30nm"
+      metal2: "Al 100nm / Ti 30nm"
+      metal3: "Al 100nm / Ti 30nm"
+      intermetal_dielectric_um: 0.5
+      dielectric_eps_rel_assumption: 3.9
+      note: "Recipe distinction is recorded; coefficients remain unparameterized until electrical PCM data is available."
+    confidence: none
+    metal_sheet_resistance_ohm_sq: {}
+    overlap_capacitance_ff_per_um2: {}
+    contact_resistance_mohm: {}
+    via_resistance_mohm: {}
+    missing_measurements:
+      - "wet-stack M1/M2/M3 sheet resistance"
+      - "wet-stack M1-M2/M2-M3 overlap capacitance"
+      - "wet-stack contact and via resistance"
+  ls1u_measured:
+    generated: false
+    status: unavailable
+    description: "Reserved for measured stack and extracted contact-chain data."

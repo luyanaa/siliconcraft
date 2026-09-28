@@ -1,0 +1,6 @@
+* schematic mirroring the extracted topology (res/cap float on own nets)
+mn1 NOUT IN NSS VSS ami06N w=3.0 l=0.9 ad=4.5 as=4.5 pd=9.0 ps=9.0
+mp1 POUT IN PVDD VDD ami06P w=3.0 l=0.9 ad=4.5 as=4.5 pd=9.0 ps=9.0
+r1 n8 n9 res r=65 w=1.2 l=3.9
+c1 n10 n12 cap c=7.29e-15
+.end

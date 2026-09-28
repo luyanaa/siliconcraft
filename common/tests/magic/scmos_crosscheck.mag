@@ -1,0 +1,21 @@
+magic
+tech scmos
+timestamp 0
+<< nwell >>
+rect 0 0 10000 10000
+<< pwell >>
+rect 12000 0 22000 10000
+<< pdiffusion >>
+rect 1500 3500 8500 5500
+<< poly >>
+rect 4500 2000 5500 7000
+<< ndiffusion >>
+rect 13500 3500 20500 5500
+<< poly >>
+rect 16500 2000 17500 7000
+<< metal1 >>
+rect 500 4000 4000 5000
+rect 6000 4000 9500 5000
+rect 12500 4000 16000 5000
+rect 18000 4000 21500 5000
+<< end >>

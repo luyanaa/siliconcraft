@@ -1,0 +1,146 @@
+style lambda=0.3(hp06_amos14tb)
+    scalefactor 30 5
+    layer nwell CWN
+        labels CWN
+    layer pwell CWP
+        labels CWP
+    layer cwell CWC
+        labels CWC
+    layer poly CPG
+        labels CPG
+    layer pdiff CAA
+        and CSP
+        and CWN
+    layer ndiff CAA
+        and CSN
+        and-not CWN
+        and-not CWC
+        and-not CCD
+    layer nsd CAA
+        and CSN
+        and CWN
+        and-not CWC
+    layer psd CAA
+        and CSP
+        and-not CWN
+        and-not CWC
+    layer nfet CPG
+        and CAA
+        and CSN
+        and-not CWN
+        and-not CWC
+        and-not CCD
+    layer pfet CAA
+        and CPG
+        and CSP
+        and CWN
+        and-not CWC
+    layer ndc CCC
+        or CCA
+        or CCP
+        or CCE
+        grow 50
+        and CAA
+        and CSN
+        and-not CWN
+        and-not CWC
+        and CMF
+    layer pdc CCC
+        or CCA
+        or CCP
+        or CCE
+        grow 50
+        and CAA
+        and CSP
+        and CWN
+        and-not CWC
+        and CMF
+    layer nsc CCC
+        or CCA
+        or CCP
+        or CCE
+        grow 50
+        and CAA
+        and CSN
+        and CWN
+        and-not CWC
+        and CMF
+    layer psc CCC
+        or CCA
+        or CCP
+        or CCE
+        grow 50
+        and CAA
+        and CSP
+        and-not CWN
+        and-not CWC
+        and CMF
+    layer pc CCC
+        or CCA
+        or CCP
+        or CCE
+        grow 50
+        and CPG
+        and CMF
+    layer electrode CEL
+        labels CEL
+    layer ec CCE
+        grow 50
+        and CMF
+        and CEL
+    layer wcap CPG
+        and CWC
+    layer cap CPG
+        and CEL
+        and-not CAA
+    layer m2c CVA
+        grow 50
+        and CMS
+        and CMF
+    layer m3c CVS
+        grow 50
+        and CMT
+        and CMS
+        and-not CWC
+    layer glass COG
+    layer pad CMF
+        shrink 50
+        and CMS
+        shrink 250
+        and CVA
+        shrink 50
+        and XP
+        and COG
+        grow 300
+    layer m1 CMF
+        labels CMF
+    layer m2 CMS
+        labels CMS
+    layer m3 CMT
+        and-not CWC
+        labels CMT
+    layer rpoly CSB
+    calma CCC 25 *
+    calma XP 26 *
+    calma CWP 41 *
+    calma CWN 42 *
+    calma CAA 43 *
+    calma CSP 44 *
+    calma CSN 45 *
+    calma CPG 46 *
+    calma CSB 29 *
+    calma CCA 48 *
+    calma CMF 49 *
+    calma CVA 50 *
+    calma CMS 51 *
+    calma COG 52 *
+    calma CCE 55 *
+    calma CEL 56 *
+    calma CCD 57 *
+    calma CWC 59 *
+    calma CVS 61 *
+    calma CMT 62 *
+    calma COG 64 *
+    calma COG 65 *
+    calma COG 90 *
+end

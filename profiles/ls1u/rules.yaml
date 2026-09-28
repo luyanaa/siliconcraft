@@ -1,0 +1,55 @@
+# profiles/ls1u/rules.yaml — normalized LS1u rule subset
+# Source: process_design_rules.tex @ ac381a1e2b76b5c8882e82978c6f594a597df616
+# Physical lambda is 0.5um (1um node table); the drawing grid is 1 lambda.
+# This table is reference data only; no LS1u authoritative DRC generator exists.
+engine: ls1u_reference
+authoritative: false
+rules:
+  grid: {x: 0.5, y: 0.5}
+  width:
+    - {id: "2.1.1", layer: pwell, value_um: 5.0, source: process_design_rules.tex}
+    - {id: "2.2.1", layer: nwell, value_um: 5.0, source: process_design_rules.tex}
+    - {id: "2.3.1", layer: active, value_um: 1.5, source: process_design_rules.tex}
+    - {id: "2.4.1", layer: poly, value_um: 1.0, source: process_design_rules.tex}
+    - {id: "2.6.1", layer: contact, value_um: 1.0, compare: exact, source: process_design_rules.tex}
+    - {id: "2.7.1", layer: metal1, value_um: 2.0, source: process_design_rules.tex}
+    - {id: "2.8.1", layer: via1, value_um: 1.0, compare: exact, source: process_design_rules.tex}
+    - {id: "2.9.1", layer: metal2, value_um: 2.0, source: process_design_rules.tex}
+    - {id: "2.10.1", layer: via2, value_um: 1.0, compare: exact, source: process_design_rules.tex}
+    - {id: "2.11.1", layer: metal3, value_um: 3.0, source: process_design_rules.tex}
+    - {id: "2.12.1", layer: glass, value_um: 60.0, compare: exact, source: process_design_rules.tex, note: "exact glass opening width/height"}
+  spacing:
+    - {id: "2.1.2", layer: pwell, value_um: 5.0, nets: diff, source: process_design_rules.tex}
+    - {id: "2.1.4", layer: pwell, layer2: nwell, value_um: 6.0, source: process_design_rules.tex}
+    - {id: "2.2.2", layer: nwell, value_um: 5.0, nets: diff, source: process_design_rules.tex}
+    - {id: "2.2.4", layer: nwell, layer2: pwell, value_um: 6.0, source: process_design_rules.tex}
+    - {id: "2.3.2", layer: active, value_um: 1.5, source: process_design_rules.tex}
+    - {id: "2.4.2", layer: poly, layer2: active, value_um: 1.0, source: process_design_rules.tex}
+    - {id: "2.4.3", layer: poly, value_um: 1.0, source: process_design_rules.tex}
+    - {id: "2.5.1", layer: nimplant, layer2: poly, value_um: 1.5, source: process_design_rules.tex}
+    - {id: "2.5.3", layer: nimplant, layer2: pimplant, value_um: 2.0, source: process_design_rules.tex}
+    - {id: "2.6.3", layer: contact, value_um: 1.0, source: process_design_rules.tex}
+    - {id: "2.6.4", layer: contact, layer2: poly, value_um: 1.0, source: process_design_rules.tex}
+    - {id: "2.7.2", layer: metal1, value_um: 2.0, source: process_design_rules.tex}
+    - {id: "2.8.2", layer: via1, value_um: 1.5, source: process_design_rules.tex}
+    - {id: "2.8.3", layer: via1, layer2: contact, value_um: 1.0, source: process_design_rules.tex}
+    - {id: "2.8.4", layer: via1, layer2: active, value_um: 1.0, source: process_design_rules.tex}
+    - {id: "2.9.2", layer: metal2, value_um: 2.0, source: process_design_rules.tex}
+    - {id: "2.10.2", layer: via2, value_um: 1.5, source: process_design_rules.tex}
+    - {id: "2.11.2", layer: metal3, value_um: 2.0, source: process_design_rules.tex}
+  enclosure:
+    - {id: "2.3.3", layer: active, layer2: pwell, value_um: 3.0, source: process_design_rules.tex}
+    - {id: "2.4.4", layer: poly, layer2: active, value_um: 1.0, source: process_design_rules.tex}
+    - {id: "2.4.5", layer: active, layer2: poly, value_um: 1.5, source: process_design_rules.tex}
+    - {id: "2.4.7", layer: pwell, layer2: poly, value_um: 0.5, source: process_design_rules.tex}
+    - {id: "2.5.2", layer: nimplant, layer2: active, value_um: 1.0, source: process_design_rules.tex}
+    - {id: "2.6.2", layer: active, layer2: contact, value_um: 0.5, source: process_design_rules.tex}
+    - {id: "2.7.3", layer: metal1, layer2: contact, value_um: 0.5, source: process_design_rules.tex}
+    - {id: "2.8.5", layer: metal1, layer2: via1, value_um: 0.5, source: process_design_rules.tex}
+    - {id: "2.9.3", layer: metal2, layer2: via1, value_um: 0.5, source: process_design_rules.tex}
+    - {id: "2.10.3", layer: metal3, layer2: via2, value_um: 0.5, source: process_design_rules.tex}
+  area: []
+  overlap:
+    - {id: "2.12.2", layer: metal3, layer2: glass, value_um: 6.0, source: process_design_rules.tex}
+  extension: []
+  notch: []

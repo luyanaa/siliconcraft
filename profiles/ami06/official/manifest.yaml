@@ -1,0 +1,34 @@
+# Official DRC override slot — profiles/ami06/official/
+#
+# If you hold the foundry/MOSIS-approved DRC for this process (or your own
+# validated deck), drop the runset here and declare it below.  This deck then
+# takes precedence over the authoritative (generated) and reference decks
+# (scripts/run_drc.py --deck auto|official).
+#
+# Deck interface (same for every deck, ours or official):
+#   env LAYOUT   input GDS path
+#   env REPORT   output .lyrdb report path
+#   env LAMBDA   process lambda in um (0.3)
+#   env GRID     design grid in um (0.15)
+#   env TECH     technology id (AMI_C5N)
+#   env WELL     well type (N|P|E)
+#   env PAD      pad style (Perimeter|Area array)
+#   env LAYERMAP JSON {"<layer name>": [gds_layer, datatype]} -- the stable
+#                     layer-map contract; official decks read GDS numbers here
+#   env FEATURES JSON feature flags (metal3Available, elecAvailable, ...)
+#   stdout       one JSON line {"rule": {"<rule-id>": <count>}, "markers": <n>}
+#
+# Only the layer map is a hard interface: an official deck needs the same GDS
+# layer numbers, nothing else from siliconcraft.  Keep the original deck file
+# byte-identical; never edit it here.
+
+deck:
+  format: klayout-pya          # klayout-pya | klayout-drc (KLayout DRC script)
+  file: ""                    # <-- path relative to this directory; REQUIRED to activate
+  args: []                    # extra arguments appended after the deck path
+  provenance: ""              # e.g. "MOSIS SCMOS rules v7.3, foundry sign-off runset vX"
+  license: ""
+  notes: >
+    Not yet populated.  To activate the override, place your official KLayout
+    runset here, set `file`, and run:
+      python3 scripts/run_drc.py --profile ami06 --deck official --layout <in.gds> --out <report.lyrdb>

@@ -1,0 +1,66 @@
+# Materialized compatibility views from the pinned OpenRule1um source tree.
+schema_version: 1
+profile: openrule1um
+source:
+  repository: "https://github.com/mineda-support/OpenRule1um"
+  commit: "85dbacfb05351c5116158f4d8e0d5c995d3b4ad1"
+  license: "Apache-2.0"
+ltspice:
+  status: materialized_upstream_compatibility
+  models:
+    wrapper: compatibility/ltspice/models/OR1_mos
+    nmos_card: compatibility/ltspice/models/BSIM3V3N.mod
+    pmos_card: compatibility/ltspice/models/BSIM3V3P.mod
+    names:
+      - nch
+      - pch
+  symbols:
+    directory: compatibility/ltspice/OR1LIB
+    required: [NMOS.asy, PMOS.asy, RDIF.asy, R_POLY.asy, CAP.asy]
+    pin_order: [D, G, S, B]
+    prefix: M
+  external_simulator_smoke: ngspice
+  model_family_isolated_from_local_or1_models: true
+kicad:
+  status: materialized_upstream_bundle
+  symbols: compatibility/kicad/LTspiceLIB.kicad_sym
+  process_symbols: compatibility/kicad/MinedaLIB.kicad_sym
+qucs_s:
+  status: materialized_upstream_bundle
+  ltspice_library: compatibility/qucs-s/user_lib/LTspiceLIB.lib
+  process_library: compatibility/qucs-s/user_lib/MinedaLIB.lib
+klayout:
+  status: materialized_technology_macro_and_runtime_sources
+  technology: compatibility/klayout/OpenRule1um.lyt
+  layer_properties: compatibility/klayout/OpenRule1um.lyp
+  macros: compatibility/klayout/macros/upstream
+  batch_drc_lvs_self_contained: true
+  gui_macro_runtime_dependencies: [AnagixLoader, MinedaCommon, MinedaPCell, MinedaLVS]
+  gui_runtime_sources_materialized: true
+  gui_runtime_dependency:
+    repository: "https://github.com/mineda-support/AnagixLoader"
+    commit: "ca2da6795c4e216bae44cfd76b8fafeabff5c6b4"
+    install_root: compatibility/klayout/anagixloader
+    license: "Apache-2.0"
+    files:
+      - compatibility/klayout/anagixloader/macros/loader.lym
+      - compatibility/klayout/anagixloader/macros/MinedaCommon.rb
+      - compatibility/klayout/anagixloader/macros/MinedaPCell.rb
+  gui_runtime_reimplemented_locally: false
+  gui_technology_portable: true
+  original_base_path_normalized: true
+stdcell:
+  status: materialized_reference_catalog
+  gds: reference/upstream/OpenRule1um_StdCell.gds
+  gds_sha256: "70475875d87d77ed776b72cf31d31e8ed06e418e0fc9d84d8891c6c03262662e"
+  catalog: compatibility/stdcell_catalog.yaml
+  xschem_symbols: compatibility/xschem/stdcells
+  gds_top_cell_count: 45
+  lef: not_supplied_upstream
+  liberty: not_supplied_upstream
+  xschem_symbol_count: 38
+  primitive_lvs_dependency: false
+support_cells:
+  manifest: support_cells.yaml
+  gds: reference/upstream/OpenRule1um_Basic.gds
+  gds_sha256: "6c809608ea0373abb1611d0a711dfb97605b08252c2d41ddf17d5ba59c181b98"
