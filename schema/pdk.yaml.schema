@@ -8,7 +8,7 @@
   "properties": {
     "meta": {
       "type": "object",
-      "required": ["name", "process", "grid_um"],
+      "required": ["name", "process", "grid_um", "rule_family"],
       "properties": {
         "name": { "type": "string", "description": "profile directory name, e.g. ami06" },
         "process": { "type": "string", "description": "technology identifier, e.g. AMI_C5N" },
@@ -23,8 +23,10 @@
         "min_width_um": { "type": "number" },
         "model_prefix": { "type": "string", "description": "SPICE model name prefix, e.g. ami06" },
         "well_type": { "enum": ["n", "p", "e"], "description": "n = n-well, p = p-well, e = epitaxial/twin-well" },
-        "submicron_rules": { "type": "boolean" },
-        "deep_rules": { "type": "boolean" },
+        "rule_family": {
+          "enum": ["scmos", "scmos_subm", "native"],
+          "description": "rule family independent of the process profile; native is for non-SCMOS profiles"
+        },
         "stacked_vias": { "type": "boolean" },
         "features": {
           "type": "object",

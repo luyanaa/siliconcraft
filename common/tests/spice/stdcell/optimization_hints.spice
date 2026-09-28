@@ -1,0 +1,13 @@
+* siliconcraft inputs: A B
+* siliconcraft outputs: Y
+* siliconcraft supplies: VDD VSS
+* siliconcraft topology: aoi21 tg
+* siliconcraft weak_devices: MN0
+* siliconcraft weak_length_scales: 1 2
+* siliconcraft symmetric_inputs: A B
+.subckt optimization_hints A B Y VDD VSS
+MP0 Y A VDD VDD ami06P W=1.5u L=0.6u
+MP1 Y B VDD VDD ami06P W=1.5u L=0.6u
+MN0 Y A VSS VSS ami06N W=1.5u L=0.6u
+MN1 Y B VSS VSS ami06N W=1.5u L=0.6u
+.ends optimization_hints

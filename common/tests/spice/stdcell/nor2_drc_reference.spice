@@ -1,0 +1,6 @@
+* Reference schematic for the generated AMI06 NOR2 DRC/LVS fixture.
+MP0 NINT A VDD VDD ami06P W=1.5 L=0.6
+MP1 Y B NINT VDD ami06P W=1.5 L=0.6
+MN0 Y A VSS VSS ami06N W=1.5 L=0.6
+MN1 Y B VSS VSS ami06N W=1.5 L=0.6
+.end

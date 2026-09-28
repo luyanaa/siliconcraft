@@ -35,26 +35,29 @@ from pathlib import Path
 
 import yamlish
 
-# Explicit profile values win; 0.5 um is the process-neutral default.
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from common.process_ir import load_process
+
 DEFAULT_LAMBDA_UM = 0.5
 
 
-ROOT = Path(__file__).resolve().parent.parent
+
 
 
 def load_profile(profile_dir: Path):
-    layers_doc = yamlish.load((profile_dir / "layers.yaml").read_text())
-    meta = layers_doc["meta"]
+    process = load_process(profile_dir, ROOT)
+    meta = dict(process.meta)
     meta.setdefault("lambda_um", DEFAULT_LAMBDA_UM)
-    layers = layers_doc["layers"]
     layermap = {}
-    for lyr in layers:
+    for lyr in process.layers_doc.get("layers", []):
         gds = lyr.get("gds") or []
         if gds:
             layermap[lyr["name"]] = [int(gds[0]["layer"]), int(gds[0]["datatype"])]
     features = dict(meta.get("features") or {})
-    features.setdefault("submicronRules", bool(meta.get("submicron_rules", False)))
-    features.setdefault("deepRules", bool(meta.get("deep_rules", False)))
+    features["rule_family"] = process.rule_family
     features.setdefault("stackedVias", bool(meta.get("stacked_vias", False)))
     return meta, layermap, features
 
@@ -145,6 +148,7 @@ def run_deck(deck_path, spec, meta, layermap, features, layout, report, klayout,
     env["PAD"] = "Perimeter"
     env["LAYERMAP"] = json.dumps(layermap)
     env["FEATURES"] = json.dumps(features)
+    env["RULE_FAMILY"] = str(features["rule_family"])
     extra_args = []
     if top_cell:
         env["TOPCELL"] = top_cell

@@ -1,0 +1,80 @@
+# SCMOS target profile matrix.
+# This is the source/process contract for normalized profile ports; it is not a
+# substitute for a profile directory's complete device/model/PEX fragments.
+schema_version: 1
+rule_families:
+  - scmos
+  - scmos_subm
+profiles:
+  - name: ami16
+    source_process: AMI_ABN
+    mosis_code: SCNA
+    lambda_um: 0.8
+    rule_family: scmos
+  - name: ami06
+    source_process: AMI_C5N
+    mosis_code: SCN3ME_SUBM
+    lambda_um: 0.3
+    rule_family: scmos_subm
+  - name: hp06
+    source_process: HP_AMOS14TB
+    mosis_code: SCN3MLC_SUBM
+    lambda_um: 0.3
+    rule_family: scmos_subm
+  - name: tsmc035_4m2p
+    source_process: TSMC_CMOS035_4M2P
+    techfile: tsmc_04_4m2p.tf
+    mosis_code: SCN4ME_SUBM
+    lambda_um: 0.2
+    grid_um: 0.1
+    min_channel_um: 0.4
+    min_width_um: 0.6
+    model_prefix: tsmc35
+    rule_family: scmos_subm
+    deep_n_well_layer: DEEP_N_WELL
+  - name: tsmc035_4m
+    source_process: TSMC_CMOS035_4M
+    techfile: tsmc_04_4m.tf
+    mosis_code: SCN4M_SUBM
+    lambda_um: 0.2
+    grid_um: 0.1
+    min_channel_um: 0.4
+    min_width_um: 0.6
+    model_prefix: tsmc35
+    rule_family: scmos_subm
+    deep_n_well_layer: DEEP_N_WELL
+  - name: tsmc03
+    source_process: TSMC_CMOS025
+    techfile: tsmc_03.tf
+    mosis_code: SCN5M_SUBM
+    lambda_um: 0.15
+    grid_um: 0.075
+    min_channel_um: 0.3
+    min_width_um: 0.45
+    model_prefix: tsmc25
+    rule_family: scmos_subm
+    deep_n_well_layer: DEEP_N_WELL
+  - name: tsmc02
+    source_process: TSMC_CMOS020
+    techfile: tsmc_02.tf
+    mosis_code: SCN6M_SUBM
+    lambda_um: 0.1
+    grid_um: 0.05
+    min_channel_um: 0.2
+    min_width_um: 0.3
+    model_prefix: tsmc20
+    rule_family: scmos_subm
+    deep_n_well_layer: DEEP_N_WELL
+forbidden:
+  process_names:
+    - TSMC_CMOS025_DEEP
+    - TSMC_CMOS018_DEEP
+  mosis_codes:
+    - SCN5M_DEEP
+    - SCN6M_DEEP
+  techfiles:
+    - tsmc_03d.tf
+    - tsmc_02d.tf
+  lambda_um:
+    - 0.12
+    - 0.09

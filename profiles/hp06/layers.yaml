@@ -12,8 +12,7 @@ meta:
   min_width_um: 0.9
   model_prefix: hp14tb
   well_type: n
-  submicron_rules: true
-  deep_rules: false
+  rule_family: scmos_subm
   stacked_vias: true
   features:
     ccdAvailable: false

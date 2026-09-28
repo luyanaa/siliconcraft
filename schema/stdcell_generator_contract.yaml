@@ -1,0 +1,402 @@
+# Architecture and implementation contract for a process-parameterized stdcell
+# generator.
+# This file describes search/evaluation policy and the currently implemented
+# front-end/geometry slice; it does not claim a complete optimizer or signoff.
+schema_version: 1
+kind: stdcell_generator_contract
+status: architecture_contract
+readiness_contract: schema/stdcell_spice_pex_readiness.yaml
+routing_grammar_contract: schema/routing_grammar_contract.yaml
+
+policy:
+  implementation: partial_frontend_geometry_backend
+  first_backend_scope: 1um_class_scmos
+  input_formats:
+    - spice
+    - cdl
+  process_optimizer_decoupled: true
+  active_library_claims: forbidden
+  signoff_claims: forbidden_until_readiness_contract_passes
+  solver_escalation: exhaustive_first_then_constraint_solver
+  unsupported_assumptions:
+    - buried_or_local_interconnect
+    - commercial_pex_or_characterization_tool
+    - fixed_drive_ratio_as_physical_truth
+  electrical_cost_boundary:
+    legality_source: routing_grammar_and_native_deck
+    desirability_source: profile_electrical_metadata_or_characterization
+    missing_resistance_data: do_not_invent_values
+    timing_power_reliability_claims: forbidden_until_pex_and_spice
+
+api:
+  cell_circuit:
+    responsibilities:
+      - parse_transistor_level_netlist
+      - preserve_mos_topology
+      - preserve_or_default_device_geometry
+      - declare_timing_arcs
+    required_input_fields:
+      - mos_terminals
+      - model_or_binding
+      - w
+      - l
+    missing_l_policy: preserve_explicit_or_default_to_process_lmin
+    initial_cell_families:
+      - inv
+      - nand2
+      - nor2
+      - aoi21
+      - oai21
+      - mux2
+    output_fields:
+      - normalized_topology
+      - timing_arcs
+      - external_pins
+
+  process:
+    source_of_truth: ProcessIR
+    required_inputs:
+      - process_geometry_and_grid
+      - design_rules
+      - layer_aliases
+      - canonical_device_bindings
+      - simulator_model_library_and_section
+      - pex_contract
+      - parasitic_ownership
+    responsibilities:
+      - resolve_technology_geometry
+      - validate_layout_rules
+      - resolve_spice_and_pex_identity
+      - expose_layer_and_unit_aliases
+
+  architecture:
+    responsibilities:
+      - define_cell_height_candidates
+      - define_rail_style
+      - define_allowed_routing_layers
+      - define_pin_access_policy
+      - define_feedthrough_policy
+    default_cell_structure:
+      rows:
+        - pmos
+        - nmos
+      row_order_is_fixed: true
+      cell_height_candidates: process_declared
+      rail_style: profile_declared
+    output_fields:
+      - resolved_cell_height
+      - resolved_rail_geometry
+      - routing_resource_map
+      - pin_access_regions
+      - rail_contract
+      - orientation_policy
+      - supply_contact_plan
+      - topology_candidates
+      - resistance_cost_metadata
+
+  candidate:
+    fields:
+      - device_sizing
+      - transistor_ordering
+      - folding
+      - placement
+      - internal_routing
+      - pin_locations
+      - contact_pattern
+      - geometry
+      - extracted_spice
+      - characterization
+    lifecycle:
+      - topology_normalize
+      - enumerate_orderings_and_diffusion_breaks
+      - enumerate_folding
+      - exact_geometry_compaction
+      - generate_internal_routing_candidates
+      - drc
+      - lvs
+      - pex
+      - spice_characterization
+      - pareto_filter
+
+search:
+  initial_method: exhaustive_enumeration_with_early_pruning
+  placement:
+    primary_method: euler_graph_enumeration_plus_folding_enumeration
+    pmos_nmos_ordering_is_joint: true
+    folding_is_enumerated_before_geometry_compaction: true
+    objective_priority:
+      - diffusion_sharing
+      - gate_alignment
+      - diffusion_breaks
+      - folding_cost
+      - estimated_routing_cost
+      - cell_width
+    preserve_multiple_pareto_candidates: true
+    diffusion_sharing_requires:
+      - explicit_shared_active_geometry
+      - contactless_internal_diffusion_when_not_external
+    gate_alignment: common_p_gate_and_n_gate_columns_share_x_coordinate
+    row_policy:
+      legal_orientations: process_declared
+      default_alternation: R0_then_MY
+      fixed_height_rail_abutment: required
+  device_variables:
+    wn:
+      role: nmos_width
+      values: process_declared_grid
+    wp:
+      role: pmos_width
+      values: process_declared_grid
+    nf:
+      role: physical_fingers
+      values:
+        - 1
+        - 2
+        - 3
+    l:
+      role: channel_length
+      policy: preserve_explicit_or_default_to_lmin
+      optimize_initially: false
+  architecture_variables:
+    cell_height:
+      values: process_declared_candidates
+    transistor_ordering:
+      source: generalized_euler_search
+      allow_diffusion_break: true
+    contact_pattern:
+      values: process_declared_candidates
+    pin_location:
+      values: legal_pin_access_regions
+  folding:
+    enumerate_until: row_geometry_fits
+    every_folding_is_a_candidate: true
+  compaction:
+    method: difference_constraints_longest_path
+    constraint_form: x_j_minus_x_i_ge_d_ij
+    optimize_width: true
+    milp_required_for_initial_cells: false
+  routing:
+    candidate_count_target: 2_to_5
+    primary_layer: grammar_compiled
+    secondary_layer: grammar_compiled
+    pattern_order:
+      - straight
+      - L
+      - Z
+      - A_star_maze
+      - negotiated_congestion_rip_up_reroute
+    multi_terminal: manhattan_mst_plus_incremental_routes
+    ordinary_router_must_not_use_diffusion: true
+    ordinary_router_must_not_use_poly_as_metal: true
+    legality_source: routing_grammar_plus_native_deck
+    electrical_costs:
+      mode: optional_log_resistance
+      source: conductor_electrical_metadata
+      fallback_without_data: geometry_and_role_cost_only
+      local_poly_or_interconnect:
+        short_route: allowed_when_native_legal
+        long_route: penalized_when_max_useful_length_declared
+      cannot_override: native_legality
+  complexity_escalation:
+    initial_cells:
+      - exhaustive_enumeration
+      - difference_constraints
+    later_cells:
+      - z3_or_cp_sat_or_milp
+    trigger:
+      - dff
+      - latch
+      - multiple_height
+      - complex_aoi_oai
+
+routing_resource_contract:
+  physical_interpretation:
+    metal_over_active_is_allowed: true
+    metal_over_active_exceptions:
+      - contact_geometry
+      - via_geometry
+      - enclosure_rules
+      - spacing_rules
+      - profile_specific_blockage
+    buried_or_local_interconnect: unsupported_by_default
+  conductor_hierarchy:
+    diffusion:
+      use: topology_constrained_connection_only
+      ordinary_routing: forbidden
+      affects_device_parasitics: true
+    poly:
+      use: short_local_connection_only
+      ordinary_intercell_routing: forbidden
+      max_length: process_declared
+      resistance_penalty: high
+    M1:
+      use: cell_internal_routing_and_rails
+      preferred_direction: profile_declared
+      over_active_allowed: true
+    M2:
+      use: intercell_routing_and_feedthrough
+      preferred_direction: profile_declared
+      preserve_for_external_routing: true
+    interconnect:
+      use: process_declared_local_route_only
+      semantics: conductor_id_not_name_inferred
+      resistance_penalty: profile_electrical_metadata_or_conservative_role_cost
+      native_shortcut: require_explicit_native_probe
+    supply_contacts:
+      count_policy: current_capacity_if_profile_declares_else_geometry_only
+      unknown_capacity: never_claim_ir_or_reliability
+  native_process_features:
+    butting_contact: use_only_after_native_probe
+    alternate_contact_enclosure_spacing: use_only_after_native_sweep
+    tin_or_local_interconnect_shortcut: use_only_after_native_probe
+  architectures:
+    two_metal_classic:
+      status: candidate
+      rail_layer: M1
+      internal_preferred_layer: M1
+      internal_allowed_layers:
+        - poly
+        - M1
+        - M2
+      external_preferred_layers:
+        M1: horizontal
+        M2: vertical
+      preserve_m2_feedthrough: true
+      min_feedthrough_tracks: 1
+      internal_m2_policy: limited
+      max_internal_m2_segments_for_combinationals: 2
+    two_metal_dense:
+      status: candidate
+      rail_layer: M1
+      internal_preferred_layer: M1
+      internal_allowed_layers:
+        - poly
+        - M1
+        - M2
+      external_preferred_layers:
+        M1: horizontal
+        M2: vertical
+      preserve_m2_feedthrough: false
+      min_feedthrough_tracks: 0
+      internal_m2_policy: allowed_with_blockage_accounting
+    three_metal_classic:
+      status: candidate
+      rail_layer: M1
+      internal_preferred_layer: M1
+      internal_allowed_layers:
+        - poly
+        - M1
+        - M2
+      external_preferred_layers:
+        M1: horizontal
+        M2: pin_access_and_local
+        M3: vertical
+      global_routing_layer: M3
+      preserve_m2_feedthrough: false
+      preserve_m3_feedthrough: true
+      min_feedthrough_tracks: 0
+      min_global_feedthrough_tracks: 1
+      internal_m2_policy: allowed_with_blockage_accounting
+      complex_cells_may_use_internal_m2: true
+  routing_resource_outputs:
+    - metal_blockage_map
+    - via_blockage_map
+    - m3_feedthrough_columns
+    - m2_feedthrough_columns
+    - pin_access_regions
+    - diffusion_and_poly_keepouts
+  feedthrough_metric:
+    name: route_permeability
+    formula: legal_m2_pass_through_tracks_divided_by_cell_width
+    unit: dimensionless
+
+candidate_evaluation:
+  hard_constraints:
+    - drc_clean
+    - lvs_clean
+    - pin_access_legal
+    - rail_and_bulk_connectivity
+    - routing_contract_satisfied
+    - pex_output_resolves_models
+  required_stage_order:
+    - drc
+    - lvs
+    - pex
+    - spice_characterization
+  timing:
+    delay_definition: max_over_timing_arcs_tpd
+    arcs:
+      - tpLH
+      - tpHL
+    standard_load_points:
+      - FO1
+      - FO2
+      - FO4
+    slew_load_grid: process_declared
+    required_measurements:
+      - propagation_delay
+      - output_slew
+      - input_capacitance
+  metrics:
+    - cell_area
+    - worst_case_delay
+    - input_capacitance
+    - output_slew
+    - power
+    - internal_m2_length
+    - via_count
+    - route_permeability
+    - pin_access_margin
+  area:
+    formula: cell_width_times_cell_height
+  pareto:
+    dimensions:
+      - cell_area
+      - worst_case_delay
+      - input_capacitance
+      - route_permeability
+    dominance_rule: a_dominates_b_if_all_metrics_no_worse_and_one_strictly_better
+    dominated_candidates_are_removed: true
+  drive_variants:
+    selected_after_pareto: true
+    physical_ratio_is_not_fixed: true
+    interface_names:
+      - X1
+      - X2
+      - X4
+    names_are_library_labels: true
+
+block_evaluation:
+  required_after_cell_pareto: true
+  tool: OpenROAD
+  library_families:
+    - area_oriented
+    - balanced
+    - speed_oriented
+  benchmark_classes:
+    - small_soc
+    - alu
+    - fifo
+    - multiplier
+  baseline:
+    type: fixed_lambda_geometry_and_fixed_wp_wn_ratio
+  metrics:
+    - post_route_area
+    - fmax
+  selection_rule: retain_block_level_non_dominated_libraries
+  isolated_cell_metrics_are_not_sufficient: true
+
+outputs:
+  candidate_artifacts:
+    - normalized_netlist
+    - layout_gds
+    - extracted_spice
+    - drc_report
+    - lvs_report
+    - pex_report
+    - characterization_data
+    - pareto_metadata
+  library_artifacts_after_signoff_inputs_exist:
+    - lef
+    - liberty
+    - cell_catalog

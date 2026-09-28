@@ -53,8 +53,8 @@ class Profile:
         self.pcells = self.pcells_doc.get("pcells", {})
         self.lambda_um = float(self.meta.get("lambda_um", 0.5))
         self.grid_um = float(self.meta["grid_um"])
-        self.submicron = bool(self.meta.get("submicron_rules", False))
-        self.deep = bool(self.meta.get("deep_rules", False))
+        self.rule_family = self.ir.rule_family
+        self.submicron = self.rule_family == "scmos_subm"
 
     def has_feature(self, name: str) -> bool:
         return bool(self.features.get(name, False))
@@ -82,8 +82,8 @@ class Profile:
         negate = atom.startswith("not-")
         name = atom[4:] if negate else atom
         aliases = {
-            "submicron": self.submicron,
-            "deep": self.deep,
+            "scmos": self.rule_family == "scmos",
+            "scmos_subm": self.rule_family == "scmos_subm",
             "stacked": bool(self.meta.get("stacked_vias", False)),
             "elec": self.has_feature("elecAvailable"),
             "highres": self.has_feature("highresAvailable"),
@@ -178,9 +178,9 @@ class Technology:
         self.metal_contact_enc = profile.rule_or(
             "enclosure", "7.3", "metal1", "ca", q
         )
-        self.nwell_active_enc = 6 * q if profile.submicron or profile.deep else 5 * q
+        self.nwell_active_enc = 6 * q if profile.submicron else 5 * q
         self.nwell_contact_enc = 3 * q
-        self.nwell_min_width = 12 * q if profile.submicron or profile.deep else 10 * q
+        self.nwell_min_width = 12 * q if profile.submicron else 10 * q
         self.via_size = profile.rule_or("width", "8.1", "via", None, 2 * q)
         self.via_spacing = profile.rule_or("spacing", "8.2", "via", None, 3 * q)
         self.via_lower_enc = profile.rule_or(
@@ -243,10 +243,15 @@ class MosPCell(_BasePCell):
         self.param("m", self.TypeInt, "Electrical multiplier", default=1)
         self.param("w_um", self.TypeDouble, "Channel width per finger (um)", default=1.5)
         self.param("l_um", self.TypeDouble, "Channel length (um)", default=0.6)
+        self.param("left_contact", self.TypeBoolean, "Keep left diffusion contact", default=True)
+        self.param("right_contact", self.TypeBoolean, "Keep right diffusion contact", default=True)
 
     def display_text_impl(self):
         name = "nmos" if self.polarity == "n" else "pmos"
-        return f"{name}(W={self.w_um:g},L={self.l_um:g},nf={self.nf},m={self.m})"
+        return (
+            f"{name}(W={self.w_um:g},L={self.l_um:g},nf={self.nf},m={self.m},"
+            f"left_contact={self.left_contact},right_contact={self.right_contact})"
+        )
 
     def coerce_parameters_impl(self):
         self.nf = max(1, int(round(self.nf)))
@@ -347,7 +352,11 @@ class MosPCell(_BasePCell):
             contact_xs = [
                 first + index * parallel_step for index in range(f + 1)
             ]
-        for x in contact_xs:
+        for index, x in enumerate(contact_xs):
+            if index == 0 and not self.left_contact:
+                continue
+            if index == len(contact_xs) - 1 and not self.right_contact:
+                continue
             for row in range(contact_count):
                 y = contact_bottom + row * (self.tech.contact_size + self.tech.contact_spacing)
                 self._rect("cc", x, y, x + self.tech.contact_size, y + self.tech.contact_size)

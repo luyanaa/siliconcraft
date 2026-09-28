@@ -21,6 +21,9 @@ def main() -> int:
 
     for name, process in processes.items():
         assert process.meta.get("name") == name
+        assert process.rule_family in {"scmos", "scmos_subm", "native"}
+        assert "deep_rules" not in process.meta
+        assert "submicron_rules" not in process.meta
         assert process.layers, f"{name}: no normalized layers"
         if process.capabilities.pex_runtime:
             assert process.capabilities.pex_topology
@@ -39,6 +42,11 @@ def main() -> int:
     ami06_contracts = validate_netlist_contracts(processes["ami06"])
     assert {contract.name for contract in ami06_contracts} == {"ami06N", "ami06P"}
     assert all(contract.representation == "primitive" for contract in ami06_contracts)
+    assert processes["ami16"].rule_family == "scmos"
+    assert processes["ami06"].rule_family == "scmos_subm"
+    assert processes["hp06"].rule_family == "scmos_subm"
+    assert processes["ls1u"].rule_family == "native"
+    assert processes["openrule1um"].rule_family == "native"
     pmos_model = ls1u.model_ir("pmos_core")
     assert pmos_model.simulation_name == "LV1UPMOS"
     assert pmos_model.fit_parameter("vth0_v") == -0.6

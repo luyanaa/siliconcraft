@@ -88,11 +88,12 @@ def offset_pt(edge, poly):
 class Nets:
     """SCMOS connectivity result: conductor components + union-find + names."""
 
-    def __init__(self, comps, uf, SUB, net_names, DBU):
+    def __init__(self, comps, uf, SUB, net_names, DBU, labels=()):
         self.comps = comps          # [(layer name, Polygon)]
         self.uf = uf                # UnionFind over comps + SUB node
         self.SUB = SUB              # synthetic substrate node index
         self.net_names = net_names  # root id -> label
+        self.labels = tuple(labels) # (label, component index)
         self.DBU = DBU
 
     @property
@@ -130,6 +131,11 @@ class Nets:
 
     def net_of_root(self, r):
         return self.net_names.get(r, f"n{r}")
+    def port_nets(self):
+        return {
+            name: f"n{self.uf.find(component)}"
+            for name, component in self.labels
+        }
 
     def substrate_net(self):
         r = self.uf.find(self.SUB)
@@ -218,7 +224,7 @@ def build_nets(D, L, F, WELL, layout, top, DBU):
                     labels.append((t.string, i))
                     net_names[uf.find(i)] = t.string
 
-    return Nets(comps, uf, SUB, net_names, DBU)
+    return Nets(comps, uf, SUB, net_names, DBU, labels)
 
 
 def emit_spice(devices, counts, net_names, TECH, PREFIX, comment, nets_count):

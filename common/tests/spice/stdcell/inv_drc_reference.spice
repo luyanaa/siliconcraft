@@ -1,0 +1,4 @@
+* Reference schematic for the generated AMI06 INV DRC/LVS fixture.
+M0 Y A VSS VSS ami06N W=1.5 L=0.6
+M1 Y A VDD VDD ami06P W=1.5 L=0.6
+.end

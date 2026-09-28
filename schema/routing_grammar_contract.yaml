@@ -1,0 +1,124 @@
+# Contract for importing PDK connectivity evidence into router resources.
+schema_version: 1
+kind: routing_grammar_contract
+status: architecture_contract
+claims:
+  geometry_legality_only: true
+  electrical_desirability: unknown_until_characterized
+  timing_power_signoff: forbidden
+
+states:
+  SUPPORTED:
+    meaning: native DRC and required native connectivity or device extraction evidence passed
+    router_use: allowed
+  EXPERIMENTAL:
+    meaning: native geometry passed but connectivity evidence is partial, indirect, or incomplete
+    router_use: allowed_only_with_conservative_cost_or_length_limit
+  UNKNOWN:
+    meaning: evidence is unavailable or insufficient
+    router_use: forbidden_by_default
+  FORBIDDEN:
+    meaning: native DRC failed or native extraction contradicted the expected relation
+    router_use: forbidden
+
+import:
+  process_first:
+    - load_ProcessIR_layers_and_GDS_mappings
+    - identify_readable_klayout_lvs_sources
+    - parse_input_aliases_connects_and_extract_devices
+  semantic_roles:
+    status: hints_only
+    router_must_not_infer_conductor_semantics_from_names: true
+  native_extraction_acceptance:
+    generic_scmos_lvs_is_valid_native_evidence: true
+    supported_requires:
+      - drc_pass
+      - expected_extracted_port_or_device_relation
+    missing_static_klayout_source_does_not_disable_native_lvs: true
+  missing_lvs_policy: UNKNOWN_not_FORBIDDEN
+evidence_fields:
+  status: one_of_states
+  confidence: one_of_high_medium_low_unknown
+  provenance:
+    - source_file_or_probe_name
+    - drc_result
+    - lvs_or_extraction_result
+    - extracted_devices
+
+active_probe_suite:
+  execution:
+    - generate_deterministic_synthetic_layouts
+    - run_native_drc_once_per_probe
+    - run_native_lvs_or_extraction_once_per_probe
+    - classify_after_native_tools_return
+    - never_run_native_tools_inside_A_star
+  positive_and_negative_cases:
+    - wire_continuity
+    - contact_or_inter_layer_transition
+    - diffusion_active_crossing
+    - same_layer_crossing
+    - metal_crossing_isolation
+    - T_junction
+    - accidental_MOS_detection
+  labels:
+    equivalence_source: native_extraction_port_nets
+    same_layer_crossing: all_labels_same_net
+    isolated_crossing: source_endpoints_same_target_endpoints_same_and_source_differs_from_target
+  device_checks:
+    forms_device: extracted_device_required
+    no_device: extracted_device_forbidden
+
+optional_local_rule_sweeps:
+  monotonic_only:
+    - wire_width
+    - same_layer_spacing
+    - contact_or_via_enclosure
+  inference_policy:
+    conditional_and_density_rules: leave_to_native_deck
+    non_monotonic_results: retain_as_observation_without_boundary_inference
+    missing_native_result: UNKNOWN
+
+compiled_router_resources:
+  inputs:
+    - conductor_ids
+    - continuity_states
+    - transition_states
+    - region_states
+    - conservative_costs
+    - optional_max_useful_length
+  electrical_cost_inputs:
+    optional_fields:
+      - sheet_resistance_ohm_per_square
+      - resistance_ohm_per_um
+      - nominal_width_um
+      - max_useful_length_um
+      - current_limit
+      - reliability
+    routing_use:
+      - conservative_log_resistance_cost
+      - optional_length_penalty
+    absent_data: retain_unknown_and_do_not_invent
+  process_specific_features:
+    butting_contact: require_explicit_native_probe_option
+    alternate_contact_enclosure_spacing: require_native_sweep
+    local_interconnect_shortcut: require_explicit_native_probe_option
+  output:
+    - routing_graph_nodes_are_conductor_ids
+    - routing_graph_edges_are_wire_or_transition_resources
+    - region_constraints_are_explicit
+  forbidden_dependencies:
+    - Poly_name_semantics
+    - TiN_name_semantics
+    - electrical_reliability_claims
+    - timing_or_power_claims
+
+native_gate_boundary:
+  final_cell_gate_owns:
+    - authoritative_DRC
+    - full_LVS_or_Netgen_equivalence
+    - PEX_and_model_smoke
+  routing_grammar_does_not_own:
+    - Liberty
+    - timing_characterization
+    - power_characterization
+    - signoff_reliability

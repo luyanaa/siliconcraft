@@ -137,6 +137,9 @@ GATED_LAYERS = {
     "npnAvailable": ["pbase", "cactive"],
 }
 
+# MOSIS SCN4M/5M/6M layer maps retain this optional capability in SUBM.
+DEEP_N_WELL_MOSIS_PREFIXES = ("SCN4M", "SCN5M", "SCN6M")
+
 
 def well_type_of(mosis_code: str) -> str:
     """devices.tf: wellType = substring(mosisCode 3 1) — 3rd char, 1-based."""
@@ -205,8 +208,19 @@ def _num(v):
     return v
 
 
+
+def rule_family_for(techdata: dict, process: str) -> str:
+    if techdata.get("deepRules"):
+        raise ValueError(
+            f"{process}: SCMOS_DEEP is not a supported normalized rule family; "
+            "select the corresponding SCMOS_SUBM process entry"
+        )
+    return "scmos_subm" if techdata.get("submicronRules") else "scmos"
+
+
 def build_profile(name: str, process: str, td: dict, tf: dict, stream: dict, cif: dict) -> dict:
     mosis = td.get("mosisCode") or ""
+    rule_family = rule_family_for(td, process)
     features = {}
     for flag in sorted(GATED_LAYERS):
         features[flag] = bool(tf.get(flag))
@@ -226,8 +240,7 @@ def build_profile(name: str, process: str, td: dict, tf: dict, stream: dict, cif
         "min_width_um": _num(td.get("minW")),
         "model_prefix": td.get("fetModelPrefix"),
         "well_type": well_type_of(mosis),
-        "submicron_rules": td.get("submicronRules") or False,
-        "deep_rules": td.get("deepRules") or False,
+        "rule_family": rule_family,
         "stacked_vias": td.get("stackedVias") or False,
         "features": features,
         "license": "NCSU CDK (NC State University; free use with notice preserved)",
@@ -249,6 +262,16 @@ def build_profile(name: str, process: str, td: dict, tf: dict, stream: dict, cif
         elif name == "pwell" and meta["well_type"] == "n":
             entry["note"] = "n-well process; pwell layer unused for this variant"
         layers.append(entry)
+    if mosis.startswith(DEEP_N_WELL_MOSIS_PREFIXES):
+        layers.append({
+            "name": "DEEP_N_WELL",
+            "purpose": "drawing",
+            "gds": [{"layer": 38, "datatype": 0}],
+            "cif": ["CDNW"],
+            "role": "well",
+            "available": True,
+            "note": "MOSIS SCN4M/5M/6M SUBM layer capability; not a DEEP rule family",
+        })
     return {"meta": meta, "layers": layers}
 
 
@@ -287,7 +310,11 @@ def main() -> int:
         stream["cactive"] = list(stream.get("active", []))
         cif["cactive"] = list(cif.get("active", []))
 
-    profile = build_profile(args.name or args.process.lower(), args.process, td, tf, stream, cif)
+    try:
+        profile = build_profile(args.name or args.process.lower(), args.process, td, tf, stream, cif)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(HEADER + emit_yaml(profile))

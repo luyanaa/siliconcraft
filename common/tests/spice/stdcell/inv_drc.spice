@@ -1,0 +1,7 @@
+* siliconcraft inputs: A
+* siliconcraft outputs: Y
+* siliconcraft supplies: VDD VSS
+.subckt inv_drc A Y VDD VSS
+M0 Y A VSS VSS ami06N W=1.5u L=0.6u
+M1 Y A VDD VDD ami06P W=1.5u L=0.6u
+.ends inv_drc

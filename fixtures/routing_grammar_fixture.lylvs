@@ -1,0 +1,5 @@
+M1 = input(49, 0)
+V1 = input(50, 0)
+connect(M1)
+connect(M1, V1)
+extract_devices(mos4(), {"G" => M1, "S" => V1})

@@ -1,0 +1,423 @@
+# Preparation contract for a future standard-cell generator.
+# This file is metadata-only; it does not enable a generator or claim signoff.
+schema_version: 1
+kind: stdcell_spice_pex_readiness
+status: preparation_contract
+
+policy:
+  generator_implementation: not_implemented
+  active_stdcell_profiles: []
+  signoff_claims: forbidden
+  historical_model_import: forbidden
+  purpose: "Describe the SPICE and PEX inputs a future generator must consume and the current blockers for each profile."
+  required_inputs:
+    - process_geometry_and_grid
+    - cell_pin_power_bulk_contract
+    - canonical_device_bindings
+    - simulator_model_library_and_section
+    - model_corner_contract
+    - extracted_spice_topology
+    - extracted_rc_ownership
+    - native_drc_lvs_pex_gates
+  required_output_views:
+    - layout_gds
+    - extracted_spice
+    - lef
+    - liberty
+  units:
+    geometry: um
+    model_geometry: profile_declared
+    resistance: ohm
+    capacitance: farad
+    time: second
+    power: watt
+  generator_must_reject:
+    - missing_model_section
+    - missing_device_binding
+    - missing_corner_contract
+    - pex_topology_only_when_rc_is_required
+    - model_owned_parasitic_duplicated_in_pex
+    - absent_pin_or_power_rail_contract
+    - reference_only_profile_used_as_active_target
+
+spice_contract:
+  simulator: ngspice
+  model_library_requirements:
+    - path_must_exist
+    - section_must_be_explicit
+    - every_emitted_model_id_must_resolve
+    - primitive_or_subcircuit_representation_must_be_declared
+    - terminal_order_must_be_declared
+    - parameter_units_must_be_declared
+  corner_requirements:
+    characterization_requires:
+      - nominal
+    timing_or_signoff_requires:
+      - process_corners
+      - voltage_corners
+      - temperature_corners
+    missing_corners_are_blocking: true
+  canonical_mos_requirements:
+    terminal_order:
+      - d
+      - g
+      - s
+      - b
+    geometry_parameters:
+      - w
+      - l
+    optional_geometry_parameters:
+      - nf
+      - m
+      - ad
+      - as
+      - pd
+      - ps
+    parasitic_ownership:
+      gate_intrinsic: model
+      gate_overlap: model
+      junction_area_cap: model
+      junction_sidewall_cap: model
+      diffusion_sheet_r: pex
+      gate_sheet_r: disabled
+
+pex_contract:
+  backend: magic
+  output_format: ngspice
+  required_for_generator:
+    - top_cell_selection
+    - explicit_model_device_identity
+    - explicit_terminal_order
+    - explicit_source_units
+    - explicit_parasitic_ownership
+    - zero_threshold_rc_extraction_when_measuring_rc
+  signoff_requirements:
+    - contact_and_via_resistance_evidence
+    - junction_and_substrate_capacitance_evidence
+    - native_drc_lvs_pex_gate
+    - cell_pin_and_power_connectivity_fixture
+  allowed_preparation_levels:
+    topology_only: "Device recognition and pin connectivity only; no delay/power claim."
+    partial_rc: "Relative RC characterization only; no signoff timing/power claim."
+    characterized_rc: "Requires source and fixture evidence for every emitted RC class."
+
+profiles:
+  ami06:
+    role: active_profile_candidate
+    process: AMI_C5N
+    spice:
+      library: profiles/ami06/models/ami06.lib
+      section: ami06
+      representation: primitive
+      geometry_units: um
+      corners:
+        available:
+          - nominal
+        missing:
+          - slow
+          - fast
+          - fnsp
+          - snfp
+      devices:
+        - binding: nmos_core
+          model: ami06N
+          prefix: m
+          terminals:
+            - d
+            - g
+            - s
+            - b
+        - binding: pmos_core
+          model: ami06P
+          prefix: m
+          terminals:
+            - d
+            - g
+            - s
+            - b
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+      source_status: public_nominal_bsim3v3
+    pex:
+      manifest: profiles/ami06/pex/manifest.yaml
+      profile: n8bn_reference
+      status: source_reference_partial
+      topology: true
+      runtime: true
+      rc: estimated
+      model_owned_terms:
+        - transistor_intrinsic_capacitance
+        - gate_overlap_capacitance
+        - junction_area_capacitance
+        - junction_sidewall_capacitance
+      pex_owned_terms:
+        - diffusion_sheet_resistance
+        - gate_sheet_resistance
+        - metal_interconnect_rc
+      withheld_terms:
+        - contact_and_via_resistance
+        - direct_junction_and_substrate_capacitance_mapping
+    readiness:
+      characterization_level: partial_rc
+      signoff: blocked
+      blockers:
+        - no_stdcell_geometry_contract
+        - no_cell_pin_power_bulk_contract
+        - no_process_voltage_temperature_corner_pack
+        - pex_contact_and_junction_terms_withheld
+        - no_lef_or_liberty_generator
+
+  ami16:
+    role: active_profile_candidate
+    process: AMI_ABN
+    spice:
+      library: profiles/ami16/models/ami16.lib
+      section: ami16
+      representation: primitive
+      geometry_units: um
+      corners:
+        available:
+          - nominal
+        missing:
+          - slow
+          - fast
+          - fnsp
+          - snfp
+      devices:
+        - binding: nmos_core
+          model: ami16N
+          prefix: m
+          terminals:
+            - d
+            - g
+            - s
+            - b
+        - binding: pmos_core
+          model: ami16P
+          prefix: m
+          terminals:
+            - d
+            - g
+            - s
+            - b
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+      source_status: public_nominal_bsim3v3
+    pex:
+      manifest: profiles/ami16/pex/manifest.yaml
+      profile: n77h_reference
+      status: source_reference_partial
+      topology: true
+      runtime: true
+      rc: estimated
+      model_owned_terms:
+        - transistor_intrinsic_capacitance
+        - gate_overlap_capacitance
+        - junction_area_capacitance
+        - junction_sidewall_capacitance
+      pex_owned_terms:
+        - diffusion_sheet_resistance
+        - gate_sheet_resistance
+        - metal_interconnect_rc
+      withheld_terms:
+        - contact_and_via_resistance
+        - direct_junction_and_substrate_capacitance_mapping
+        - electrode_mos_model_cards
+        - npn_model_card
+    readiness:
+      characterization_level: partial_rc
+      signoff: blocked
+      blockers:
+        - no_stdcell_geometry_contract
+        - no_cell_pin_power_bulk_contract
+        - no_process_voltage_temperature_corner_pack
+        - pex_contact_and_junction_terms_withheld
+        - no_electrode_or_npn_model_contract_for_extended_devices
+        - no_lef_or_liberty_generator
+
+  hp06:
+    role: active_profile_candidate
+    process: HP_AMOS14TB
+    spice:
+      library: profiles/hp06/models/hp06.lib
+      section: hp06
+      representation: primitive
+      geometry_units: um
+      corners:
+        available:
+          - nominal
+        missing:
+          - slow
+          - fast
+          - fnsp
+          - snfp
+      devices:
+        - binding: nmos_core
+          model: hp14tbN
+          prefix: m
+          terminals:
+            - d
+            - g
+            - s
+            - b
+        - binding: pmos_core
+          model: hp14tbP
+          prefix: m
+          terminals:
+            - d
+            - g
+            - s
+            - b
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+      source_status: public_nominal_bsim3v3
+    pex:
+      manifest: profiles/hp06/pex/manifest.yaml
+      profile: n8ag_reference
+      status: source_reference_partial
+      topology: true
+      runtime: true
+      rc: estimated
+      model_owned_terms:
+        - transistor_intrinsic_capacitance
+        - gate_overlap_capacitance
+        - junction_area_capacitance
+        - junction_sidewall_capacitance
+      pex_owned_terms:
+        - diffusion_sheet_resistance
+        - gate_sheet_resistance
+        - metal_interconnect_rc
+      withheld_terms:
+        - contact_and_via_resistance
+        - direct_junction_and_substrate_capacitance_mapping
+    readiness:
+      characterization_level: partial_rc
+      signoff: blocked
+      blockers:
+        - no_stdcell_geometry_contract
+        - no_cell_pin_power_bulk_contract
+        - no_process_voltage_temperature_corner_pack
+        - pex_contact_and_junction_terms_withheld
+        - no_lef_or_liberty_generator
+
+  ls1u:
+    role: topology_reference_only
+    process: LS1U
+    spice:
+      library: profiles/ls1u/models/ls1u.lib
+      section: ls1u
+      representation: subckt
+      geometry_units: um
+      corners:
+        contract: absent
+        available:
+          - nominal_subckt
+      devices:
+        - binding: nmos_core
+          model: LV1UNMOS
+          prefix: x
+          terminals:
+            - d
+            - g
+            - s
+            - b
+        - binding: pmos_core
+          model: LV1UPMOS
+          prefix: x
+          terminals:
+            - d
+            - g
+            - s
+            - b
+      parameter_map:
+        w: W
+        l: L
+        pd: PD
+        ps: PS
+      source_status: partial_characterization
+      limitations:
+        - empirical_pmos_fit
+        - unmeasured_ngate
+        - unmeasured_pgate
+    pex:
+      manifest: profiles/ls1u/pex/manifest.yaml
+      profile: none
+      status: topology_only
+      topology: true
+      runtime: false
+      rc: estimated
+      limitations:
+        - scmos_legacy_is_not_ls1u_calibration
+        - hkust_estimates_are_not_characterized_ls1u_rc
+    readiness:
+      characterization_level: topology_only
+      signoff: blocked
+      blockers:
+        - no_calibrated_ls1u_rc_contract
+        - no_process_corner_contract
+        - no_stdcell_geometry_contract
+        - no_lef_or_liberty_generator
+
+  openrule1um:
+    role: reference_conformance_only
+    process: OpenRule1um
+    spice:
+      library: profiles/openrule1um/models/openrule1um.lib
+      section: openrule1um
+      representation: model_contract_only
+      geometry_units: um
+      corners:
+        contract: absent
+      devices:
+        - model: or1_nmos
+          status: model_contract_only
+        - model: or1_pmos
+          status: model_contract_only
+      source_status: measured_primitive_contract
+      limitation: no_active_canonical_device_bindings
+    pex:
+      manifest: profiles/openrule1um/pex/manifest.yaml
+      profile: none
+      status: deferred
+      selected_profile_status: unavailable
+      topology: false
+      runtime: false
+      rc: false
+      reason: no_openrule1um_parasitic_extraction_deck_or_calibrated_rule_contract
+    reference_cells:
+      catalog: profiles/openrule1um/compatibility/stdcell_catalog.yaml
+      gds_top_cells: 45
+      xschem_symbols: 38
+      lef: unavailable
+      liberty: unavailable
+    readiness:
+      characterization_level: reference_catalog_only
+      signoff: blocked
+      blockers:
+        - no_stdcell_geometry_contract
+        - no_active_canonical_device_bindings
+        - pex_deferred
+        - no_lef_view
+        - no_liberty_view
+        - no_process_corner_contract

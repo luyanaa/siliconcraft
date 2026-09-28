@@ -1,0 +1,9 @@
+* siliconcraft inputs: A B
+* siliconcraft outputs: Y
+* siliconcraft supplies: VDD VSS
+.subckt nor2 A B Y VDD VSS
+MP0 NINT A VDD VDD ami06P W=3.0u L=0.6u
+MP1 Y B NINT VDD ami06P W=3.0u L=0.6u
+MN0 Y A VSS VSS ami06N W=1.5u L=0.6u
+MN1 Y B VSS VSS ami06N W=1.5u L=0.6u
+.ends nor2

@@ -251,7 +251,7 @@ def run():
     emit_spice(devices, counts, N.net_names, TECH, PREFIX,
                "scmos_reference_lvs.py (divaEXT.rul port)", N.net_count)
     summary = {"devices": counts, "nets": N.net_count, "warnings": warnings,
-               "ports": sorted(set(N.net_names.values()))}
+               "ports": sorted(set(N.net_names.values())), "port_nets": N.port_nets()}
     print(json.dumps(summary))
     return 0
 

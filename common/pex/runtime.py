@@ -25,6 +25,7 @@ def run_magic_extract(
     workdir: Path,
     style: str,
     ignored_fatal_markers: tuple[str, ...] = (),
+    top_cell: str | None = None,
 ) -> tuple[str, str]:
     """Run the existing layout -> Magic -> ext2spice PEX flow.
 
@@ -35,7 +36,7 @@ def run_magic_extract(
     requires the expected extracted devices.
     """
 
-    cell = layout.stem
+    cell = top_cell or layout.stem
     if layout.suffix.lower() == ".mag":
         commands = [
             f"load {layout}",

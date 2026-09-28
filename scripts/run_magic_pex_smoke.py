@@ -53,8 +53,9 @@ def run_magic(
     output: Path,
     workdir: Path,
     style: str,
+    top_cell: str | None = None,
 ) -> tuple[str, str]:
-    return run_magic_extract(magic, layout, technology, output, workdir, style)
+    return run_magic_extract(magic, layout, technology, output, workdir, style, top_cell=top_cell)
 
 
 def run_ngspice(
@@ -147,6 +148,7 @@ def main() -> int:
     ap.add_argument("--model-section")
     ap.add_argument("--nmos-model")
     ap.add_argument("--pmos-model")
+    ap.add_argument("--top-cell")
     ap.add_argument("--require-parasitics", action="store_true")
     ap.add_argument("--magic", default=os.environ.get("MAGIC", "magic"))
     ap.add_argument("--ngspice", default=os.environ.get("NGSPICE", "ngspice"))
@@ -172,6 +174,7 @@ def main() -> int:
             output,
             workdir,
             style,
+            top_cell=args.top_cell,
         )
         devices = parse_mosfet_lines(extracted)
         parasitic_caps = [

@@ -1,0 +1,9 @@
+* siliconcraft inputs: A B
+* siliconcraft outputs: Y
+* siliconcraft supplies: VDD VSS
+.subckt nand2_drc A B Y VDD VSS
+MP0 Y A VDD VDD ami06P W=1.5u L=0.6u
+MP1 Y B VDD VDD ami06P W=1.5u L=0.6u
+MN0 NINT A VSS VSS ami06N W=1.5u L=0.6u
+MN1 Y B NINT VSS ami06N W=1.5u L=0.6u
+.ends nand2_drc

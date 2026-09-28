@@ -9,16 +9,16 @@ mirroring the reference deck (common/drc/scmos_reference.py), so per-rule
 violation accounting matches the oracle.
 
 Condition syntax (rules.yaml): comma = AND, | = OR, not- = negate.
-Feature keys: submicron, deep, stacked, elec, highres, metal3..metal6,
+Rule-family terms: scmos, scmos_subm.
+Feature keys: stacked, elec, highres, metal3..metal6,
 cwell, sblock, polycap, ccd, npn, hv, metalcap, mems.
-Tech keys: tech:NAME, tech-not-in:A,B,C.  Absent = always.
 
 Layer names resolve to raw input layers, Diva-derived layers
 (scmos_layers.derive), or pad-derived names (BondingPad, ProbePad, Pad,
 near_<layer>).
 
-Env: LAYOUT, MARKERS, LAYERMAP, FEATURES, LAMBDA, GRID, TECH, WELL, PAD,
-RULES (path to rules.yaml).  Same output contract as the reference deck:
+Env: LAYOUT, MARKERS, LAYERMAP, FEATURES, LAMBDA, GRID, TECH, RULE_FAMILY,
+WELL, PAD, RULES (path to rules.yaml).  Same output contract as the reference deck:
 marker GDS (layer = 1000 + crc32(rule_id) & 0x3FFF) + JSON summary.
 """
 
@@ -76,13 +76,13 @@ class Report:
 
 # ------------------------------------------------------------------ conditions
 
-def _cond_one(term, F, TECH):
+def _cond_one(term, F, TECH, RULE_FAMILY):
     neg = term.startswith("not-")
     name = term[4:] if neg else term
-    if name == "submicron":
-        v = F("submicronRules")
-    elif name == "deep":
-        v = F("deepRules")
+    if name == "scmos":
+        v = RULE_FAMILY == "scmos"
+    elif name == "scmos_subm":
+        v = RULE_FAMILY == "scmos_subm"
     elif name == "stacked":
         v = F("stackedVias")
     elif name == "elec":
@@ -122,17 +122,19 @@ def _cond_one(term, F, TECH):
     return (not v) if neg else v
 
 
-def cond_ok(cond, F, TECH):
+def cond_ok(cond, F, TECH, RULE_FAMILY):
     if not cond:
         return True
     for term in str(cond).split(","):
         term = term.strip()
         if not term:
             continue
-        ok = any(_cond_one(alt.strip(), F, TECH) for alt in term.split("|"))
+        ok = any(_cond_one(alt.strip(), F, TECH, RULE_FAMILY) for alt in term.split("|"))
         if not ok:
             return False
     return True
+
+
 
 
 # ------------------------------------------------------------------- run
@@ -160,6 +162,9 @@ def run():
 
     LAYER_MAP = json.loads(os.environ.get("LAYERMAP", "{}"))
     FEATURES = json.loads(os.environ.get("FEATURES", "{}"))
+    RULE_FAMILY = os.environ.get("RULE_FAMILY") or FEATURES.get("rule_family", "scmos")
+    if RULE_FAMILY not in ("scmos", "scmos_subm"):
+        raise SystemExit(f"unsupported SCMOS rule family: {RULE_FAMILY!r}")
 
     def F(name):
         return FEATURES.get(name, False)
@@ -244,9 +249,8 @@ def run():
     # saveDerived markers (same set as the reference deck, for count parity)
     R.save_derived(and_(D["nwell"], D["pwell"]),
                    "(SCMOS Rule 1 note) n-wells and p-wells may not overlap")
-    if not F("deepRules"):
-        R.save_derived(butting(and_(D["ca"], D["nselect"]), and_(D["ca"], D["pselect"]), 1),
-                       "(SCMOS Rule 4.3) select overlap of active contact: 1 lambda")
+    R.save_derived(butting(and_(D["ca"], D["nselect"]), and_(D["ca"], D["pselect"]), 1),
+                   "(SCMOS Rule 4.3) select overlap of active contact: 1 lambda")
     R.save_derived(and_(D["nselect"], D["pselect"]),
                    "(SCMOS Rule 4.4) n select and p select may not overlap")
     R.save_derived(andnot(D["cp"], D["poly"]),
@@ -277,7 +281,7 @@ def run():
     if not F("stackedVias"):
         R.save_derived(and_(D["via"], or_(D["ca"], D["cp"])),
                        "(SCMOS Rule 8.4) via to contact spacing: 2 lambda")
-    if not (F("submicronRules") or F("deepRules")):
+    if RULE_FAMILY == "scmos":
         R.save_derived(straddle(D["via"], D["poly"]),
                        "(SCMOS Rule 8.5) via to poly edge spacing: 2 lambda")
         R.save_derived(straddle(D["via"], D["active"]),
@@ -403,7 +407,7 @@ def run():
                      ("enclosure", echeck), ("extension", echeck),
                      ("area", areacheck), ("overlap", ocheck)):
         for entry in tables.get(kind, []):
-            if not cond_ok(entry.get("condition"), F, TECH):
+            if not cond_ok(entry.get("condition"), F, TECH, RULE_FAMILY):
                 continue
             rid = entry["id"]
             msg = f"({rid}) {entry.get('note', '')}".strip()

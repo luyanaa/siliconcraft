@@ -1,0 +1,6 @@
+* Reference schematic for the generated AMI06 NAND2 DRC/LVS fixture.
+MP0 Y A VDD VDD ami06P W=1.5 L=0.6
+MP1 Y B VDD VDD ami06P W=1.5 L=0.6
+MN0 NINT A VSS VSS ami06N W=1.5 L=0.6
+MN1 Y B NINT VSS ami06N W=1.5 L=0.6
+.end

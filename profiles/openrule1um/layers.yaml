@@ -19,8 +19,7 @@ meta:
   min_width_um: 1.0
   model_prefix: or1
   well_type: n
-  submicron_rules: false
-  deep_rules: false
+  rule_family: native
   stacked_vias: true
   features:
     metal3Available: true

@@ -79,6 +79,23 @@ def resolve_netgen_setup(profile_dir, deck):
         return None
     path = profile_dir / deck / setup
     return path if path.exists() else None
+def generated_netgen_permutation_setup(profile_dir):
+    """Translate canonical LVS symmetry groups to Netgen pin names."""
+    from common.process_ir import load_process
+
+    process = load_process(profile_dir.name, ROOT)
+    pin_names = {"d": "drain", "s": "source", "g": "gate", "b": "bulk"}
+    lines = []
+    for binding in process.device_bindings.values():
+        model = binding.lvs_class
+        if not model:
+            continue
+        for group in binding.lvs_permutable:
+            pins = tuple(pin_names.get(pin, pin) for pin in group)
+            if len(pins) == 2:
+                lines.append(f"permute {model} {pins[0]} {pins[1]}")
+    return "\n".join(lines)
+
 
 def _first_spice_subckt(path: Path) -> str | None:
     for line in path.read_text(errors="replace").splitlines():
@@ -200,7 +217,9 @@ def main():
     setup_source = resolve_netgen_setup(profile_dir, deck)
     setup_text = setup_source.read_text().rstrip() if setup_source else ""
     circuit = _netgen_circuit(profile_dir, deck, sch, args.circuit)
-    setup_body = setup_text + ("\n" if setup_text else "") + "set tcl_precision 6\n"
+    permutation_setup = generated_netgen_permutation_setup(profile_dir)
+    setup_parts = [setup_text, permutation_setup, "set tcl_precision 6"]
+    setup_body = "\n".join(part for part in setup_parts if part) + "\n"
     if circuit:
         setup.write_text(setup_body)
         circuit1 = f"{spice.name} {circuit}"

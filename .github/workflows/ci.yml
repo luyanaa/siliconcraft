@@ -10,12 +10,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate normalized, historical, and stdcell contracts
+        run: |
+          python3 scripts/test_process_ir.py
+          python3 scripts/test_scmos_rule_families.py
+          python3 scripts/test_historical_scmos.py
+          python3 scripts/test_stdcell_spice_pex.py
+          python3 scripts/test_stdcell_generator_contract.py
+          python3 scripts/test_stdcell_generator.py
+          python3 scripts/test_routing_grammar.py
+          python3 scripts/inspect_routing_grammar.py --profile ls1u --output /tmp/ls1u-routing-grammar.json
       - uses: DeterminateSystems/nix-installer-action@v16
       - uses: DeterminateSystems/magic-nix-cache-action@v9
-      - name: Run siliconcraft conformance gates
+      - name: Run siliconcraft conformance and stdcell geometry gates
         run: >
-          nix-shell -p klayout netgen python3 --run
-          "python3 scripts/run_ci.py --profile ami06"
+          nix-shell -p klayout netgen magic ngspice python3 --run
+          "python3 scripts/run_ci.py --profile ami06 &&
+          python3 scripts/run_stdcell_inv_gate.py --profile ami06 &&
+          python3 scripts/run_stdcell_gate.py --profile ami06
+          --architecture two_metal_classic --cell nand2_drc
+          --input common/tests/spice/stdcell/nand2_drc.spice
+          --schematic common/tests/spice/stdcell/nand2_drc_reference.spice
+          --workdir build/stdcell/ami06/nand2_gate_pex_lef --pex --lef &&
+          python3 scripts/run_stdcell_gate.py --profile ami06
+          --architecture three_metal_classic --cell nor2_drc
+          --input common/tests/spice/stdcell/nor2_drc.spice
+          --schematic common/tests/spice/stdcell/nor2_drc_reference.spice
+          --workdir build/stdcell/ami06/nor2_gate"
 
   pex:
     name: Magic PEX contract and runtime gates

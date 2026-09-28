@@ -1,0 +1,964 @@
+# Historical SCMOS process families and Magic extraction contracts.
+# This is a provenance-backed reference matrix, not an active ProcessIR profile.
+schema_version: 1
+kind: historical_scmos_process_matrix
+authority: reference_only
+active_profile_policy:
+  status: metadata_only
+  active_profiles: []
+  do_not_claim:
+    - calibrated_device_models
+    - complete_active_drc_profiles
+    - complete_active_lvs_profiles
+    - signoff_pex
+    - foundry_signoff
+  reason: "The public sources expose scalable layer/rule contracts and historical Magic extraction data, but not a complete current foundry-qualified profile for every port."
+
+sources:
+  mosis_scmos_7_2:
+    url: "https://www.clear.rice.edu/elec422/1999/manual/mosis_scmos7_2.pdf"
+    title: "MOSIS Scalable CMOS (SCMOS) Design Rules, version 7.2"
+    evidence:
+      - "Table 2 defines E, A, 3M, 4M, LC, MEMS, and SUBM options."
+      - "Tables 3a and 3b map Orbit, HP CMOS34, HP CMOS26G, AMI CWL, HP GMOS14TB, and HP GMOS10QA to MOSIS codes and lambda."
+      - "Table 5 assigns GDS/CIF identifiers for analog, capacitor, CCD, MEMS, silicide, and multi-metal layers."
+      - "The CMOS14 contact rule requires exact standard insulator contacts/vias; large openings use arrays."
+  southampton_scmos_8_0:
+    url: "https://personal.southampton.ac.uk/~bim/notes/ice/DesignRules/scmos-main.html"
+    title: "Southampton SCMOS design-rule notes, version 8.0"
+    evidence:
+      - "Separates logical SCMOS layers from foundry output layers and documents PC poly-cap versus LC cap-well."
+      - "Adds 5M/6M, THICK_ACTIVE, SILICIDE_BLOCK, and richer SUBM rule/layer observations."
+      - "Records historical DEEP variants; those remain provenance-only in siliconcraft."
+  magic_catalog:
+    url: "https://opencircuitdesign.com/magic/tech.html"
+    title: "Magic Technology Files catalog"
+    evidence:
+      - "2002a is the last known MOSIS archive release; 2001a is a separate long-used archive set."
+      - "The bundled scmos.tech is an obsolete standard scalable-CMOS distribution, not either archive release."
+      - "SCMOS rules are conservative integer-lambda abstractions; implicit wells/implants and output styles are not foundry signoff rules."
+      - "Distribution files include scmos-sub.tech, scmos-tm.tech, scmosWR.tech, and scmos.tech."
+  magic_2001a:
+    url: "https://opencircuitdesign.com/magic/archive/2001a.tar.gz"
+    title: "Magic SCMOS archive release 2001a"
+    role: archive_release
+  magic_2002a:
+    url: "https://opencircuitdesign.com/magic/archive/2002a.tar.gz"
+    title: "Magic SCMOS archive release 2002a"
+    role: archive_release
+  bundled_magic_source:
+    path: "profiles/ls1u/reference/magic/scmos.tech.in"
+    title: "Bundled Magic SCMOS source used as a historical/backend reference"
+    version: 8.2.8
+    role: bundled_distribution_source
+
+magic_release_contract:
+  archive_releases_are_distinct:
+    - magic_2001a
+    - magic_2002a
+  bundled_technology_is_distinct: true
+  bundled_name: scmos.tech
+  bundled_source: "profiles/ls1u/reference/magic/scmos.tech.in"
+  required_behavior: "Never treat 2001a or 2002a as aliases for the bundled scmos.tech. Preserve release, file name, target label, and conditional-preprocessor context."
+  distribution_files:
+    - name: scmos-sub.tech
+      url: "https://opencircuitdesign.com/magic/archive/scmos-sub.tech"
+      target_labels:
+        - HP CMOS26G
+        - HP CMOS14B
+      feature_sizes_um:
+        - 0.8
+        - 0.6
+      lambda_um:
+        - 0.4
+        - 0.3
+    - name: scmos-tm.tech
+      url: "https://opencircuitdesign.com/magic/archive/scmos-tm.tech"
+      target_label: tight_metal
+      feature_sizes_um:
+        - 1.2
+        - 1.0
+        - 0.7
+      lambda_um:
+        - 0.6
+        - 0.5
+        - 0.35
+    - name: scmosWR.tech
+      url: "https://opencircuitdesign.com/magic/archive/scmosWR.tech"
+      target_label: standard_without_well_routing
+    - name: scmos.tech
+      url: "https://opencircuitdesign.com/magic/archive/scmos.tech"
+      target_label: standard_scalable_cmos
+      feature_sizes_um:
+        - 2.0
+        - 1.6
+        - 1.2
+
+magic_pex_method:
+  purpose: "Carry historical Magic extraction structure into future source-driven manifests without silently promoting it to calibrated process data."
+  native_units:
+    lambda: centimicron
+    sheet_resistance: milliohm_per_square
+    area_capacitance: attofarad_per_lambda2
+    edge_capacitance: attofarad_per_lambda
+    contact_resistance: magic_contact_native_or_milliohm_per_contact
+  directive_families:
+    - planeorder
+    - resist
+    - contact
+    - areacap
+    - overlap
+    - perimc
+    - sideoverlap
+    - sidewall
+    - fet
+    - fetresis
+    - device
+  ownership_rules:
+    - "Historical Magic comments marked MODEL HANDLES THIS remain model-owned; do not duplicate intrinsic gate or junction terms in PEX."
+    - "Metal, poly, well, resistor, overlap, perimeter, sidewall, contact, and route-layer terms are candidates for a source-driven PEX manifest after unit and fixture validation."
+    - "A Magic technology file can supply plane/connectivity grammar while coefficients remain from another source; the active AMI16 and HP06 manifests already use this separation."
+
+capabilities:
+  analog_npn:
+    layers:
+      - pbase
+      - emitter
+      - collector
+    magic_types:
+      - pbase
+      - emit
+      - coll
+      - npn
+    source: mosis_scmos_7_2
+  buried_ccd:
+    layers:
+      - buried_ccd
+      - buried_ccd_contact
+    magic_types:
+      - bd
+      - nbd
+      - nbdc
+    source: mosis_scmos_7_2
+  floating_gate:
+    magic_types:
+      - nffet
+      - pffet
+      - enfet
+      - epfet
+    source: bundled_magic_source
+  mems:
+    layers:
+      - mems_open
+      - mems_etch_stop
+    magic_types:
+      - open
+      - pstop
+      - ppstop
+      - pstc
+    source: magic_2002a
+  electrode_poly2:
+    layers:
+      - electrode
+    magic_types:
+      - poly2
+      - ecap
+      - p2c
+    source: mosis_scmos_7_2
+  linear_capacitor:
+    layers:
+      - cap_well
+    magic_types:
+      - capwell
+      - wellcap
+      - wcap
+    source: mosis_scmos_7_2
+  poly_capacitor:
+    layers:
+      - poly_cap1
+    magic_types:
+      - polycap
+      - cap
+    source: southampton_scmos_8_0
+  silicide_block:
+    layers:
+      - silicide_block
+    magic_types:
+      - sb
+      - sblock
+    source: southampton_scmos_8_0
+  metal3:
+    layers:
+      - via2
+      - metal3
+    source: mosis_scmos_7_2
+  metal4:
+    layers:
+      - via3
+      - metal4
+    source: mosis_scmos_7_2
+  stacked_via:
+    magic_types:
+      - m123c
+      - m234c
+    source: magic_2002a
+  tight_metal:
+    magic_deck: scmos-tm.tech
+    source: magic_catalog
+  subm:
+    rule_family: scmos_subm
+    source: mosis_scmos_7_2
+
+layers:
+  - name: mems_open
+    gds_layer: 23
+    gds_datatype: 0
+    cif: COP
+    magic_type: open
+    source: mosis_scmos_7_2
+  - name: mems_etch_stop
+    gds_layer: 24
+    gds_datatype: 0
+    cif: CPS
+    magic_type: pstop
+    source: mosis_scmos_7_2
+  - name: poly_cap1
+    gds_layer: 28
+    gds_datatype: 0
+    cif: CPC
+    magic_type: polycap
+    source: mosis_scmos_7_2
+  - name: silicide_block
+    gds_layer: 29
+    gds_datatype: 0
+    cif: CSB
+    magic_type: sb
+    source: southampton_scmos_8_0
+  - name: via3
+    gds_layer: 30
+    gds_datatype: 0
+    cif: CVT
+    magic_type: m3contact
+    source: mosis_scmos_7_2
+  - name: metal4
+    gds_layer: 31
+    gds_datatype: 0
+    cif: CMQ
+    magic_type: metal4
+    source: mosis_scmos_7_2
+  - name: via2
+    gds_layer: 61
+    gds_datatype: 0
+    cif: CVS
+    magic_type: m2contact
+    source: mosis_scmos_7_2
+  - name: metal3
+    gds_layer: 62
+    gds_datatype: 0
+    cif: CMT
+    magic_type: metal3
+    source: mosis_scmos_7_2
+  - name: thick_active
+    gds_layer: 60
+    gds_datatype: 0
+    cif: CTA
+    magic_type: thick_active
+    source: southampton_scmos_8_0
+  - name: cap_well
+    gds_layer: 59
+    gds_datatype: 0
+    cif: CWC
+    magic_type: capwell
+    source: mosis_scmos_7_2
+  - name: buried_ccd
+    gds_layer: 57
+    gds_datatype: 0
+    cif: CCD
+    magic_type: bd
+    source: mosis_scmos_7_2
+  - name: pbase
+    gds_layer: 58
+    gds_datatype: 0
+    cif: CBA
+    magic_type: pbase
+    source: mosis_scmos_7_2
+  - name: electrode
+    gds_layer: 56
+    gds_datatype: 0
+    cif: CEL
+    magic_type: poly2
+    source: mosis_scmos_7_2
+
+rule_overlays:
+  standard:
+    lambda_convention: "Historically one half of minimum gate length."
+    source: magic_catalog
+    integer_lambda_contract:
+      minimum_gate_length_lambda: 2
+      minimum_metal_width_lambda: 3
+      minimum_diffusion_width_lambda: 3
+      minimum_contact_size_lambda: 4
+  tight_metal:
+    source: mosis_scmos_7_2
+    magic_source: scmos-tm.tech
+    differences_from_standard:
+      - rule: metal1_spacing
+        standard_lambda: 3
+        tight_metal_lambda: 2
+      - rule: metal2_spacing
+        standard_lambda: 4
+        tight_metal_lambda: 3
+      - rule: metal3_spacing
+        standard_lambda: 4
+        tight_metal_lambda: 4
+  subm:
+    source: mosis_scmos_7_2
+    differences_from_standard:
+      - rule: well_width
+        standard_lambda: 10
+        subm_lambda: 12
+      - rule: well_spacing_different_potential
+        standard_lambda: 9
+        subm_lambda: 18
+      - rule: well_overlap_transistor
+        standard_lambda: 5
+        subm_lambda: 6
+      - rule: poly_spacing
+        standard_lambda: 2
+        subm_lambda: 3
+      - rule: contact_spacing
+        standard_lambda: 2
+        subm_lambda: 3
+      - rule: via_on_flat
+        standard_lambda: 2
+        subm_lambda: unrestricted
+      - rule: metal2_spacing
+        standard_lambda: 4
+        subm_lambda: 3
+      - rule: metal3_width
+        standard_lambda: 6
+        subm_lambda: 5
+      - rule: metal3_spacing
+        standard_lambda: 4
+        subm_lambda: 3
+    extended_observations:
+      - "Southampton SCMOS 8.0 records wider SUBM metal spacing and substantially different poly2/electrode rules."
+      - "SUBM is a rule-family choice; it is not a license to import DEEP variants."
+  hp_cmos14_contact_policy:
+    source: mosis_scmos_7_2
+    requirements:
+      - "Insulator contacts and vias use the exact standard contact size."
+      - "Pads and large openings use arrays; do not infer a single oversized contact."
+
+processes:
+  - name: orbit_20
+    ncsu_gap_name: ORBIT_SCNA2
+    vendor_labels:
+      - ORBIT 2.0
+      - SCNA20(ORB)
+      - SCPE20(ORB)
+    feature_size_um: 2.0
+    lambda_um: 1.0
+    rule_family: scmos
+    mosis_codes:
+      - SCNA
+      - SCNE
+      - SCN
+      - SCNA_MEMS
+    capabilities:
+      - analog_npn
+      - buried_ccd
+      - floating_gate
+      - electrode_poly2
+      - mems
+    variants:
+      - code: SCNA
+        role: analog_n_well_cmos_bjt
+      - code: SCNE
+        role: electrode_poly2_option
+      - code: SCNA_MEMS
+        role: analog_mems_option
+    source: mosis_scmos_7_2
+    magic:
+      bundled_historical_styles:
+        - SCNA20(ORB)
+        - SCPE20(ORB)
+      bundled_style_context: "OLD_EXTRACT_STYLE and STANDARD conditional branches in scmos.tech.in"
+      archive_feature_techfile: SCNA_MEMS.80.tech27
+      archive_feature_target_label: "AMIabn"
+      exact_orbit_archive_target: false
+      note: "The archive SCNA.80/SCNA_MEMS.80 files expose the analog/NPN/poly2/MEMS grammar but are labeled AMIabn; Orbit's exact historical PEX is in the bundled SCNA20(ORB) style."
+    status: historical_reference
+  - name: ami_abn_12
+    ncsu_gap_name: AMI_ABN_12
+    vendor_labels:
+      - AMI ABN 1.2
+      - AMI 1.2
+    feature_size_um: 1.2
+    lambda_um: 0.6
+    rule_family: scmos
+    mosis_codes:
+      - SCNA
+      - SCNE
+      - SCN
+    options:
+      - high_voltage
+    capabilities:
+      - analog_npn
+      - buried_ccd
+      - electrode_poly2
+      - high_voltage
+    source: mosis_scmos_7_2
+    magic:
+      generic_archive_techfile: SCNA.80.tech27
+      generic_archive_target_label: "AMIabn"
+      generic_archive_feature_size_um: 1.6
+      exact_12um_archive_target: false
+      note: "The 2002a SCNA.80 file is an AMIabn 1.6um/lambda-0.8 generic analog style; it is not silently used as the AMI ABN 1.2um target."
+    status: historical_reference
+  - name: hp_cmos34
+    ncsu_gap_name: HP_CMOS34
+    vendor_labels:
+      - HP CMOS34
+      - AMOSI
+      - SCN12LC(HP)
+    feature_size_um: 1.2
+    lambda_um: 0.6
+    rule_family: scmos
+    mosis_codes:
+      - SCNLC
+      - SCN
+    options:
+      - tight_metal
+    capabilities:
+      - linear_capacitor
+      - tight_metal
+    source: mosis_scmos_7_2
+    magic:
+      bundled_historical_style: SCN12LC(HP)
+      bundled_style_context: "TIGHTMETAL conditional branch in scmos.tech.in"
+      archive_exact_techfile: false
+      note: "scmos-tm.tech carries the lambda=0.6(hp) geometry/PEX family; the old bundled source names the process-specific linear-cap style SCN12LC(HP)."
+    status: historical_reference
+  - name: ami_cwl
+    ncsu_gap_name: AMI_CWL
+    vendor_labels:
+      - AMI CWL
+      - SCNPC
+    feature_size_um: 0.8
+    lambda_um: 0.5
+    rule_family: scmos
+    mosis_codes:
+      - SCNPC
+    options:
+      - tight_metal
+    capabilities:
+      - poly_capacitor
+      - tight_metal
+    source: mosis_scmos_7_2
+    magic:
+      generic_layer_contract: polycap
+      exact_archive_techfile: false
+      note: "SCNPC is the distinct POLY_CAP1/CPC option; do not substitute the cap-well/CWC LC option."
+    status: historical_reference
+  - name: hp_cmos26b_legacy
+    ncsu_gap_name: HP_CMOS26B
+    vendor_labels:
+      - HP CMOS26B
+      - SCN08(HP)
+    feature_size_um: 1.0
+    lambda_um: 0.5
+    rule_family: scmos
+    mosis_codes:
+      - SCN3M
+    options:
+      - tight_metal
+    capabilities:
+      - metal3
+      - tight_metal
+    source: bundled_magic_source
+    magic:
+      bundled_historical_style: SCN08(HP)
+      bundled_style_context: "TIGHTMETAL conditional branch in scmos.tech.in"
+      archive_2002a_techfile: SCN3M.50.tech27
+      archive_header_target_label: HPcmos26g
+      exact_process_alias: false
+      rich_pex: true
+      note: "The bundled source explicitly calls the lambda=0.5 style HP CMOS26B; the archive file with the same lambda is labeled HPcmos26g. Preserve both labels instead of silently collapsing B and G."
+    status: historical_reference
+  - name: hp_cmos26g
+    ncsu_gap_name: HP_CMOS26G
+    vendor_labels:
+      - HP CMOS26G
+      - HPcmos26g
+      - SCN3M.50.tech27
+    feature_size_um: 0.8
+    lambda_um: 0.5
+    rule_family: scmos
+    mosis_codes:
+      - SCN3M
+      - SCN
+    options:
+      - tight_metal
+    capabilities:
+      - metal3
+      - tight_metal
+    source: mosis_scmos_7_2
+    magic:
+      archive_2001a_techfile: SCN3M.50.tech27
+      archive_2002a_techfile: SCN3M.50.tech27
+      archive_header_target_label: HPcmos26g
+      exact_process_alias: true
+      rich_pex: true
+      bundled_conflicting_style: SCN08(HP)
+      note: "The archive's HPcmos26g target is retained separately from the bundled HP CMOS26B historical branch, even though both use lambda=0.5 3M extraction grammar."
+    status: historical_reference
+  - name: hp_cmos26g_subm
+    ncsu_gap_name: HP_CMOS26G
+    vendor_labels:
+      - HP CMOS26G
+      - SCN3M_SUBM.40.HP
+    feature_size_um: 0.8
+    lambda_um: 0.4
+    rule_family: scmos_subm
+    mosis_codes:
+      - SCN3M_SUBM
+      - SCN_SUBM
+    capabilities:
+      - metal3
+      - subm
+      - silicide_block
+      - stacked_via
+    source: mosis_scmos_7_2
+    magic:
+      archive_2001a_techfile: SCN3M_SUBM.40.HP.tech27
+      archive_2002a_techfile: SCN3M_SUBM.40.HP.tech27
+      exact_process_alias: true
+      rich_pex: true
+      note: "The HP variant adds fill and stacked-contact grammar and has a full historical Magic extraction block."
+    status: historical_reference
+  - name: hp_mos14tb
+    ncsu_gap_name: HP_GMOS14TB
+    vendor_labels:
+      - HP MOS14TB
+      - HP GMOS14TB
+      - AMOS14TB
+    feature_size_um: 0.5
+    lambda_um: 0.35
+    rule_family: scmos
+    mosis_codes:
+      - SCN3M
+      - SCN
+      - SCN3MLC
+      - SCNLC
+    capabilities:
+      - metal3
+      - linear_capacitor
+      - silicide_block
+    source: mosis_scmos_7_2
+    magic:
+      archive_2002a_techfiles:
+        - SCN3M.35.tech27
+        - SCN3MLC.35.tech27
+      exact_process_alias: true
+      rich_pex: true
+      note: "SCN3MLC is the cap-well/linear-cap variant; SCN3M is the 3M base."
+    status: historical_reference
+  - name: hp_mos14tb_subm
+    ncsu_gap_name: HP_GMOS14TB
+    vendor_labels:
+      - HP MOS14TB SUBM
+      - HP GMOS14TB SUBM
+      - AMOS14TB SUBM
+    feature_size_um: 0.5
+    lambda_um: 0.3
+    rule_family: scmos_subm
+    mosis_codes:
+      - SCN3M_SUBM
+      - SCN_SUBM
+      - SCN3MLC_SUBM
+      - SCNLC_SUBM
+    capabilities:
+      - metal3
+      - subm
+      - linear_capacitor
+      - silicide_block
+      - stacked_via
+    source: mosis_scmos_7_2
+    magic:
+      archive_2002a_techfiles:
+        - SCN3M_SUBM.30.tech27
+        - SCN3MLC_SUBM.30.tech27
+      exact_process_alias: true
+      rich_pex: true
+      note: "Apply the CMOS14 exact-contact/array policy; do not use a generic oversized-contact shortcut."
+    status: historical_reference
+  - name: hp_gmos10qa
+    ncsu_gap_name: HP_GMOS10QA
+    vendor_labels:
+      - HP GMOS10QA
+    feature_size_um: 0.35
+    lambda_um: 0.25
+    rule_family: scmos
+    mosis_codes:
+      - SCN4N
+    options:
+      - tight_metal
+    capabilities:
+      - metal4
+      - tight_metal
+    source: mosis_scmos_7_2
+    magic:
+      exact_archive_techfile: false
+      note: "The MOSIS mapping is confirmed, but the 2001a/2002a archive scan did not locate an exact GMOS10QA/SCN4N target file."
+    status: historical_reference
+  - name: hp_gmos10qa_subm
+    ncsu_gap_name: HP_GMOS10QA
+    vendor_labels:
+      - HP GMOS10QA SUBM
+    feature_size_um: 0.35
+    lambda_um: 0.2
+    rule_family: scmos_subm
+    mosis_codes:
+      - SCN4M_SUBM
+    options:
+      - tight_metal
+    capabilities:
+      - metal4
+      - subm
+      - tight_metal
+    source: mosis_scmos_7_2
+    magic:
+      backend_grammar_techfile: SCN4M_SUBM.20.tech27
+      backend_header_target_label: TSMC35
+      exact_process_alias: false
+      note: "SCN4M_SUBM.20 exists in the archive but is labeled TSMC35; use it only as a 4M/SUBM grammar reference until GMOS10QA-specific output and coefficients are sourced."
+    status: historical_reference
+
+magic_pex_references:
+  - id: orbit20_scna20_legacy
+    process: orbit_20
+    source_path: "profiles/ls1u/reference/magic/scmos.tech.in"
+    source_section: "OLD_EXTRACT_STYLE / STANDARD / SCNA20(ORB)"
+    lambda_centimicron: 100
+    sidehalo: 0
+    measured_run: n34o
+    units:
+      resistance: milliohm_per_square
+      capacitance_area: attofarad_per_lambda2
+      capacitance_edge: attofarad_per_lambda
+      contact: milliohm_per_contact
+    sheet_resistance:
+      ndiff: 27260
+      pdiff: 59550
+      poly: 23430
+      poly2: 19690
+      emitter: 27260
+      pbase: 2000000
+      metal1: 52
+      metal2: 26
+      nwell: 2505830
+    contact_resistance:
+      poly: 11000
+      electrode: 9000
+      ndiff: 18710
+      pdiff: 100560
+    capacitance_summary:
+      area:
+        poly: 39
+        metal1: 24
+        metal2: 19
+        cap: 39
+        poly2: 50
+      overlap:
+        metal1_diffusion: 47
+        metal2_diffusion: 22
+        metal1_poly: 30
+        metal2_poly: 19
+        metal2_metal1: 45
+        metal1_poly2: 40
+      perimeter:
+        poly: 80
+    device_methods:
+      - "device capacitor None cap,capc/a poly,pc 120 735"
+      - "device capacitor None wcap ndiff,ndc 300 0"
+      - "device bjt npn emit,emc/a pbase,pbc/a nwell"
+    model_owned_terms:
+      - diffusion_junction_capacitance
+      - mos_gate_overlap_and_intrinsic_terms
+  - id: hp_cmos34_scn12lc
+    process: hp_cmos34
+    source_path: "profiles/ls1u/reference/magic/scmos.tech.in"
+    source_section: "TIGHTMETAL / SCN12LC(HP)"
+    lambda_centimicron: 60
+    sidehalo: 0
+    measured_run: n36y
+    units:
+      resistance: milliohm_per_square
+      capacitance_area: attofarad_per_lambda2
+      capacitance_edge: attofarad_per_lambda
+      contact: milliohm_per_contact
+    sheet_resistance:
+      ndiff: 74630
+      pdiff: 109590
+      poly: 26620
+      metal1: 60
+      metal2: 39
+      nwell: 1500000
+    contact_resistance:
+      ndiff: 77000
+      pdiff: 44260
+      poly: 16210
+      via1: 86560
+    capacitance_summary:
+      area:
+        poly: 22
+        metal1: 14
+        metal2: 9
+      overlap:
+        metal1_poly: 24
+        metal2_poly: 7
+        metal2_metal1: 14
+    device_methods:
+      - "fet wcap ndiff,ndc 1 wcap GND! 300 0"
+    model_owned_terms:
+      - diffusion_junction_capacitance
+      - mos_gate_overlap_and_intrinsic_terms
+  - id: hp_cmos26b_scn08
+    process: hp_cmos26b_3m
+    source_path: "profiles/ls1u/reference/magic/scmos.tech.in"
+    source_section: "TIGHTMETAL / SCN08(HP)"
+    lambda_centimicron: 50
+    sidehalo: 8
+    measured_run: n33h
+    units:
+      resistance: milliohm_per_square
+      capacitance_area: attofarad_per_lambda2
+      capacitance_edge: attofarad_per_lambda
+      contact: milliohm_per_contact
+    sheet_resistance:
+      ndiff: 2280
+      pdiff: 1990
+      poly: 3480
+      metal1: 67
+      metal2: 65
+      metal3: 29
+      nwell: 1265560
+    contact_resistance:
+      poly: 1680
+      diffusion: 1100
+      via1: 305
+      via2: 259
+    capacitance_summary:
+      area:
+        poly: 16
+        metal1: 9
+        metal2: 5
+        metal3: 4
+      overlap:
+        metal1_poly: 13
+        metal2_poly: 4
+        metal2_metal1: 6
+        metal3_poly: 2
+        metal3_metal1: 3
+        metal3_metal2: 7
+      perimeter:
+        metal1: 43
+        metal2: 36
+        metal3: 36
+    model_owned_terms:
+      - diffusion_junction_capacitance
+      - mos_gate_overlap_and_intrinsic_terms
+  - id: hp_cmos26g_scn08_subm_legacy
+    process: hp_cmos26g_subm
+    source_path: "profiles/ls1u/reference/magic/scmos.tech.in"
+    source_section: "SUBMICRON / SCN08(HP26G)"
+    lambda_centimicron: 40
+    sidehalo: 8
+    measured_run: n48r
+    units:
+      resistance: milliohm_per_square
+      capacitance_area: attofarad_per_lambda2
+      capacitance_edge: attofarad_per_lambda
+      contact: milliohm_per_contact
+    sheet_resistance:
+      ndiff: 2375
+      pdiff: 2000
+      poly: 2350
+      metal1: 70
+      metal2: 67
+      metal3: 30
+      nwell: 1265000
+    contact_resistance:
+      poly: 1250
+      ndiff: 1300
+      pdiff: 1125
+      via1: 430
+      via2: 300
+    capacitance_summary:
+      area:
+        poly: 13
+        metal1: 6
+        metal2: 3
+        metal3: 2
+      overlap:
+        metal1_poly: 9
+        metal2_poly: 3
+        metal2_metal1: 5
+        metal3_poly: 2
+        metal3_metal1: 3
+        metal3_metal2: 5
+      sidewall:
+        poly: 11
+        metal1: 24
+        metal2: 27
+        metal3: 39
+    model_owned_terms:
+      - diffusion_junction_capacitance
+      - mos_gate_overlap_and_intrinsic_terms
+  - id: hp_cmos26g_subm_2002a_rich
+    process: hp_cmos26g_subm
+    source_release: magic_2002a
+    source_path: "SCN3M_SUBM.40.HP.tech27"
+    source_section: extract
+    magic_style: "HP0.8um(hpcmos26g)from:N88X"
+    lambda_centimicron: 40
+    sidehalo: 8
+    units:
+      resistance: milliohm_per_square
+      capacitance_area: attofarad_per_lambda2
+      capacitance_edge: attofarad_per_lambda
+      contact: magic_contact_native
+    sheet_resistance:
+      ndiff: 2300
+      pdiff: 2000
+      nwell: 1600000
+      pwell: 1
+      poly: 2000
+      metal1: 70
+      metal2: 70
+      metal3: 50
+    contact_resistance:
+      ndiff: 1400
+      pdiff: 1200
+      poly: 1200
+      via1: 500
+      via2: 370
+    capacitance_summary:
+      well_area: 6.4
+      diffusion_area_model_owned:
+        ndiff: 48
+        pdiff: 87.68
+      diffusion_perimeter_model_owned:
+        ndiff: 170
+        pdiff: 73.6
+      poly_area: 18.69
+      metal1_area: 7.859
+      metal2_area: 2.518
+      metal3_area: 1.493
+      metal1_perimeter: 7.86
+      metal2_perimeter: 2.928
+      metal3_perimeter: 1.788
+    extra_methods:
+      - stacked_contact: m123c
+      - fill_plane: fill
+      - resistor_devices: rnwell,rpoly,rndiff,rpdiff,rmetal1,rmetal2,rmetal3
+    model_owned_terms:
+      - diffusion_junction_capacitance
+      - mos_gate_overlap_and_intrinsic_terms
+  - id: hp_mos14tb_scn3mlc
+    process: hp_mos14tb
+    source_release: magic_2002a
+    source_path: "SCN3MLC.35.tech27"
+    source_section: extract
+    magic_style: "HP0.5um(hpcmos14tb)from:T24L"
+    lambda_centimicron: 35
+    sidehalo: 8
+    units:
+      resistance: milliohm_per_square
+      capacitance_area: attofarad_per_lambda2
+      capacitance_edge: attofarad_per_lambda
+      contact: magic_contact_native
+    sheet_resistance:
+      ndiff: 2600
+      pdiff: 2300
+      nwell: 721000
+      pwell: 1
+      poly: 2300
+      metal1: 70
+      metal2: 70
+      metal3: 50
+    contact_resistance:
+      ndiff: 1900
+      pdiff: 1700
+      poly: 1700
+      via1: 460
+      via2: 460
+    capacitor_methods:
+      wellcap_overlap: 277.83
+      cwell_area: 12.372
+    capacitance_summary:
+      poly_area: 14.309
+      metal1_area: 6.017
+      metal2_area: 1.928
+      metal3_area: 1.143
+    extra_methods:
+      - capwell
+      - wellcapacitor
+      - silicide_block
+    model_owned_terms:
+      - diffusion_junction_capacitance
+      - mos_gate_overlap_and_intrinsic_terms
+  - id: hp_mos14tb_subm_scn3mlc
+    process: hp_mos14tb_subm
+    source_release: magic_2002a
+    source_path: "SCN3MLC_SUBM.30.tech27"
+    source_section: extract
+    magic_style: "HP0.5um(hpcmos14tb)from:T24L"
+    lambda_centimicron: 30
+    sidehalo: 8
+    units:
+      resistance: milliohm_per_square
+      capacitance_area: attofarad_per_lambda2
+      capacitance_edge: attofarad_per_lambda
+      contact: magic_contact_native
+    sheet_resistance:
+      ndiff: 2600
+      pdiff: 2300
+      nwell: 721000
+      pwell: 1
+      poly: 2300
+      metal1: 70
+      metal2: 70
+      metal3: 50
+    contact_resistance:
+      ndiff: 1900
+      pdiff: 1700
+      poly: 1700
+      via1: 460
+      via2: 460
+    capacitor_methods:
+      wellcap_overlap: 204.12
+      cwell_area: 9.09
+    capacitance_summary:
+      poly_area: 10.513
+      metal1_area: 4.421
+      metal2_area: 1.417
+      metal3_area: 0.84
+    extra_methods:
+      - capwell
+      - wellcapacitor
+      - silicide_block
+      - fill_plane
+    model_owned_terms:
+      - diffusion_junction_capacitance
+      - mos_gate_overlap_and_intrinsic_terms
+  - id: hp_gmos10qa_subm_backend_only
+    process: hp_gmos10qa_subm
+    source_release: magic_2002a
+    source_path: "SCN4M_SUBM.20.tech27"
+    source_section: extract
+    magic_style: not_process_specific
+    lambda_centimicron: 20
+    exact_process_match: false
+    note: "The archive file is labeled TSMC35. Retain its 4M/SUBM connectivity and stacked-via grammar as a method reference only; do not copy its coefficients into GMOS10QA."

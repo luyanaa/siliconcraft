@@ -12,8 +12,7 @@ meta:
   min_width_um: 1.5
   model_prefix: ls1u
   well_type: e
-  submicron_rules: false
-  deep_rules: false
+  rule_family: native
   stacked_vias: false
   features:
     twinWellAvailable: true

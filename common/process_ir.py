@@ -24,6 +24,36 @@ class ProcessIRError(ValueError):
     """Raised when process fragments cannot form a coherent ProcessIR."""
 
 
+RULE_FAMILIES = frozenset({"scmos", "scmos_subm", "native"})
+
+
+def validate_rule_family(meta: dict[str, Any], source: Path) -> str:
+    """Validate the normalized rule-family contract for one profile."""
+    forbidden = {"submicron_rules", "deep_rules"} & set(meta)
+    if forbidden:
+        names = ", ".join(sorted(forbidden))
+        raise ProcessIRError(
+            f"{source}: legacy rule flags {names} are forbidden; use "
+            "meta.rule_family"
+        )
+    family = meta.get("rule_family")
+    if family not in RULE_FAMILIES:
+        allowed = ", ".join(sorted(RULE_FAMILIES))
+        raise ProcessIRError(
+            f"{source}: meta.rule_family must be one of {allowed}; got {family!r}"
+        )
+    if family in {"scmos", "scmos_subm"}:
+        identifiers = (
+            str(meta.get("process", "")),
+            str(meta.get("mosis_code", "")),
+        )
+        if any("DEEP" in identifier.upper() for identifier in identifiers):
+            raise ProcessIRError(
+                f"{source}: SCMOS_DEEP process identifiers are forbidden; "
+                "use the corresponding SCMOS_SUBM process"
+            )
+    return str(family)
+
 @dataclass(frozen=True)
 class DeviceBinding:
     """Canonical device plus process-specific layout/simulation/LVS binding."""
@@ -132,6 +162,10 @@ class ProcessIR:
     def profile_dir(self) -> Path:
         return self.root / "profiles" / self.profile
 
+
+    @property
+    def rule_family(self) -> str:
+        return str(self.meta["rule_family"])
     @property
     def lambda_um(self) -> float:
         return float(self.meta.get("lambda_um", 0.5))
@@ -353,6 +387,7 @@ def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
             f"{layers_path}: meta.name={meta['name']!r} does not match "
             f"profile directory {profile_name!r}"
         )
+    validate_rule_family(meta, layers_path)
 
     return ProcessIR(
         root=repo_root,
