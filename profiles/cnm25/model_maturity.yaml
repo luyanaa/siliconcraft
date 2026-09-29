@@ -1,0 +1,35 @@
+# profiles/cnm25/model_maturity.yaml — model evidence for the CNM25 APDK cards.
+models:
+  cnm25modn:
+    simulator: ngspice
+    representation: subckt
+    source: "APDK spiceopus/cnm25mod.lib (BSIM3v3.2.4, HSPICE Level 53)"
+    corners:
+      - ttt
+      - sss
+      - fff
+    mismatch: true
+    evidence: "foundry-style BSIM3v3 card set shipped with the IMB-CNM(CSIC) APDK; Pelgrom coefficients avth0=30mV.um, rau0=5%/um, racj=0.5%/um in the ttt_mc section. Generated cnm25.lib maps APDK BSIM3v3.2.4 (LEVEL 53) to LEVEL 49 because standard ngspice lacks LEVEL 53, and rndgauss() to agauss(0,s); SpiceOpus keeps the original APDK file"
+    fit_status: published
+  cnm25modp:
+    simulator: ngspice
+    representation: subckt
+    source: "APDK spiceopus/cnm25mod.lib (BSIM3v3.2.4, HSPICE Level 53)"
+    corners:
+      - ttt
+      - sss
+      - fff
+    mismatch: true
+    evidence: "same APDK card set; PMOS TOX 3.75E-8, LINT 8E-7"
+    fit_status: published
+  cnm25cpoly:
+    simulator: ngspice
+    representation: subckt
+    source: "APDK spiceopus/cnm25mod.lib (PiP capacitor, cj=4.227E-4 F/m2)"
+    corners:
+      - ttt
+      - sss
+      - fff
+    mismatch: true
+    evidence: "poly-insulator-poly (POLY0/POLY1) capacitor model with process corners"
+    fit_status: published

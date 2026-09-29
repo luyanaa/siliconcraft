@@ -1,0 +1,112 @@
+# profiles/ams_c35/model_contract.yaml — C35 standard + RF model contract
+#
+# STANDARD MODELS (now shipped):
+#   profiles/ams_c35/models/ams_c35.lib holds the ENG-182 REV_6 BSIM3v3 cards
+#   (MODN/MODP) transcribed from the public appendix of E. I. Ishibe,
+#   "Projeto de uma fonte de tensão de referência", M.Sc. thesis EESC/USP
+#   2014 (Anexos A/B/C; thesis license: reproduction for study/research with
+#   citation).  The ELDO dialect is mapped to ngspice (LEVEL 53 -> 49,
+#   VERSION 3.3, ELDO-only parameters dropped).  The same parameter family
+#   appears in Appendix C of Leblebici, "Fundamentals of High-Frequency CMOS
+#   Analog Integrated Circuits" (Cambridge University Press) — used as a
+#   cross-reference, not reproduced here.
+#
+# RF MODELS (contract only): the ams ENG-188 Rev 5.0 "0.35 um CMOS C35 RF
+# SPICE Models" defines the RF primitive subcircuits; the model FILES are ams
+# HIT-Kit and are not redistributed.  The topology and validity envelope
+# below are verified against the ENG-188 Rev 5.0 document (see
+# docs/ams_c35_rf.md for the full SCMOS_RF patch discussion).
+family:
+  id: ams.c35.eng182_eng188
+  backend: ngspice
+  library: models/ams_c35.lib
+  section: ams_c35
+  source:
+    standard_cards: "ENG-182 REV_6 (extracted B10866 / C64685, 2002-12), transcribed from the Ishibe 2014 USP thesis appendix"
+    rf_document: "ENG-188 Rev 5.0, 0.35um CMOS C35 RF SPICE Models (2005-11)"
+    rf_document_public_copy: "https://pdfcoffee.com/eng-188-rev5-3-pdf-free.html"
+    related:
+      - "ENG-183 Rev 5.0, 0.35um CMOS C35 Design Rules"
+      - "ENG-228, C35 Matching Parameters"
+      - "Leblebici, Fundamentals of High-Frequency CMOS Analog Integrated Circuits, Appendix C (cross-reference)"
+  physical_geometry_units: microns
+  nominal_process_um: 0.35
+  design_rule_um: 0.35
+
+corners:
+  ams_c35:
+    condition: typical
+    source: "thesis Anexo A (ENG-182 REV_6)"
+  ams_c35_ws:
+    condition: worst-speed
+    source: "thesis Anexo C (ENG-182 REV_5)"
+  ams_c35_wp:
+    condition: worst-power
+    source: "thesis Anexo B (ENG-182 REV_5)"
+  ams_c35_mc:
+    condition: monte-carlo
+    source: "thesis Anexo D"
+    portability: "ELDO LOT/UNIFORM statistical syntax — not ngspice-portable; documented only"
+
+standard_model_validity:
+  note: "ams ENG-182 plain analog/mixed-signal MOS models are guaranteed to about 1 GHz; above that the ENG-188 RF models apply."
+
+model_topology:
+  rf_mosfet:
+    names:
+      - "modnrf (NMOSRF)"
+      - "modprf (PMOSRF)"
+    intrinsic: "BSIM3v3.1"
+    extrinsic_network:
+      - "RG  — gate resistance (single-sided gate contact)"
+      - "RD  — drain extrinsic resistance"
+      - "RS  — source extrinsic resistance"
+      - "RSUB1/RSUB2 — substrate resistance (RSUB1 = RSUB2)"
+      - "Djdb — external drain/bulk junction diode"
+      - "Djsb — external source/bulk junction diode"
+    note: "internal D/B and S/B diodes of the plain model are replaced by external diodes; the network scales with gate-finger count (multi-finger device = one equivalent MOS + scaled extrinsic network)"
+  rf_validity_envelope:
+    frequency: "up to 6 GHz"
+    l: "fixed 0.35 um"
+    finger_width_wf: "5 or 10 um"
+    total_width: "NMOS <= 200 um, PMOS <= 150 um"
+    gate_contact: "finger contacted on one side"
+    w_definition: "W = ng * wf"
+    example: "W=90 um, wf=5 um, L=0.35 um, ng=18, Ad=2.5 um2, As=2.69 um2, Pd=1.0 um, Ps=1.63 um"
+  rf_performance:
+    note: "Table 2.1 of ENG-188, VDS=+/-3 V: fT(5um)=fT(10um)=28 GHz (NMOS) / 15 GHz (PMOS), but fmax(5um)=49.9/34.6 GHz > fmax(10um)=36.6/27.9 GHz — gate-resistance/distributed-parasitic dominated"
+  varactor:
+    name: "cvar (CVAR)"
+    core: "accumulation-mode MOS capacitor via PMOS BSIM3v3.2 gate-bulk capacitance (Cgb)"
+    extrinsic: "RG + Ro1/2 (inversion suppression) + Rw1/2 (well R) + Dw1/2 (well/substrate junction)"
+    validity: "few kHz - 6 GHz; total W 100-1000 um; wseg=6.6 um fixed; L=0.65 um fixed; row*col array, col/row 1-5"
+    performance: "Cmax/Cmin ~ 3.65-3.68 (tuning ~57%); min Q 41-80 at 2.4 GHz"
+  rf_passives:
+    inductor: "spiral: Ls+Rs+Cp+Cox1/2+Csub1/2+Rsub1/2; differential: Brune transformer macro (Ldc/LBp/LBs/k12/Rdc/RB/Re/CW/CB/COX/RSUB); fixed-layout libraries (3M/4M/thick), 1.5-6 nH"
+    cpolyrf: "Cpoly + Rs + Cpw + Rpw; <= 6 GHz, 0.1-5 pF, W/L 1-2; Q 437(0.12pF)..13.5(4pF) at 2.4 GHz"
+    cmimrf: "Cmim + Rs + Cmw; Rs ~ 0.1 ohm (VIA2-contact-limited); require connecting metal >= 2 um wide"
+    rpoly2rf / rpolyhrf: "Rpoly + Cp + Cpw; drawn W 1-3 um; L max 90 um (RPOLY2) / 30 um (RPOLYH); n-well terminal to substrate/AC ground"
+  model_revisions: "ENG-188 Rev 5.0: modnrf/modprf 3.0, cvar 3.0, stxxxayyyb 3.0, dixxpt 1.0, cpolyrf 4.0, cmimrf 1.0, rpoly2rf 4.0, rpolyhrf 1.0"
+
+source_policy:
+  simulator:
+    authority: shipped_eng182_cards
+    rule: "Use models/ams_c35.lib (typical / worst-speed / worst-power) for standard MOS; the ENG-188 RF subcircuit cards are ams HIT-Kit files and user-supplied."
+  layout_lvs:
+    authority: "SCMOS derived-layer extraction (devices.yaml) with c35N/c35P model names"
+    rule: "Extracted NMOS/PMOS/PiP match the ENG-183 element definitions (NGATE/PSUB, PGATE/NTUB, CPOLY)."
+  rf_layout:
+    authority: "ENG-188 RF-qualified layout topologies (restricted finger width/count, single-sided gate contact, min-L)"
+    rule: "An RF device contract must include finger width, finger count and gate-contact topology, not just total W/L."
+  numeric_equivalence:
+    required_before_clean_claim: true
+    unresolved_policy: "The transcribed cards are ELDO-dialect adapted to ngspice; numeric equivalence with the original ELDO runs is not claimed without revalidation."
+
+measurement_evidence:
+  source:
+    kind: process_documentation
+    author: austriamicrosystems
+    title: "ENG-182 (process parameters) / ENG-183 (design rules) / ENG-188 (RF SPICE models)"
+    thesis: "E. I. Ishibe, 'Projeto de uma fonte de tensão de referência', EESC/USP 2014 (Anexos A-D)"
+    url: "https://www.teses.usp.br/teses/disponiveis/18/18155/tde-24072014-165540/publico/Eder.pdf"
+    description: "Rule values from ENG-183; standard BSIM3v3 cards from ENG-182 (thesis appendix); RF model topology/envelope from ENG-188."

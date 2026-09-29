@@ -276,10 +276,8 @@ def _layer_candidates(process: ProcessIR, facts: list[dict[str, Any]]) -> list[s
     return sorted(
         name
         for name, layer in process.layers.items()
-        if layer.get("available", False) and layer.get("role") in roles
+        if layer.get("available", True) and layer.get("role") in roles
     )
-
-
 def _canonicalize_facts(
     process: ProcessIR,
     facts: list[dict[str, Any]],
@@ -396,7 +394,7 @@ def inspect_profile(profile: str, root: Path) -> RoutingGrammar:
     cut_layers = {
         name
         for name, layer in process.layers.items()
-        if layer.get("available", False) and layer.get("role") == "cut"
+        if layer.get("available", True) and layer.get("role") == "cut"
     }
     source_kind = "klayout_lvs_static" if source_paths else "no_readable_klayout_lvs"
 

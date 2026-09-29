@@ -26,6 +26,68 @@ class ProcessIRError(ValueError):
 
 RULE_FAMILIES = frozenset({"scmos", "scmos_subm", "native"})
 
+# HVCMOS is an undeclared SCMOS 7.2 option with marker layers (CVP/CVN) and
+# no official rule section.  Lambda-expressed HV rules (the process-specific
+# Magic scmos.tech.in AMI 1.5um 20.x set) are forbidden unless the profile
+# explicitly opts in with this feature flag.
+HVCMOS_LAMBDA_OVERRIDE = "hvcmosLambdaOverride"
+HVCMOS_RULE_OVERRIDE = "hvcmosRuleOverride"
+HVCMOS_FAMILY = "hvcmos"
+
+
+def validate_hvcmos_lambda_override(
+    rules_doc: dict[str, Any], meta: dict[str, Any], source: Path
+) -> None:
+    """Validate explicit HVCMOS rule families and the initial HV contract.
+
+    ``family: hvcmos`` in the ordinary SCMOS rule tables remains reserved for
+    the historical Magic AMI 1.5um 20.x lambda deck.  X-FAB-style voltage
+    rules use the separate ``rules.hvcmos`` table and require an explicit
+    ``hvcmosRuleOverride`` opt-in because their public datasheets do not
+    publish a complete foundry DRC/LVS rule set.
+    """
+    rules = rules_doc.get("rules") or {}
+    hv = [
+        entry
+        for group in rules.values()
+        if isinstance(group, list)
+        for entry in group
+        if isinstance(entry, dict) and entry.get("family") == HVCMOS_FAMILY
+    ]
+    features = meta.get("features") or {}
+    lambda_override = bool(features.get(HVCMOS_LAMBDA_OVERRIDE))
+    hv_override = bool(features.get(HVCMOS_RULE_OVERRIDE))
+    hvcmos = rules_doc.get("hvcmos") or {}
+    if hv and not lambda_override:
+        ids = ", ".join(str(entry.get("id", "?")) for entry in hv[:8])
+        raise ProcessIRError(
+            f"{source}: rules tagged family: {HVCMOS_FAMILY} ({ids}) are not "
+            "SCMOS 7.2 lambda rules; declare "
+            f"features.{HVCMOS_LAMBDA_OVERRIDE} explicitly for the historical "
+            "Magic AMI 1.5um 20.x override."
+        )
+    if lambda_override and not hv:
+        raise ProcessIRError(
+            f"{source}: features.{HVCMOS_LAMBDA_OVERRIDE} is set but no "
+            f"rules.yaml entry is tagged family: {HVCMOS_FAMILY}; remove the "
+            "flag or mark the intended historical rules."
+        )
+    if hvcmos and not features.get("hvcmosAvailable"):
+        raise ProcessIRError(
+            f"{source}: rules.hvcmos requires features.hvcmosAvailable=true"
+        )
+    if hvcmos and not hv_override:
+        raise ProcessIRError(
+            f"{source}: rules.hvcmos is process-specific HV collateral; "
+            f"declare features.{HVCMOS_RULE_OVERRIDE}=true and record its "
+            "source/limitations in the profile metadata."
+        )
+    if hv_override and not hvcmos:
+        raise ProcessIRError(
+            f"{source}: features.{HVCMOS_RULE_OVERRIDE} is set but rules.hvcmos "
+            "is absent; remove the flag or add the intended HV contract."
+        )
+
 
 def validate_rule_family(meta: dict[str, Any], source: Path) -> str:
     """Validate the normalized rule-family contract for one profile."""
@@ -388,6 +450,7 @@ def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
             f"profile directory {profile_name!r}"
         )
     validate_rule_family(meta, layers_path)
+    validate_hvcmos_lambda_override(rules_doc, meta, profile_dir / "rules.yaml")
 
     return ProcessIR(
         root=repo_root,

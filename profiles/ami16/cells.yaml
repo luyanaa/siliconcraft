@@ -1,0 +1,28 @@
+# AMI16 fixed-height stdcell geometry candidate.
+# Derived from the AMI_ABN lambda/grid and SCMOS rule table; not a foundry
+# standard-cell library or signoff row contract.
+schema_version: 1
+profile: ami16
+stdcell:
+  geometry_status: derived_candidate_not_signoff
+  geometry_basis:
+    - profiles/ami16/layers.yaml
+    - profiles/ami16/rules.yaml
+    - public NCSU CDK AMI_ABN globalData.il
+  site_height_um: 31.2
+  row_heights_um:
+    n: 8.8
+    p: 17.6
+  row_gap_um: 1.6
+  rail_margin_um: 1.6
+  tap_policy: self_tapped
+  tapcell:
+    required: false
+    cell: TAPCELL
+    max_spacing_um: null
+  orientations:
+    even_row: R0
+    odd_row: MX
+    legal:
+      - R0
+      - MX

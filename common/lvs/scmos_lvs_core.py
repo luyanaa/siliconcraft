@@ -23,6 +23,7 @@ TEXT_GDS = (64, 0)
 
 MODEL_SUFFIX = {
     "nmos": "N", "pmos": "P", "nmos_hv": "Nhv", "pmos_hv": "Phv",
+    "ndmos": "Nhv", "pdmos": "Phv", "nldmos": "Nhv", "pldmos": "Phv",
     "nelec": "NE", "pelec": "PE", "npdiode": "NP", "pndiode": "PN",
     "nwpdiode": "NwP",
 }
@@ -32,8 +33,9 @@ DEFAULT_SHEET_RES = {"poly": 20.0, "elec": 20.0, "highres": 1000.0,
 DEFAULT_CAP_AREACAP = {"elec_poly": 1000.0, "poly_polycap": 700.0,
                        "metalcap": 300.0, "poly_cwell": 700.0}  # aF/um^2
 
-CONDUCTORS = ["nDiff", "pDiff", "nOhmic", "pOhmic", "nBulk", "poly", "elec",
-              "metal1", "metal2", "metal3", "metal4", "metal5", "metal6"]
+CONDUCTORS = ["nDiff", "pDiff", "nOhmic", "pOhmic", "nBulk", "isoPwell",
+              "poly", "elec", "metal1", "metal2", "metal3", "metal4",
+              "metal5", "metal6"]
 CUTS = ["cc", "via", "via2", "via3", "via4", "via5"]
 
 
@@ -190,11 +192,22 @@ def build_nets(D, L, F, WELL, layout, top, DBU):
                         uf.union(i, j)
     if "pOhmic" in D:
         for poly in D["pOhmic"].merge().each():
-            for i in comps_interacting(pya.Region(pya.Polygon(poly))):
-                if comps[i][0] == "pOhmic":
-                    uf.union(i, SUB)
+            polygon = pya.Polygon(poly)
+            region = pya.Region(polygon)
+            for i in comps_interacting(region):
+                if comps[i][0] != "pOhmic":
+                    continue
+                iso = D.get("isoPwell")
+                center = polygon.bbox().center()
+                if iso is not None and not iso.is_empty() and not region.interacting(iso).is_empty():
+                    j = comp_at(center, "isoPwell")
+                    if j is not None:
+                        uf.union(i, j)
+                        continue
+                uf.union(i, SUB)
     if "pwell" in D and not D["pwell"].is_empty():
-        for poly in D["pwell"].merge().each():
+        substrate_pwell = D["pwell"] - D.get("isoPwell", pya.Region())
+        for poly in substrate_pwell.merge().each():
             for i in comps_interacting(pya.Region(pya.Polygon(poly))):
                 uf.union(i, SUB)
 
@@ -205,7 +218,7 @@ def build_nets(D, L, F, WELL, layout, top, DBU):
             continue
         for cpoly in D[cut].merge().each():
             touch = [i for i in comps_interacting(pya.Region(pya.Polygon(cpoly)))
-                     if comps[i][0] not in ("nBulk", "pwell")]
+                     if comps[i][0] not in ("nBulk", "pwell", "isoPwell")]
             for a in touch:
                 for b in touch:
                     uf.union(a, b)

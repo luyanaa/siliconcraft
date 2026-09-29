@@ -1,0 +1,139 @@
+# profiles/ams_c35/rules.yaml — authoritative DRC rule table (ams C35, SCMOS_SUBM)
+#
+# Abstraction: SCMOS_SUBM at lambda = 0.20um (MOSIS maps the TSMC-licensed
+# 0.35um 2P4M base, which ams C35 tracks, to SCN4ME_SUBM).  Values are the
+# SCMOS_SUBM lambda multiples scaled by 0.2um, with the explicit ams
+# (ENG-183 Rev 5.0) exceptions documented below.  Most SCMOS_SUBM limits are
+# conservative against the native C35 rules; where the native rule is TIGHTER
+# the entry is overridden and marked "exception".
+#
+# Documented exceptions (user-verified against ENG-183):
+#   E1  VIA size: SCMOS 2lambda = 0.40um is too small for C35
+#       (VIA1/VIA2/VIA3 are fixed 0.50um) -> width 0.50, area 0.25.
+#   E2  Select overlap of active: SCMOS 4.2 = 2lambda = 0.40um vs
+#       NP.O.1/PP.O.1 = 0.45um -> 0.45.
+#   E3  NPLUS/PPLUS enclosure of diffusion contact: SCMOS 4.3 = 1lambda =
+#       0.20um vs CO.E.4/CO.E.3 = 0.25um -> 0.25.
+#   E4  Stacked vias are allowed (VIA1.C.1/VIA2.C.1), so via-to-contact
+#       spacing rules (SCMOS 8.4/14.4) are disabled (stacked_vias: true).
+#   E5  POLY2 (elec) rules use native CPOLY values (0.8 width / 0.65
+#       spacing / 1.2 contact spacing) because SCMOS elec limits are looser.
+#   E6  Bonding pad width uses the native 85um (CB.W.1).
+#
+# Layer vocabulary resolves through the SCMOS derived layers exactly as the
+# other profiles; ams CONT is the single contact layer bound to `cc`.
+#
+# SCMOS reference: MOSIS SCMOS 7.2 SUBM table at lambda=0.2 (multiples taken
+# from the AMI06 SUBM table).  Native reference: ENG-183 Rev 5.0.
+rules:
+  grid:
+    x: 0.025
+    y: 0.025
+
+  width:
+    - { id: "1.1", layer: nwell, value_um: 2.4, condition: "scmos_subm", source: "SCMOS 12lambda; native NW.W.1 1.7", note: "conservative" }
+    - { id: "2.1", layer: active, value_um: 0.6, source: "SCMOS 3lambda; native OD.W.1 0.4", note: "conservative" }
+    - { id: "3.1", layer: poly, value_um: 0.4, source: "SCMOS 2lambda; native PO.W 0.35", note: "conservative" }
+    - { id: "4.4", layer: nselect, value_um: 0.6, source: "native NP.W.1 0.6", note: "native-aligned" }
+    - { id: "4.4", layer: pselect, value_um: 0.6, source: "native PP.W.1 0.6", note: "native-aligned" }
+    - { id: "5.1", layer: cp, value_um: 0.4, source: "SCMOS 2lambda = native CO.W.1 0.4", note: "agree" }
+    - { id: "6.1", layer: ca, value_um: 0.4, source: "SCMOS 2lambda = native CO.W.1 0.4", note: "agree" }
+    - { id: "7.1", layer: metal1, value_um: 0.6, source: "SCMOS 3lambda; native M1.W.1 0.5", note: "conservative" }
+    - { id: "8.1", layer: via, value_um: 0.5, source: "native VIA1.W.1 fixed 0.5 — exception E1", note: "VIA override" }
+    - { id: "9.1", layer: metal2, value_um: 0.6, source: "SCMOS 3lambda = native M2.W.1 0.6", note: "agree" }
+    - { id: "10.1", layer: BondingPad, value_um: 85.0, source: "native CB.W.1 85 — exception E6", note: "bonding pad" }
+    - { id: "10.2", layer: ProbePad, value_um: 20.0, source: "SCMOS 7.2; native W1PA 15", note: "conservative" }
+    - { id: "11.1", layer: CapacitorElec, value_um: 0.8, condition: "elec", source: "native PO2.W.1 CPOLY 0.8 — exception E5", note: "POLY2 aligned" }
+    - { id: "13.1", layer: ce, value_um: 0.4, condition: "elec", source: "SCMOS 2lambda = native CONT 0.4", note: "agree" }
+    - { id: "14.1", layer: via2, value_um: 0.5, condition: "metal3", source: "native VIA2.W.1 fixed 0.5 — exception E1", note: "VIA override" }
+    - { id: "15.1", layer: metal3, value_um: 0.6, condition: "metal3", source: "SCMOS 3lambda = native M3.W.1 0.6", note: "agree" }
+    - { id: "28.1", layer: via3, value_um: 0.5, condition: "metal4", source: "native VIA3.W.1 fixed 0.5 — exception E1", note: "VIA override" }
+    - { id: "29.1", layer: metal4, value_um: 0.6, condition: "metal4", source: "SCMOS 3lambda = native M4.W.1 0.6 (thin M4)", note: "agree" }
+    - { id: "27.1", layer: highres, value_um: 0.6, condition: "highres", source: "native HRES 0.6", note: "native-aligned" }
+
+  spacing:
+    - { id: "1.2", layer: nwell, value_um: 3.6, condition: "scmos_subm", app: true, source: "SCMOS 18lambda app; native NW.S 1.0/3.0", note: "conservative" }
+    - { id: "1.3", layer: nwell, value_um: 1.2, source: "SCMOS 6lambda; native NW.S.1 3.0 diff-pot", note: "conservative for same-pot" }
+    - { id: "2.2", layer: active, value_um: 0.6, source: "SCMOS 3lambda = native OD.S.1 0.6", note: "agree" }
+    - { id: "2.3", layer: nNotOhmic, layer2: nBulk, value_um: 1.2, condition: "scmos_subm", source: "SCMOS 6lambda = native OD.C.2 1.2", note: "agree" }
+    - { id: "2.3", layer: pNotOhmic, layer2: pBulk, value_um: 1.2, condition: "scmos_subm", source: "SCMOS 6lambda = native OD.C.4 1.2", note: "agree" }
+    - { id: "2.4", layer: nOhmic, layer2: pBulk, value_um: 0.6, source: "SCMOS 3lambda; native OD.C.5 0.2", note: "conservative" }
+    - { id: "2.4", layer: pOhmic, layer2: nBulk, value_um: 0.6, source: "SCMOS 3lambda", note: "conservative" }
+    - { id: "2.5", layer: nNotOhmic, layer2: pOhmic, value_um: 0.8, app: true, source: "SCMOS 4lambda; native OD.S.2b 0.6", note: "conservative" }
+    - { id: "2.5", layer: pNotOhmic, layer2: nOhmic, value_um: 0.8, app: true, source: "SCMOS 4lambda", note: "conservative" }
+    - { id: "3.2", layer: poly, value_um: 0.6, source: "SCMOS 3lambda; native PO.S.1 0.45", note: "conservative" }
+    - { id: "3.5", layer: poly, layer2: active, value_um: 0.2, source: "SCMOS 1lambda = native PO.C.1 0.2", note: "agree" }
+    - { id: "4.1", layer: nselect, layer2: nChannel, value_um: 0.6, app: true, source: "SCMOS 3lambda; native NP.C.2 0.45", note: "conservative" }
+    - { id: "4.1", layer: pselect, layer2: pChannel, value_um: 0.6, app: true, source: "SCMOS 3lambda; native PP.C.2 0.45", note: "conservative" }
+    - { id: "4.2", layer: nselect, layer2: active, value_um: 0.45, source: "native NP.O.1 0.45 — exception E2", note: "select/active overlap override" }
+    - { id: "4.2", layer: pselect, layer2: active, value_um: 0.45, source: "native PP.O.1 0.45 — exception E2", note: "select/active overlap override" }
+    - { id: "4.3", layer: nselect, layer2: ca, value_um: 0.25, source: "native CO.E.4 0.25 — exception E3", note: "N+/P+ enclosure of contact" }
+    - { id: "4.3", layer: pselect, layer2: ca, value_um: 0.25, source: "native CO.E.3 0.25 — exception E3", note: "N+/P+ enclosure of contact" }
+    - { id: "5.3", layer: cp, value_um: 0.6, source: "SCMOS 3lambda; native CO.S.1 0.4", note: "conservative" }
+    - { id: "5.4", layer: cp, layer2: Gate, value_um: 0.4, source: "SCMOS 2lambda; native CO.C.1 0.3", note: "conservative" }
+    - { id: "5.6.b", layer: cp, layer2: active, value_um: 0.4, source: "SCMOS 2lambda = native CO.C.2 0.4", note: "agree" }
+    - { id: "5.5.b", layer: cp, layer2: poly, value_um: 0.4, source: "native CO.C.1/CO.C.2 conservative contact-to-POLY1 spacing", note: "PCell adapter; conservative against C35 contact rules" }
+    - { id: "6.3", layer: ca, value_um: 0.6, source: "SCMOS 3lambda; native CO.S.1 0.4", note: "conservative" }
+    - { id: "6.4", layer: ca, layer2: Gate, value_um: 0.4, source: "SCMOS 2lambda; native CO.C.1 0.3", note: "conservative" }
+    - { id: "6.5.b", layer: ca, layer2: active, value_um: 1.0, source: "SCMOS 5lambda", note: "conservative" }
+    - { id: "6.6.b", layer: ca, layer2: fieldPoly, value_um: 0.4, source: "SCMOS 2lambda", note: "conservative" }
+    - { id: "6.8.b", layer: ca, layer2: cp, value_um: 0.8, source: "SCMOS 4lambda", note: "conservative" }
+    - { id: "7.2", layer: metal1, value_um: 0.6, source: "SCMOS 3lambda; native M1.S.1 0.45", note: "conservative" }
+    - { id: "8.2", layer: via, value_um: 0.6, source: "SCMOS 3lambda; native VIA1.S.1 0.45", note: "conservative" }
+    - { id: "8.5", layer: poly, layer2: via, value_um: 0.4, condition: "scmos", source: "SCMOS 2lambda", note: "conservative" }
+    - { id: "8.5", layer: active, layer2: via, value_um: 0.4, condition: "scmos", source: "SCMOS 2lambda", note: "conservative" }
+    - { id: "9.2", layer: metal2, value_um: 0.6, source: "SCMOS 3lambda; native M2.S.1 0.5", note: "conservative" }
+    - { id: "14.2", layer: via2, value_um: 0.6, condition: "metal3", source: "SCMOS 3lambda; native VIA2.S.1 0.45", note: "conservative" }
+    - { id: "15.2", layer: metal3, value_um: 0.6, condition: "metal3", source: "SCMOS 3lambda = native M3.S.1 0.6", note: "agree" }
+    - { id: "28.2", layer: via3, value_um: 0.6, condition: "metal4", source: "SCMOS 3lambda; native VIA3.S.1 0.45", note: "conservative" }
+    - { id: "29.2", layer: metal4, value_um: 0.6, condition: "metal4", source: "SCMOS 3lambda = native M4.S.1 0.6", note: "agree" }
+    - { id: "11.2", layer: CapacitorElec, value_um: 0.65, condition: "elec", source: "native PO2.S.1 CPOLY 0.65 — exception E5", note: "POLY2 aligned" }
+    - { id: "11.4", layer: CapacitorElec, layer2: active, value_um: 0.4, condition: "elec", source: "SCMOS 2lambda; native PO2.C.2 0.2", note: "conservative" }
+    - { id: "11.5", layer: CapacitorElec, layer2: cp, value_um: 1.2, condition: "elec", source: "native PO2.C.1 1.2 — exception E5", note: "POLY2 aligned" }
+    - { id: "13.2", layer: ce, value_um: 0.6, condition: "elec", source: "SCMOS 3lambda; native CO.S.1 0.4", note: "conservative" }
+    - { id: "13.5", layer: ce, layer2: poly, value_um: 1.2, condition: "elec", source: "native PO2.C.1 1.2 — exception E5", note: "POLY2 aligned" }
+    - { id: "13.5", layer: ce, layer2: active, value_um: 0.6, condition: "elec", source: "SCMOS 3lambda", note: "conservative" }
+    - { id: "27.2", layer: highres, value_um: 0.6, condition: "highres", source: "native HRES spacing 0.6", note: "native-aligned" }
+    - { id: "27.3", layer: highres, layer2: poly, value_um: 0.35, condition: "highres", source: "native S1HRP1 0.35 — exception E7", note: "HRES to POLY1" }
+    - { id: "27.3", layer: highres, layer2: elec, value_um: 3.0, condition: "highres", source: "native S1HRP2 3.0 — exception E7", note: "HRES to POLY2" }
+    - { id: "27.4", layer: highres, layer2: active, value_um: 0.35, condition: "highres", source: "native S1DFHR 0.35 — exception E7", note: "HRES to DIFF" }
+
+  enclosure:
+    - { id: "2.3", layer: nBulk, layer2: nNotOhmic, value_um: 1.2, condition: "scmos_subm", source: "SCMOS 6lambda = native OD.C.2 1.2", note: "agree" }
+    - { id: "2.3", layer: pBulk, layer2: pNotOhmic, value_um: 1.2, condition: "scmos_subm", source: "SCMOS 6lambda = native OD.C.4 1.2", note: "agree" }
+    - { id: "2.4", layer: nBulk, layer2: nOhmic, value_um: 0.6, source: "SCMOS 3lambda", note: "conservative" }
+    - { id: "2.4", layer: pBulk, layer2: pOhmic, value_um: 0.6, source: "SCMOS 3lambda", note: "conservative" }
+    - { id: "3.3", layer: poly, layer2: active, value_um: 0.4, source: "SCMOS 2lambda", note: "conservative" }
+    - { id: "3.4", layer: active, layer2: poly, value_um: 0.6, source: "SCMOS 3lambda; native PO.C.2 0.5", note: "conservative" }
+    - { id: "4.1", layer: nselect, layer2: nChannel, value_um: 0.6, source: "SCMOS 3lambda; native NP.C.3 0.45", note: "conservative" }
+    - { id: "4.1", layer: pselect, layer2: pChannel, value_um: 0.6, source: "SCMOS 3lambda; native PP.C.3 0.45", note: "conservative" }
+    - { id: "4.2", layer: nselect, layer2: active, value_um: 0.45, source: "native NP.O.1 0.45 — exception E2", note: "select/active overlap override" }
+    - { id: "4.2", layer: pselect, layer2: active, value_um: 0.45, source: "native PP.O.1 0.45 — exception E2", note: "select/active overlap override" }
+    - { id: "4.3", layer: nselect, layer2: ca, value_um: 0.25, source: "native CO.E.4 0.25 — exception E3", note: "N+/P+ enclosure of contact" }
+    - { id: "4.3", layer: pselect, layer2: ca, value_um: 0.25, source: "native CO.E.3 0.25 — exception E3", note: "N+/P+ enclosure of contact" }
+    - { id: "5.2.b", layer: poly, layer2: cp, value_um: 0.2, source: "SCMOS 1lambda = native CO.E.2 0.2", note: "agree" }
+    - { id: "6.2.b", layer: active, layer2: ca, value_um: 0.4, source: "SCMOS 2lambda; native CO.E.1 0.15", note: "conservative" }
+    - { id: "7.3", layer: metal1, layer2: cp, value_um: 0.2, source: "SCMOS 1lambda; native M1.E.1 0.15", note: "conservative" }
+    - { id: "7.3", layer: metal1, layer2: ca, value_um: 0.2, source: "SCMOS 1lambda; native M1.E.1 0.15", note: "conservative" }
+    - { id: "8.3", layer: metal1, layer2: via, value_um: 0.2, source: "SCMOS 1lambda = native VIA1.E.1 0.2", note: "agree" }
+    - { id: "9.3", layer: metal2, layer2: via, value_um: 0.2, source: "SCMOS 1lambda; native M2.E.1 0.15", note: "conservative" }
+    - { id: "14.3", layer: metal2, layer2: via2, value_um: 0.2, condition: "metal3", source: "SCMOS 1lambda; native VIA2.E.1 0.2", note: "agree" }
+    - { id: "15.3", layer: metal3, layer2: via2, value_um: 0.4, condition: "metal3,not-metal4", source: "SCMOS 2lambda", note: "conservative" }
+    - { id: "15.3", layer: metal3, layer2: via2, value_um: 0.2, condition: "metal3,metal4", source: "SCMOS 1lambda", note: "conservative" }
+    - { id: "28.3", layer: metal3, layer2: via3, value_um: 0.2, condition: "metal4", source: "native M3.E.1-style 0.2", note: "native-aligned" }
+    - { id: "29.3", layer: metal4, layer2: via3, value_um: 0.2, condition: "metal4", source: "native M4 enclosure of VIA3 0.2", note: "native-aligned" }
+    - { id: "13.3", layer: CapacitorElec, layer2: ce, value_um: 0.6, condition: "elec", source: "native PO2.E.2 0.6 — exception E5", note: "POLY2 aligned" }
+    - { id: "11.3", layer: poly, layer2: CapacitorElec, value_um: 1.0, condition: "elec", source: "native PO2.E.1", note: "POLY1 enclosure of CPOLY" }
+    - { id: "27.5", layer: highres, layer2: elec, value_um: 3.0, condition: "highres", source: "native E1HRP2 3.0 — exception E7", note: "HRES enclosure of POLY2" }
+
+  area:
+    - { id: "5.1", layer: cp, value_um: 0.16, source: "native CONT 0.4x0.4", note: "contact exact" }
+    - { id: "6.1", layer: ca, value_um: 0.16, source: "native CONT 0.4x0.4", note: "contact exact" }
+    - { id: "8.1", layer: via, value_um: 0.25, source: "native VIA1 0.5x0.5 — exception E1", note: "via exact" }
+    - { id: "13.1", layer: ce, value_um: 0.16, condition: "elec", source: "native CONT 0.4x0.4", note: "contact exact" }
+    - { id: "14.1", layer: via2, value_um: 0.25, condition: "metal3", source: "native VIA2 0.5x0.5 — exception E1", note: "via exact" }
+    - { id: "28.1", layer: via3, value_um: 0.25, condition: "metal4", source: "native VIA3 0.5x0.5 — exception E1", note: "via exact" }
+
+  overlap: []
+  extension: []
+  notch: []

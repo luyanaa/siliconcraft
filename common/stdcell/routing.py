@@ -139,6 +139,107 @@ class RoutingPolicy:
             allowed_layers=layers,
         )
 
+    @classmethod
+    def for_architecture_grammar(
+        cls,
+        architecture: str,
+        grammar,
+        *,
+        allow_unknown: bool = False,
+    ) -> "RoutingPolicy":
+        """Compile process grammar evidence into an architecture policy.
+
+        The architecture selects logical layers/directions.  The grammar
+        selects whether those physical conductors and transitions are usable.
+        Unknown static evidence is accepted only when the caller opts into a
+        pre-native geometry search.
+        """
+        from common.routing_grammar import EXPERIMENTAL, FORBIDDEN, UNKNOWN
+
+        base = cls.for_architecture(architecture)
+        physical = {f"M{index}": f"metal{index}" for index in range(1, 4)}
+        logical_layers = tuple(base.layer_cost)
+        statuses: dict[str, str] = {}
+        for logical in logical_layers:
+            physical_name = physical[logical]
+            conductor = grammar.conductors.get(physical_name)
+            if conductor is None:
+                raise RoutingError(
+                    f"{grammar.profile}: grammar has no conductor {physical_name}"
+                )
+            status = conductor.continuity.status
+            statuses[logical] = status
+            if status == FORBIDDEN or (status == UNKNOWN and not allow_unknown):
+                raise RoutingError(
+                    f"{grammar.profile}: {physical_name} is {status}; "
+                    f"cannot compile {architecture}"
+                )
+
+        layer_cost = {}
+        resistance_per_um = {}
+        max_useful_length_um = {}
+        for logical in logical_layers:
+            conductor = grammar.conductors[physical[logical]]
+            multiplier = 2.0 if statuses[logical] == EXPERIMENTAL else 1.0
+            if statuses[logical] == UNKNOWN:
+                multiplier = 4.0
+            layer_cost[logical] = base.layer_cost[logical] * max(
+                1.0, float(conductor.cost)
+            ) * multiplier
+            electrical = conductor.electrical
+            resistance = electrical.get("resistance_ohm_per_um")
+            if resistance is None:
+                sheet = electrical.get("sheet_resistance_ohm_per_square")
+                nominal_width = electrical.get("nominal_width_um")
+                if (
+                    isinstance(sheet, (int, float))
+                    and isinstance(nominal_width, (int, float))
+                    and float(nominal_width) > 0
+                ):
+                    resistance = float(sheet) / float(nominal_width)
+            if isinstance(resistance, (int, float)) and float(resistance) >= 0:
+                resistance_per_um[logical] = float(resistance)
+            if (
+                isinstance(conductor.max_useful_length_um, (int, float))
+                and conductor.max_useful_length_um > 0
+            ):
+                max_useful_length_um[logical] = float(
+                    conductor.max_useful_length_um
+                )
+
+        via_cost = {}
+        for (source, target), base_cost in base.via_cost.items():
+            source_physical = physical[source]
+            target_physical = physical[target]
+            first = grammar.conductors[source_physical].connections.get(target_physical)
+            second = grammar.conductors[target_physical].connections.get(source_physical)
+            observation = first or second
+            status = observation.status if observation is not None else UNKNOWN
+            if status == FORBIDDEN or (status == UNKNOWN and not allow_unknown):
+                continue
+            multiplier = (
+                2.0
+                if status == EXPERIMENTAL
+                else 4.0
+                if status == UNKNOWN
+                else 1.0
+            )
+            via_cost[(source, target)] = base_cost * multiplier
+        return cls(
+            architecture=f"{architecture}+grammar:{grammar.profile}",
+            layer_cost=layer_cost,
+            preferred_direction=base.preferred_direction,
+            via_cost=via_cost,
+            global_layer=base.global_layer,
+            congestion_penalty=base.congestion_penalty,
+            wrong_direction_penalty=base.wrong_direction_penalty,
+            allowed_layers=logical_layers,
+            resistance_per_um=resistance_per_um,
+            max_useful_length_um=max_useful_length_um,
+            resistance_weight=base.resistance_weight,
+            log_resistance=base.log_resistance,
+        )
+
     def edge_cost(self, layer: str, direction: str, length_um: float) -> float:
         length_um = max(length_um, 1e-9)
         base = self.layer_cost[layer] * length_um
@@ -497,17 +598,25 @@ class NegotiatedRouter:
         self.graph = graph
         self.max_iterations = max_iterations
 
-    def route(self, nets: Mapping[str, tuple[tuple[RoutingNode, ...], tuple[RoutingNode, ...]]]) -> dict[str, tuple[RoutingEdge, ...]]:
+    def route(
+        self,
+        nets: Mapping[str, tuple[tuple[RoutingNode, ...], tuple[RoutingNode, ...]]],
+        *,
+        blocked: set[tuple[RoutingNode, RoutingNode, str]] | None = None,
+    ) -> dict[str, tuple[RoutingEdge, ...]]:
         names = tuple(sorted(nets))
         previous: dict[str, tuple[RoutingEdge, ...]] = {}
         history: dict[tuple[RoutingNode, RoutingNode, str], int] = {}
         overflow: list[tuple[RoutingNode, RoutingNode, str]] = []
+        blocked = blocked or set()
         for _iteration in range(self.max_iterations):
             usage: dict[tuple[RoutingNode, RoutingNode, str], int] = dict(history)
             current: dict[str, tuple[RoutingEdge, ...]] = {}
             for name in names:
                 starts, goals = nets[name]
-                path = self.graph.route_two_terminal(starts, goals, usage=usage)
+                path = self.graph.route_two_terminal(
+                    starts, goals, usage=usage, blocked=blocked
+                )
                 current[name] = path
                 for edge in path:
                     usage[edge.key] = usage.get(edge.key, 0) + 1

@@ -21,3 +21,8 @@ PLAN.md
 # local deepwork state
 .slim/deepwork/
 .ruff_cache/
+
+# local ripgrep ignore overrides and EDA report databases
+.ignore
+*.lyrdb
+*.lvsdb

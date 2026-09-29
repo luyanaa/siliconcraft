@@ -91,10 +91,20 @@ def run():
         devices.append(line)
         counts[kind] = counts.get(kind, 0) + 1
 
+    mos_specs = [
+        ("nmos4", "nChannel", "nDiff", "nmos", False),
+        ("pmos4", "pChannel", "pDiff", "pmos", True),
+    ]
+    if F("hvcmosAvailable"):
+        mos_specs = [
+            ("nmos4", "nChannelTran", "nDiff", "nmos", False),
+            ("pmos4", "pChannelTran", "pDiff", "pmos", True),
+            ("nmos_hv", "hvnChannelTran", "nHVDiff", "nmos_hv", False),
+            ("pmos_hv", "hvpChannelTran", "pHVDiff", "pmos_hv", True),
+        ]
+
     # ---- MOSFETs (Diva extractMOS: W from S/D-butting edges, L = area/W)
-    for dev, ch_key, df_key, suffix, is_nwell_bulk in (
-            ("nmos4", "nChannel", "nDiff", "nmos", False),
-            ("pmos4", "pChannel", "pDiff", "pmos", True)):
+    for dev, ch_key, df_key, suffix, is_nwell_bulk in mos_specs:
         channel = D.get(ch_key)
         diff = D.get(df_key)
         if channel is None or diff is None or channel.is_empty() or diff.is_empty():
@@ -123,12 +133,22 @@ def run():
             if is_nwell_bulk:
                 b = comp_at(center, "nBulk")
                 b_net = net_of(b) if b is not None else None
+            elif dev == "nmos_hv":
+                b = comp_at(center, "isoPwell")
+                b_net = net_of(b) if b is not None else N.substrate_net()
             else:
                 b_net = N.substrate_net()
             sides = []
             for e in sedges.each():
                 pt = offset_pt(e, cpoly)
                 ci = comp_at(pt, df_key)
+                if ci is None:
+                    physical_layer = {
+                        "nHVDiff": "nDiff",
+                        "pHVDiff": "pDiff",
+                    }.get(df_key)
+                    if physical_layer:
+                        ci = comp_at(pt, physical_layer)
                 if ci is None:
                     warnings.append(f"{dev}: side net not found at {pt}")
                     continue
@@ -145,7 +165,6 @@ def run():
                     f"{b_net if b_net else 'SUBS'} {model} "
                     f"w={W:.6g} l={L:.6g} ad={ad:.6g} as={ad:.6g} "
                     f"pd={pd:.6g} ps={pd:.6g}")
-
     # ---- resistors (Diva: W = butting-edge length/2, L = (P-Wtot)/2,
     #      R = Rs*L/W - corner correction (corners not ported, ~0))
     for key, conn_key, rs_key in (("polyRes", "poly", "poly"),

@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description>ams C35 native DRC (ENG-183 Rev 5.0 core module, 1:1 values)</description>
+ <version/>
+ <category>drc</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>true</show-in-menu>
+ <group-name>drc_scripts</group-name>
+ <menu-path>tools_menu.drc.end</menu-path>
+ <interpreter>dsl</interpreter>
+ <dsl-interpreter-name>drc-dsl-xml</dsl-interpreter-name>
+ <text>
+#
+#    ams C35 native DRC — 1:1 values from ENG-183 Rev 5.0
+#    (&quot;0.35 um CMOS C35 Design Rules&quot;, austriamicrosystems).
+#
+#    Layer rules 4.1.x (core module) + PIP capacitor (4.2) + high-resistive
+#    poly (4.6) + Metal 4 module (4.4).  Grid 0.025um.
+#
+#    Usage: klayout -b -r ams_c35_native.lydrc -rd input=in.gds -rd output=out.lyrdb
+#
+########################
+if $input
+  if $topcell
+    source($input, $topcell)
+  else
+    source($input)
+  end
+end
+
+if $output
+  report(&quot;ams C35 native DRC&quot;, $output)
+else
+  report(&quot;ams C35 native DRC&quot;, &quot;ams_c35_native.lyrdb&quot;)
+end
+
+GRID = 0.025
+
+# raw layers (ENG-183 layer table; GDS number/datatype)
+NTUB   = input(5, 0)
+DIFF   = input(10, 0)
+POLY1  = input(20, 0)
+NPLUS  = input(23, 0)
+PPLUS  = input(24, 0)
+CONT   = input(34, 0)
+MET1   = input(35, 0)
+VIA1   = input(36, 0)
+MET2   = input(37, 0)
+VIA2   = input(38, 0)
+MET3   = input(39, 0)
+PAD    = input(40, 0)
+VIA3   = input(41, 0)
+MET4   = input(42, 0)
+POLY2  = input(30, 0)
+HRES   = input(29, 0)
+
+# derived layers (ENG-183 &quot;Definition Layers&quot; / &quot;Structures&quot;)
+GATE     = DIFF &amp; POLY1
+NGATE    = DIFF &amp; NPLUS &amp; POLY1
+PGATE    = DIFF &amp; PPLUS &amp; POLY1
+NDIFF    = DIFF &amp; NPLUS
+PDIFF    = DIFF &amp; PPLUS
+DIFFCON  = CONT &amp; DIFF
+NDIFFCON = DIFFCON &amp; NPLUS
+PDIFFCON = DIFFCON &amp; PPLUS
+POLY1CON = CONT &amp; POLY1
+POLY2CON = CONT &amp; POLY2
+CPOLY    = POLY1 &amp; POLY2
+
+########################
+# off-grid 0.025um
+########################
+NTUB.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: NTUB&quot;)
+DIFF.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: DIFF&quot;)
+POLY1.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: POLY1&quot;)
+NPLUS.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: NPLUS&quot;)
+PPLUS.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: PPLUS&quot;)
+CONT.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: CONT&quot;)
+MET1.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: MET1&quot;)
+VIA1.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: VIA1&quot;)
+MET2.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: MET2&quot;)
+VIA2.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: VIA2&quot;)
+MET3.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: MET3&quot;)
+PAD.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: PAD&quot;)
+VIA3.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: VIA3&quot;)
+MET4.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: MET4&quot;)
+POLY2.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: POLY2&quot;)
+HRES.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: HRES&quot;)
+
+########################
+# 4.1.1 NTUB
+########################
+NTUB.width(1.7, euclidian).output(&quot;NW.W.1&quot;, &quot;NW.W.1: NTUB width &lt; 1.7um&quot;)
+NTUB.isolated(3.0, euclidian).output(&quot;NW.S.1&quot;, &quot;NW.S.1: NTUB spacing (diff potential) &lt; 3um&quot;)
+NTUB.isolated(1.0, euclidian).output(&quot;NW.S.2&quot;, &quot;NW.S.2: NTUB spacing (same potential) &lt; 1um&quot;)
+
+########################
+# 4.1.2 DIFF
+########################
+GATE.separation(GATE, 0.6, euclidian).output(&quot;OD.S.1&quot;, &quot;OD.S.1: DIFF spacing &lt; 0.6um&quot;)
+DIFF.isolated(0.6, euclidian).output(&quot;OD.S.1&quot;, &quot;OD.S.1: DIFF spacing &lt; 0.6um&quot;)
+GATE.width(0.4, euclidian).output(&quot;OD.W.1&quot;, &quot;OD.W.1: DIFF width (device) &lt; 0.4um&quot;)
+(DIFF - GATE).width(0.3, euclidian).output(&quot;OD.W.2&quot;, &quot;OD.W.2: DIFF width (interconnect) &lt; 0.3um&quot;)
+NTUB.enclosing(NDIFF, 0.2, euclidian).output(&quot;OD.C.1&quot;, &quot;OD.C.1: NTUB enclosure of NDIFF &lt; 0.2um&quot;)
+NDIFF.separation(NTUB, 1.2, euclidian).output(&quot;OD.C.2&quot;, &quot;OD.C.2: NDIFF to NTUB spacing &lt; 1.2um&quot;)
+NTUB.enclosing(PDIFF, 1.2, euclidian).output(&quot;OD.C.4&quot;, &quot;OD.C.4: NTUB enclosure of PDIFF &lt; 1.2um&quot;)
+PDIFF.separation(NTUB, 0.2, euclidian).output(&quot;OD.C.5&quot;, &quot;OD.C.5: PDIFF to NTUB spacing &lt; 0.2um&quot;)
+NDIFF.separation(PGATE, 0.45, euclidian).output(&quot;OD.C.6b&quot;, &quot;OD.C.6b: NDIFF to PGATE spacing &lt; 0.45um&quot;)
+PDIFF.separation(NGATE, 0.45, euclidian).output(&quot;OD.C.6a&quot;, &quot;OD.C.6a: PDIFF to NGATE spacing &lt; 0.45um&quot;)
+NDIFF.separation(PDIFF, 0.6, euclidian).output(&quot;OD.S.2b&quot;, &quot;OD.S.2b: NDIFF to non-butting PDIFF &lt; 0.6um&quot;)
+
+########################
+# 4.1.3 POLY1
+########################
+GATE.width(0.35, euclidian).output(&quot;PO.W.1&quot;, &quot;PO.W.1: GATE length &lt; 0.35um&quot;)
+(POLY1 - GATE).width(0.35, euclidian).output(&quot;PO.W.3&quot;, &quot;PO.W.3: POLY1 interconnect width &lt; 0.35um&quot;)
+POLY1.isolated(0.45, euclidian).output(&quot;PO.S.1&quot;, &quot;PO.S.1: POLY1 spacing &lt; 0.45um&quot;)
+POLY1.separation(DIFF, 0.2, euclidian).output(&quot;PO.C.1&quot;, &quot;PO.C.1: POLY1 to DIFF spacing &lt; 0.2um&quot;)
+_gate_poly_h = (GATE.edges &amp; POLY1.edges).select { |e| e.dy == 0 }
+_gate_poly_v = (GATE.edges &amp; POLY1.edges).select { |e| e.dx == 0 }
+_gate_diff_h = (GATE.edges &amp; DIFF.edges).select { |e| e.dy == 0 }
+_gate_diff_v = (GATE.edges &amp; DIFF.edges).select { |e| e.dx == 0 }
+_gate_poly_h.not_inside(DIFF.sized(0.0, -0.5)).output(&quot;PO.C.2&quot;, &quot;PO.C.2: DIFF extension of GATE &lt; 0.5um&quot;)
+_gate_poly_v.not_inside(DIFF.sized(-0.5, 0.0)).output(&quot;PO.C.2&quot;, &quot;PO.C.2: DIFF extension of GATE &lt; 0.5um&quot;)
+_gate_diff_h.not_inside(POLY1.sized(0.0, -0.4)).output(&quot;PO.O.1&quot;, &quot;PO.O.1: POLY1 extension of GATE &lt; 0.4um&quot;)
+_gate_diff_v.not_inside(POLY1.sized(-0.4, 0.0)).output(&quot;PO.O.1&quot;, &quot;PO.O.1: POLY1 extension of GATE &lt; 0.4um&quot;)
+
+########################
+# 4.1.4 PPLUS
+########################
+PPLUS.width(0.6, euclidian).output(&quot;PP.W.1&quot;, &quot;PP.W.1: PPLUS width &lt; 0.6um&quot;)
+PPLUS.isolated(0.6, euclidian).output(&quot;PP.S.1&quot;, &quot;PP.S.1: PPLUS spacing &lt; 0.6um&quot;)
+PPLUS.separation(DIFF, 0.35, euclidian).output(&quot;PP.C.1&quot;, &quot;PP.C.1: PPLUS to DIFF spacing &lt; 0.35um&quot;)
+(PGATE.edges.not_inside(PPLUS.sized(-0.45))).output(&quot;PP.C.3&quot;, &quot;PP.C.3: PPLUS extension of PGATE &lt; 0.45um&quot;)
+PPLUS.enclosing(PDIFF, 0.45, euclidian).output(&quot;PP.O.1&quot;, &quot;PP.O.1: PPLUS overlap of DIFF &lt; 0.45um&quot;)
+((PPLUS &amp; DIFF).edges &amp; DIFF.edges).not_inside(PPLUS.sized(-0.25)).output(&quot;PP.E.1&quot;, &quot;PP.E.1: PPLUS extension of DIFF &lt; 0.25um&quot;)
+PPLUS.separation(NPLUS, 0.25, euclidian).output(&quot;PP.C.5&quot;, &quot;PP.C.5: PPLUS to NPLUS spacing on POLY1 &lt; 0.25um&quot;)
+
+########################
+# 4.1.5 NPLUS
+########################
+NPLUS.width(0.6, euclidian).output(&quot;NP.W.1&quot;, &quot;NP.W.1: NPLUS width &lt; 0.6um&quot;)
+NPLUS.isolated(0.6, euclidian).output(&quot;NP.S.1&quot;, &quot;NP.S.1: NPLUS spacing &lt; 0.6um&quot;)
+NPLUS.separation(DIFF, 0.35, euclidian).output(&quot;NP.C.1&quot;, &quot;NP.C.1: NPLUS to DIFF spacing &lt; 0.35um&quot;)
+(NGATE.edges.not_inside(NPLUS.sized(-0.45))).output(&quot;NP.C.3&quot;, &quot;NP.C.3: NPLUS extension of NGATE &lt; 0.45um&quot;)
+NPLUS.enclosing(NDIFF, 0.45, euclidian).output(&quot;NP.O.1&quot;, &quot;NP.O.1: NPLUS overlap of DIFF &lt; 0.45um&quot;)
+((NPLUS &amp; DIFF).edges &amp; DIFF.edges).not_inside(NPLUS.sized(-0.25)).output(&quot;NP.E.1&quot;, &quot;NP.E.1: NPLUS extension of DIFF &lt; 0.25um&quot;)
+
+########################
+# 4.1.6 CONT
+########################
+CONT.width(0.4, euclidian).output(&quot;CO.W.1&quot;, &quot;CO.W.1: CONT fixed width 0.4um&quot;)
+CONT.not(CONT.with_area(0.15, 0.17)).output(&quot;CO.W.1&quot;, &quot;CO.W.1: CONT fixed 0.4um x 0.4um (exact)&quot;)
+CONT.isolated(0.4, euclidian).output(&quot;CO.S.1&quot;, &quot;CO.S.1: CONT spacing &lt; 0.4um&quot;)
+DIFFCON.separation(GATE, 0.3, euclidian).output(&quot;CO.C.1&quot;, &quot;CO.C.1: DIFFCON to GATE spacing &lt; 0.3um&quot;)
+POLY1CON.separation(DIFF, 0.4, euclidian).output(&quot;CO.C.2&quot;, &quot;CO.C.2: POLY1CON to DIFF spacing &lt; 0.4um&quot;)
+DIFF.enclosing(DIFFCON, 0.15, euclidian).output(&quot;CO.E.1&quot;, &quot;CO.E.1: DIFF enclosure of DIFFCON &lt; 0.15um&quot;)
+POLY1.enclosing(POLY1CON, 0.2, euclidian).output(&quot;CO.E.2&quot;, &quot;CO.E.2: POLY1 enclosure of POLY1CON &lt; 0.2um&quot;)
+PPLUS.enclosing(PDIFFCON, 0.25, euclidian).output(&quot;CO.E.3&quot;, &quot;CO.E.3: PPLUS enclosure of PDIFFCON &lt; 0.25um&quot;)
+NPLUS.enclosing(NDIFFCON, 0.25, euclidian).output(&quot;CO.E.4&quot;, &quot;CO.E.4: NPLUS enclosure of NDIFFCON &lt; 0.25um&quot;)
+(CONT - DIFF - POLY1 - POLY2).output(&quot;R01CT&quot;, &quot;R01CT: CONT without DIFF/POLY1/POLY2&quot;)
+
+########################
+# 4.1.7 MET1
+########################
+MET1.width(0.5, euclidian).output(&quot;M1.W.1&quot;, &quot;M1.W.1: MET1 width &lt; 0.5um&quot;)
+MET1.isolated(0.45, euclidian).output(&quot;M1.S.1&quot;, &quot;M1.S.1: MET1 spacing &lt; 0.45um&quot;)
+MET1.enclosing(CONT, 0.15, euclidian).output(&quot;M1.E.1&quot;, &quot;M1.E.1: MET1 enclosure of CONT &lt; 0.15um&quot;)
+
+########################
+# 4.1.8 VIA1
+########################
+VIA1.width(0.5, euclidian).output(&quot;VIA1.W.1&quot;, &quot;VIA1.W.1: VIA1 fixed 0.5um&quot;)
+VIA1.not(VIA1.with_area(0.24, 0.26)).output(&quot;VIA1.W.1&quot;, &quot;VIA1.W.1: VIA1 fixed 0.5um x 0.5um (exact)&quot;)
+VIA1.isolated(0.45, euclidian).output(&quot;VIA1.S.1&quot;, &quot;VIA1.S.1: VIA1 spacing &lt; 0.45um&quot;)
+MET1.enclosing(VIA1, 0.2, euclidian).output(&quot;VIA1.E.1&quot;, &quot;VIA1.E.1: MET1 enclosure of VIA1 &lt; 0.2um&quot;)
+(VIA1 - MET1).output(&quot;R01V1&quot;, &quot;R01V1: VIA1 without MET1&quot;)
+
+########################
+# 4.1.9 MET2
+########################
+MET2.width(0.6, euclidian).output(&quot;M2.W.1&quot;, &quot;M2.W.1: MET2 width &lt; 0.6um&quot;)
+MET2.isolated(0.5, euclidian).output(&quot;M2.S.1&quot;, &quot;M2.S.1: MET2 spacing &lt; 0.5um&quot;)
+MET2.enclosing(VIA1, 0.15, euclidian).output(&quot;M2.E.1&quot;, &quot;M2.E.1: MET2 enclosure of VIA1 &lt; 0.15um&quot;)
+
+########################
+# 4.1.10 VIA2
+########################
+VIA2.width(0.5, euclidian).output(&quot;VIA2.W.1&quot;, &quot;VIA2.W.1: VIA2 fixed 0.5um&quot;)
+VIA2.not(VIA2.with_area(0.24, 0.26)).output(&quot;VIA2.W.1&quot;, &quot;VIA2.W.1: VIA2 fixed 0.5um x 0.5um (exact)&quot;)
+VIA2.isolated(0.45, euclidian).output(&quot;VIA2.S.1&quot;, &quot;VIA2.S.1: VIA2 spacing &lt; 0.45um&quot;)
+MET2.enclosing(VIA2, 0.2, euclidian).output(&quot;VIA2.E.1&quot;, &quot;VIA2.E.1: MET2 enclosure of VIA2 &lt; 0.2um&quot;)
+(VIA2 - MET2).output(&quot;R01V2&quot;, &quot;R01V2: VIA2 without MET2&quot;)
+
+########################
+# 4.1.11 MET3
+########################
+MET3.width(0.6, euclidian).output(&quot;M3.W.1&quot;, &quot;M3.W.1: MET3 width &lt; 0.6um&quot;)
+MET3.isolated(0.6, euclidian).output(&quot;M3.S.1&quot;, &quot;M3.S.1: MET3 spacing &lt; 0.6um&quot;)
+MET3.enclosing(VIA2, 0.15, euclidian).output(&quot;M3.E.1&quot;, &quot;M3.E.1: MET3 enclosure of VIA2 &lt; 0.15um&quot;)
+
+########################
+# 4.1.12 PAD
+########################
+PAD.width(15.0, euclidian).output(&quot;W1PA&quot;, &quot;W1PA: PAD width &lt; 15um&quot;)
+PAD.isolated(15.0, euclidian).output(&quot;CB.S.1&quot;, &quot;CB.S.1: PAD spacing &lt; 15um&quot;)
+MET1.enclosing(PAD, 5.0, euclidian).output(&quot;CB.E.1&quot;, &quot;CB.E.1: MET1 enclosure of PAD &lt; 5um&quot;)
+MET2.enclosing(PAD, 5.0, euclidian).output(&quot;CB.E.2&quot;, &quot;CB.E.2: MET2 enclosure of PAD &lt; 5um&quot;)
+MET3.enclosing(PAD, 5.0, euclidian).output(&quot;CB.E.3&quot;, &quot;CB.E.3: MET3 enclosure of PAD &lt; 5um&quot;)
+
+########################
+# 4.2 PIP capacitor module (POLY2)
+########################
+CPOLY.width(0.8, euclidian).output(&quot;PO2.W.1&quot;, &quot;PO2.W.1: CPOLY width &lt; 0.8um&quot;)
+POLY2.width(0.65, euclidian).output(&quot;PO2.W.2&quot;, &quot;PO2.W.2: POLY2 width &lt; 0.65um&quot;)
+CPOLY.isolated(0.65, euclidian).output(&quot;PO2.S.1&quot;, &quot;PO2.S.1: CPOLY spacing &lt; 0.65um&quot;)
+POLY2.isolated(0.5, euclidian).output(&quot;PO2.S.2&quot;, &quot;PO2.S.2: POLY2 spacing &lt; 0.5um&quot;)
+POLY1CON.separation(CPOLY, 1.2, euclidian).output(&quot;PO2.C.1&quot;, &quot;PO2.C.1: POLY1CON to CPOLY spacing &lt; 1.2um&quot;)
+POLY2.separation(DIFF, 0.2, euclidian).output(&quot;PO2.C.2&quot;, &quot;PO2.C.2: DIFF to POLY2 spacing &lt; 0.2um&quot;)
+POLY1.separation(POLY2, 0.65, euclidian).output(&quot;PO2.C.3&quot;, &quot;PO2.C.3: POLY1 to POLY2 spacing &lt; 0.65um&quot;)
+POLY1.enclosing(CPOLY, 1.0, euclidian).output(&quot;PO2.E.1&quot;, &quot;PO2.E.1: POLY1 enclosure of CPOLY &lt; 1um&quot;)
+CPOLY.enclosing(POLY2CON, 0.6, euclidian).output(&quot;PO2.E.2&quot;, &quot;PO2.E.2: CPOLY enclosure of POLY2CON &lt; 0.6um&quot;)
+POLY2.enclosing(POLY2CON, 0.25, euclidian).output(&quot;PO2.E.3&quot;, &quot;PO2.E.3: POLY2 enclosure of POLY2CON &lt; 0.25um&quot;)
+(POLY2 &amp; DIFF).output(&quot;PO2.R.1&quot;, &quot;PO2.R.1: POLY2 on DIFF not allowed&quot;)
+
+########################
+# 4.4 Metal 4 module
+########################
+VIA3.width(0.5, euclidian).output(&quot;VIA3.W.1&quot;, &quot;VIA3.W.1: VIA3 fixed 0.5um&quot;)
+VIA3.not(VIA3.with_area(0.24, 0.26)).output(&quot;VIA3.W.1&quot;, &quot;VIA3.W.1: VIA3 fixed 0.5um x 0.5um (exact)&quot;)
+VIA3.isolated(0.45, euclidian).output(&quot;VIA3.S.1&quot;, &quot;VIA3.S.1: VIA3 spacing &lt; 0.45um&quot;)
+MET3.enclosing(VIA3, 0.2, euclidian).output(&quot;VIA3.E.1&quot;, &quot;VIA3.E.1: MET3 enclosure of VIA3 &lt; 0.2um&quot;)
+(VIA3 - MET3).output(&quot;R01V3&quot;, &quot;R01V3: VIA3 without MET3&quot;)
+MET4.width(0.6, euclidian).output(&quot;M4.W.1&quot;, &quot;M4.W.1: MET4 width &lt; 0.6um&quot;)
+MET4.isolated(0.6, euclidian).output(&quot;M4.S.1&quot;, &quot;M4.S.1: MET4 spacing &lt; 0.6um&quot;)
+MET4.enclosing(VIA3, 0.2, euclidian).output(&quot;M4.E.1&quot;, &quot;M4.E.1: MET4 enclosure of VIA3 &lt; 0.2um&quot;)
+
+########################
+# 4.6 High resistive poly module
+########################
+HRES.width(0.6, euclidian).output(&quot;HR.W.1&quot;, &quot;HR.W.1: HRES width &lt; 0.6um&quot;)
+HRES.isolated(0.6, euclidian).output(&quot;HR.S.1&quot;, &quot;HR.S.1: HRES spacing &lt; 0.6um&quot;)
+HRES.separation(POLY1, 0.35, euclidian).output(&quot;S1HRP1&quot;, &quot;S1HRP1: HRES to POLY1 spacing &lt; 0.35um&quot;)
+HRES.separation(POLY2, 3.0, euclidian).output(&quot;S1HRP2&quot;, &quot;S1HRP2: HRES to POLY2 spacing &lt; 3um&quot;)
+HRES.separation(DIFF, 0.35, euclidian).output(&quot;S1DFHR&quot;, &quot;S1DFHR: HRES to DIFF spacing &lt; 0.35um&quot;)
+POLY2.enclosing(HRES, 3.0, euclidian).output(&quot;E1HRP2&quot;, &quot;E1HRP2: HRES enclosure of POLY2 &lt; 3um&quot;)
+(HRES &amp; DIFF).output(&quot;BAD1HR&quot;, &quot;BAD1HR: HRES over DIFF not allowed&quot;)
+(HRES &amp; NPLUS).output(&quot;BAD2HR&quot;, &quot;BAD2HR: HRES over NPLUS not allowed&quot;)
+(HRES &amp; POLY1).output(&quot;BAD3HR&quot;, &quot;BAD3HR: HRES over POLY1 not allowed&quot;)
+
+</text>
+</klayout-macro>

@@ -1,0 +1,108 @@
+# profiles/cnm25/rules.yaml — authoritative DRC rule table (CNM25, SCMOS conservative)
+#
+# Abstraction: classic-SCMOS conservative with lambda_cover = 1.5um.
+# CNM25 is not a lambda process (native rules are directly in um on a 0.25um
+# grid), but it has high covering compatibility with classic SCMOS.  With
+# lambda_cover = 1.5um most SCMOS limits are stricter (conservative) than the
+# native CNM25 values; the single explicit override is the contact exact size,
+# mapped to the native 2.5um x 2.5um cut (SCMOS 2lambda = 3.0 would reject
+# legal CNM25 contacts).  POLY0 (elec) rules use the native CNM25 values
+# (POLY0 spacing 6.0, POLY0/contact enclosure 4.0) because SCMOS elec values
+# are looser than the CNM25 POLY0 rules.  TransistorElec checks are excluded:
+# CNM25 POLY0 is used for the PiP capacitor only and never forms transistor
+# channels, so SCMOS 12.x would produce false positives.
+#
+# The native (oracle) deck is reference/klayout/cnm25_native.lydrc (1:1 from
+# the APDK cnm25drc.py, um values, 0.25um grid).  Layer names resolve to raw
+# or Diva-derived layers exactly as in the other SCMOS profiles; CNM25 uses a
+# single WINDOW contact layer bound to `cc`, with ca/cp/ce classified from it.
+#
+# SCMOS reference: MOSIS SCMOS 7.2 (classic table) scaled by lambda_cover.
+# Native reference: APDK cnm25drc.py rules 0.0 .. 10.1.
+rules:
+  grid:
+    x: 0.25
+    y: 0.25
+
+  width:
+    - { id: "1.1", layer: nwell, value_um: 15.0, source: "SCMOS 7.2 10lambda; native 8.0", note: "SCMOS conservative" }
+    - { id: "2.1", layer: active, value_um: 4.5, source: "SCMOS 7.2 3lambda; native 2.0", note: "SCMOS conservative" }
+    - { id: "3.1", layer: poly, value_um: 3.0, source: "SCMOS 7.2 2lambda; native 3.0 inside GASAD / 2.5 outside", note: "SCMOS conservative" }
+    - { id: "4.4", layer: nselect, value_um: 3.0, source: "SCMOS 7.2 2lambda; native NPLUS 2.5", note: "SCMOS conservative" }
+    - { id: "5.1", layer: cp, value_um: 2.5, source: "native contact exact 2.5 override", note: "contact exact size mapped to native 2.5um cut" }
+    - { id: "6.1", layer: ca, value_um: 2.5, source: "native contact exact 2.5 override", note: "contact exact size mapped to native 2.5um cut" }
+    - { id: "7.1", layer: metal1, value_um: 4.5, source: "SCMOS 7.2 3lambda; native 2.5", note: "SCMOS conservative" }
+    - { id: "8.1", layer: via, value_um: 3.0, source: "SCMOS 7.2 2lambda = native via exact 3.0", note: "SCMOS and native agree" }
+    - { id: "9.1", layer: metal2, value_um: 4.5, source: "SCMOS 7.2 3lambda; native 3.5", note: "SCMOS conservative" }
+    - { id: "10.1", layer: BondingPad, value_um: 100.0, source: "native passivation exact 100 override", note: "native-aligned pad size" }
+    - { id: "10.2", layer: ProbePad, value_um: 20.0, source: "SCMOS 7.2", note: "SCMOS default" }
+    - { id: "11.1", layer: elec, value_um: 4.5, condition: "elec", source: "SCMOS 7.2 3lambda; native POLY0 2.5", note: "SCMOS conservative" }
+    - { id: "13.1", layer: ce, value_um: 2.5, condition: "elec", source: "native contact exact 2.5 override", note: "POLY0 contact exact size" }
+
+  spacing:
+    - { id: "1.2", layer: nwell, value_um: 13.5, app: true, source: "SCMOS 7.2 9lambda app; native 8.0", note: "SCMOS conservative" }
+    - { id: "1.3", layer: nwell, value_um: 9.0, source: "SCMOS 7.2 6lambda; native 8.0", note: "SCMOS conservative" }
+    - { id: "2.2", layer: active, value_um: 4.5, source: "SCMOS 7.2 3lambda; native 4.0", note: "SCMOS conservative" }
+    - { id: "2.3", layer: nNotOhmic, layer2: nBulk, value_um: 7.5, source: "SCMOS 7.2 5lambda; native 5.0", note: "SCMOS conservative" }
+    - { id: "2.3", layer: pNotOhmic, layer2: pBulk, value_um: 7.5, source: "SCMOS 7.2 5lambda; native 5.0", note: "SCMOS conservative" }
+    - { id: "2.4", layer: nOhmic, layer2: pBulk, value_um: 4.5, source: "SCMOS 7.2 3lambda", note: "SCMOS conservative" }
+    - { id: "2.4", layer: pOhmic, layer2: nBulk, value_um: 4.5, source: "SCMOS 7.2 3lambda", note: "SCMOS conservative" }
+    - { id: "2.5", layer: nNotOhmic, layer2: pOhmic, value_um: 6.0, app: true, source: "SCMOS 7.2 4lambda", note: "SCMOS conservative" }
+    - { id: "2.5", layer: pNotOhmic, layer2: nOhmic, value_um: 6.0, app: true, source: "SCMOS 7.2 4lambda", note: "SCMOS conservative" }
+    - { id: "3.2", layer: poly, value_um: 3.0, source: "SCMOS 7.2 2lambda = native 3.0", note: "SCMOS and native agree" }
+    - { id: "3.5", layer: poly, layer2: active, value_um: 1.5, source: "SCMOS 7.2 1lambda; native 1.25", note: "SCMOS conservative" }
+    - { id: "4.1", layer: nselect, layer2: nChannel, value_um: 4.5, app: true, source: "SCMOS 7.2 3lambda; native NP.C.3-type 1.5", note: "SCMOS conservative" }
+    - { id: "4.1", layer: pselect, layer2: pChannel, value_um: 4.5, condition: "not-pselectFromActive", app: true, source: "SCMOS 7.2 3lambda", note: "SCMOS conservative; explicit pselect absent in CNM25" }
+    - { id: "4.2", layer: nselect, layer2: active, value_um: 3.0, source: "SCMOS 7.2 2lambda; native 2.5", note: "SCMOS conservative" }
+    - { id: "4.2", layer: pselect, layer2: active, value_um: 3.0, condition: "not-pselectFromActive", source: "SCMOS 7.2 2lambda; native 2.5", note: "SCMOS conservative; explicit pselect absent in CNM25" }
+    - { id: "4.3", layer: nselect, layer2: ca, value_um: 1.5, source: "SCMOS 7.2 1lambda", note: "SCMOS conservative" }
+    - { id: "4.3", layer: pselect, layer2: ca, value_um: 1.5, condition: "not-pselectFromActive", source: "SCMOS 7.2 1lambda", note: "SCMOS conservative; explicit pselect absent in CNM25" }
+    - { id: "5.3", layer: cp, value_um: 3.0, source: "SCMOS 7.2 2lambda = native contact spacing 3.0", note: "SCMOS and native agree" }
+    - { id: "5.4", layer: cp, layer2: Gate, value_um: 3.0, source: "SCMOS 7.2 2lambda; native 6.6 2.0", note: "SCMOS conservative" }
+    - { id: "5.6.b", layer: cp, layer2: active, value_um: 3.0, source: "SCMOS 7.2 2lambda; native 6.5 2.5", note: "SCMOS conservative" }
+    - { id: "6.3", layer: ca, value_um: 3.0, source: "SCMOS 7.2 2lambda = native contact spacing 3.0", note: "SCMOS and native agree" }
+    - { id: "6.4", layer: ca, layer2: Gate, value_um: 3.0, source: "SCMOS 7.2 2lambda; native 6.6 2.0", note: "SCMOS conservative" }
+    - { id: "7.2", layer: metal1, value_um: 3.0, source: "SCMOS 7.2 2lambda = native 3.0", note: "SCMOS and native agree" }
+    - { id: "8.2", layer: via, value_um: 4.5, source: "SCMOS 7.2 3lambda; native 3.5", note: "SCMOS conservative" }
+    - { id: "8.4", layer: via, layer2: ca, value_um: 3.0, condition: "not-stacked", source: "SCMOS 7.2 2lambda; native 8.4 2.5", note: "SCMOS conservative" }
+    - { id: "8.4", layer: via, layer2: cp, value_um: 3.0, condition: "not-stacked", source: "SCMOS 7.2 2lambda; native 8.4 2.5", note: "SCMOS conservative" }
+    - { id: "8.5", layer: poly, layer2: via, value_um: 3.0, condition: "scmos", source: "SCMOS 7.2 2lambda; native 8.5 2.5", note: "SCMOS conservative" }
+    - { id: "8.5", layer: active, layer2: via, value_um: 3.0, condition: "scmos", source: "SCMOS 7.2 2lambda; native 8.5 2.5", note: "SCMOS conservative" }
+    - { id: "9.2", layer: metal2, value_um: 4.5, source: "SCMOS 7.2 3lambda; native 3.5", note: "SCMOS conservative" }
+    - { id: "11.2", layer: elec, value_um: 6.0, condition: "elec", source: "native POLY0 spacing 6.0 override", note: "native-aligned POLY0 spacing" }
+    - { id: "11.4", layer: elec, layer2: active, value_um: 6.0, condition: "elec", source: "native POLY0-GASAD spacing 6.0 override", note: "native-aligned" }
+    - { id: "11.5", layer: elec, layer2: cp, value_um: 4.0, condition: "elec", source: "native 6.10 contact to POLY0 spacing 4.0 override", note: "native-aligned" }
+    - { id: "13.2", layer: ce, value_um: 3.0, condition: "elec", source: "SCMOS 7.2 2lambda = native contact spacing", note: "SCMOS and native agree" }
+    - { id: "13.5", layer: ce, layer2: poly, value_um: 4.0, condition: "elec", source: "native 6.10 contact to POLY1 spacing 4.0 override", note: "native-aligned" }
+    - { id: "13.5", layer: ce, layer2: active, value_um: 4.0, condition: "elec", source: "native 6.10 contact spacing 4.0 override", note: "native-aligned" }
+
+  enclosure:
+    - { id: "2.3", layer: nBulk, layer2: nNotOhmic, value_um: 7.5, source: "SCMOS 7.2 5lambda; native 5.0", note: "SCMOS conservative" }
+    - { id: "2.3", layer: pBulk, layer2: pNotOhmic, value_um: 7.5, source: "SCMOS 7.2 5lambda; native 5.0", note: "SCMOS conservative" }
+    - { id: "2.4", layer: nBulk, layer2: nOhmic, value_um: 4.5, source: "SCMOS 7.2 3lambda", note: "SCMOS conservative" }
+    - { id: "2.4", layer: pBulk, layer2: pOhmic, value_um: 4.5, source: "SCMOS 7.2 3lambda", note: "SCMOS conservative" }
+    - { id: "3.3", layer: poly, layer2: active, value_um: 3.0, source: "SCMOS 7.2 2lambda", note: "SCMOS conservative" }
+    - { id: "3.4", layer: active, layer2: poly, value_um: 4.5, source: "SCMOS 7.2 3lambda; native GASAD ext POLY1 3.0", note: "SCMOS conservative" }
+    - { id: "4.1", layer: nselect, layer2: nChannel, value_um: 4.5, source: "SCMOS 7.2 3lambda; native NP.C.3 1.5", note: "SCMOS conservative" }
+    - { id: "4.1", layer: pselect, layer2: pChannel, value_um: 4.5, condition: "not-pselectFromActive", source: "SCMOS 7.2 3lambda", note: "SCMOS conservative; explicit pselect absent in CNM25" }
+    - { id: "4.2", layer: nselect, layer2: active, value_um: 3.0, source: "SCMOS 7.2 2lambda; native NPLUS enc GASAD 2.5", note: "SCMOS conservative" }
+    - { id: "4.2", layer: pselect, layer2: active, value_um: 3.0, condition: "not-pselectFromActive", source: "SCMOS 7.2 2lambda; native 2.5", note: "SCMOS conservative; explicit pselect absent in CNM25" }
+    - { id: "4.3", layer: nselect, layer2: ca, value_um: 1.5, source: "SCMOS 7.2 1lambda", note: "SCMOS conservative" }
+    - { id: "4.3", layer: pselect, layer2: ca, value_um: 1.5, condition: "not-pselectFromActive", source: "SCMOS 7.2 1lambda", note: "SCMOS conservative; explicit pselect absent in CNM25" }
+    - { id: "5.2.b", layer: poly, layer2: cp, value_um: 1.5, source: "SCMOS 7.2 1lambda; native POLY1 enc contact 1.25", note: "SCMOS conservative" }
+    - { id: "6.2.b", layer: active, layer2: ca, value_um: 1.5, source: "SCMOS 7.2 1lambda; native GASAD enc contact 1.0", note: "SCMOS conservative" }
+    - { id: "7.3", layer: metal1, layer2: cp, value_um: 1.5, source: "SCMOS 7.2 1lambda; native METAL enc contact 1.25", note: "SCMOS conservative" }
+    - { id: "7.3", layer: metal1, layer2: ca, value_um: 1.5, source: "SCMOS 7.2 1lambda; native METAL enc contact 1.25", note: "SCMOS conservative" }
+    - { id: "8.3", layer: metal1, layer2: via, value_um: 1.5, source: "SCMOS 7.2 1lambda; native 1.25", note: "SCMOS conservative" }
+    - { id: "9.3", layer: metal2, layer2: via, value_um: 1.5, source: "SCMOS 7.2 1lambda; native 1.25", note: "SCMOS conservative" }
+    - { id: "13.3", layer: elec, layer2: ce, value_um: 4.0, condition: "elec", source: "native POLY0 enc contact 4.0 override", note: "native-aligned" }
+
+  area:
+    - { id: "5.1", layer: cp, value_um: 6.25, source: "native contact exact 2.5x2.5", note: "contact exact size override" }
+    - { id: "6.1", layer: ca, value_um: 6.25, source: "native contact exact 2.5x2.5", note: "contact exact size override" }
+    - { id: "8.1", layer: via, value_um: 9.0, source: "native via exact 3x3", note: "via exact size" }
+    - { id: "13.1", layer: ce, value_um: 6.25, condition: "elec", source: "native contact exact 2.5x2.5", note: "contact exact size override" }
+
+  overlap: []
+  extension: []
+  notch: []

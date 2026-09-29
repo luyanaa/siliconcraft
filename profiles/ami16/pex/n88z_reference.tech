@@ -14,7 +14,7 @@ end
 
 version
     version 0.1
-    description "AMI_ABN N77H source-reference PEX (extraction scope only)"
+    description "AMI_ABN N88Z source-reference PEX (extraction scope only)"
 # 382 "scmos.tech.out"
 end
 
@@ -775,7 +775,7 @@ style plot
 end
 # 1079 "scmos.tech.out"
 cifinput
-style lambda=0.8(ami16_n77h)
+style lambda=0.8(ami16_n88z)
     scalefactor 80 5
     layer nwell CWN
         labels CWN
@@ -1442,7 +1442,7 @@ end
 
 
 extract
-  style ami16_n77h
+  style ami16_n88z
     lambda 80
     cscale 1
     step 100
@@ -1455,28 +1455,35 @@ extract
     planeorder oxide 5
     device mosfet ami16N nfet ndiff,ndc pwell Gnd! 0 0
     device mosfet ami16P pfet pdiff,pdc nwell Vdd! 0 0
-    resist nwell 1465000
-    resist poly 35000
-    resist poly2 25000
-    resist metal1 60
+    resist nwell 1524000
+    resist poly 26100
+    resist poly2 25200
+    resist metal1 50
     resist metal2 30
-    areacap active 193
-    areacap poly 22
-    areacap poly2 477
-    areacap cap 395
-    areacap metal1 13
-    areacap metal2 8
-    overlap metal1 ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc 36
-    overlap metal1 poly 33
-    overlap metal1 poly2 33
-    overlap metal2 ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc 18
-    overlap metal2 poly 15
-    overlap metal2 metal1 28
-    perimc poly active 30
-    perimc metal1 ~metal1 44
-    perimc metal2 ~metal2 38
-    sideoverlap metal1 space,nwell,pwell poly 52
-    sideoverlap metal2 space,nwell,pwell poly 35
+    contact ndc 4 65800
+    contact nsc 4 65800
+    contact pdc 4 36300
+    contact psc 4 36300
+    contact pc 4 25700
+    contact ec 6 20200
+    contact m2c 4 60
+    areacap active 184
+    areacap poly 23
+    areacap poly2 452
+    areacap cap 381
+    areacap metal1 8
+    areacap metal2 18
+    overlap metal1 ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc 31
+    overlap metal1 poly 29
+    overlap metal1 poly2 29
+    overlap metal2 ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc 16
+    overlap metal2 poly 13
+    overlap metal2 metal1 24
+    perimc poly ~poly 35
+    perimc metal1 ~metal1 28
+    sideoverlap metal1 space,nwell,pwell poly 44
+    sideoverlap metal2 space,nwell,pwell poly 31
+    sideoverlap metal2 space,nwell,pwell metal1 38
 end
 
 

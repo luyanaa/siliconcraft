@@ -32,6 +32,7 @@ import pya
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from scmos_layers import (derive, or_, and_, andnot, inside, outside, avoiding,
                           overlap, straddle, butting, holes, sized)
+from hvcmos import run_hvcmos_checks
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "..", "..", "scripts"))
@@ -109,10 +110,20 @@ def _cond_one(term, F, TECH, RULE_FAMILY):
         v = F("npnAvailable")
     elif name == "hv":
         v = F("hvAvailable")
+    elif name in {"hvcmos", "hvcmosAvailable"}:
+        v = F("hvcmosAvailable")
+    elif name in {"deepWell", "deepWellAvailable"}:
+        v = F("deepNwellAvailable") or F("deepPwellAvailable")
+    elif name in {"drift", "driftAvailable"}:
+        v = F("driftAvailable")
+    elif name in {"voltageAware", "voltageAwareSpacing"}:
+        v = F("voltageAwareSpacing")
     elif name == "metalcap":
         v = F("metalcapAvailable")
     elif name == "mems":
         v = F("memsAvailable")
+    elif name == "pselectFromActive":
+        v = F("pselectFromActive")
     elif name.startswith("tech:"):
         v = (TECH == name[5:])
     elif name.startswith("tech-not-in:"):
@@ -425,6 +436,18 @@ def run():
             else:
                 fn(r, entry["value_um"], msg, rid)
 
+    run_hvcmos_checks(
+        rules.get("hvcmos") or {},
+        D,
+        resolve,
+        layout,
+        top,
+        L,
+        F,
+        WELL,
+        DBU,
+        R,
+    )
     # ------------------------------------------------------------ save markers
     try:
         out = pya.Layout()

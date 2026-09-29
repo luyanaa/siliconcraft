@@ -1,0 +1,27 @@
+# Public evidence is sufficient for netlist identity only.  X-FAB model cards
+# and PDK binaries are not redistributed by this repository.
+models:
+  xh018N:
+    simulator: null
+    representation: contract_only
+    source: "Public XH018 datasheet: 1.8/3.3V core and HV/DMOS module topology"
+    fit_status: unavailable
+    limitation: "No public calibrated SPICE card or foundry corner deck; simulation is not enabled"
+  xh018P:
+    simulator: null
+    representation: contract_only
+    source: "Public XH018 datasheet: 1.8/3.3V core and HV/DMOS module topology"
+    fit_status: unavailable
+    limitation: "No public calibrated SPICE card or foundry corner deck; simulation is not enabled"
+  xh018Nhv:
+    simulator: null
+    representation: contract_only
+    source: "Public XH018 HVMOS/HVNMOS/DMOS module names; model identity only"
+    fit_status: unavailable
+    limitation: "HV model parameters and validity envelope are not public"
+  xh018Phv:
+    simulator: null
+    representation: contract_only
+    source: "Public XH018 HVMOS/HVPMOS/DMOS module names; model identity only"
+    fit_status: unavailable
+    limitation: "HV model parameters and validity envelope are not public"

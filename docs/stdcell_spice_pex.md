@@ -1,14 +1,16 @@
 # SPICE and PEX readiness for the stdcell generator
 
-The machine-readable preparation contract is [`schema/stdcell_spice_pex_readiness.yaml`](../schema/stdcell_spice_pex_readiness.yaml). It is deliberately not an active stdcell profile and does not claim timing, power, Liberty, or signoff. The generator can emit a geometry-plan LEF-compatible abstract, but that view is not a signoff library view.
+The machine-readable preparation contract is [`schema/stdcell_spice_pex_readiness.yaml`](../schema/stdcell_spice_pex_readiness.yaml). The planner now has explicit rule-derived fixed-height geometry candidates for `ami06`, `ami16`, `hp06`, `cnm25`, and `ams_c35`; this is deliberately not a foundry standard-cell library and does not claim timing, power, Liberty, or signoff. The generator can emit a geometry-plan LEF-compatible abstract, but that view is not a signoff library view.
 
 ## Current SPICE status
 
 | Profile | SPICE representation | Current model IDs | Current corner contract | Current evidence |
 | --- | --- | --- | --- | --- |
-| `ami06` | Primitive MOS4 | `ami06N`, `ami06P` | Nominal only in `ami06` section | xschem/ngspice smoke passes; native PEX output simulates |
-| `ami16` | Primitive MOS4 | `ami16N`, `ami16P` | Nominal only in `ami16` section | Native PEX output simulates; no xschem smoke contract |
-| `hp06` | Primitive MOS4 | `hp14tbN`, `hp14tbP` | Nominal only in `hp06` section | Native PEX output simulates; no xschem smoke contract |
+| `ami06` | Primitive MOS4 | `ami06N`, `ami06P` | Nominal only in `ami06` section | xschem/ngspice smoke passes; native PEX output simulates; stdcell INV/NAND2/NOR2 DRC/LVS smoke passes |
+| `ami16` | Primitive MOS4 | `ami16N`, `ami16P` | Nominal only in `ami16` section | Native PEX output simulates; stdcell INV authoritative DRC/LVS/PEX/LEF smoke passes; no xschem smoke contract |
+| `hp06` | Primitive MOS4 | `hp14tbN`, `hp14tbP` | Nominal only in `hp06` section | Native PEX output simulates; stdcell INV authoritative DRC/LVS/PEX/LEF smoke passes; no xschem smoke contract |
+| `cnm25` | Primitive MOS4 | `cnm25modN`, `cnm25modP` | Nominal only in `cnm25` section | Stdcell INV authoritative DRC/LVS/LEF smoke passes; no Magic runtime PEX backend |
+| `ams_c35` | Primitive MOS4 | `c35N`, `c35P` | Nominal only in `ams_c35` section | Stdcell INV authoritative DRC/LVS/LEF smoke passes; no Magic runtime PEX backend |
 | `ls1u` | `LV1UNMOS` / `LV1UPMOS` subcircuits | `LV1UNMOS`, `LV1UPMOS` | No process-corner contract; partial characterization | xschem/ngspice and native Magic MOS smoke pass |
 | `openrule1um` | Model-contract-only | `or1_nmos`, `or1_pmos` plus passive variants | No corner contract | Measured primitive model contract; no active canonical bindings |
 
@@ -31,8 +33,24 @@ The active manifests are source-driven Magic extraction contracts:
 - output is ngspice-compatible extracted SPICE;
 - transistor intrinsic, gate-overlap, and junction capacitances remain model-owned;
 - diffusion sheet resistance and metal interconnect RC are PEX-owned;
-- contact/via resistance and direct junction/substrate mappings are intentionally withheld in the current reference profiles;
+- contact/via resistance is emitted per cut from the MOSIS parametric reports (AMI06 N8BN, HP06 N8AG, AMI16 N88Z); direct junction/substrate mappings remain withheld in the current reference profiles;
 - the profile capability is `pex_rc=estimated`, not characterized/signoff.
+
+### CNM25 and AMS C35
+
+Both ports are DRC/LVS-first: they carry no Magic extraction backend, so
+`pex_runtime`/`pex_rc` stay false and no RC coefficients are emitted yet.
+
+- CNM25: the APDK field-solver path is the intended PEX route — FastCap 3D
+  capacitance (cross-section data in `profiles/cnm25/reference/klayout/`
+  deck provenance and `docs/cnm25_em_flow.md`) is solid, while the APDK has
+  no R extraction; the FastHenry GDS→EM preparation ships in
+  `scripts/run_cnm25_em.py`. The 2D parallel-plate densities are recorded in
+  the PEX manifest as the fast fallback.
+- AMS C35: interconnect PEX is deferred; the ENG-188 RF model topology
+  (BSIM3v3.1 + RG/RD/RS + RSUB + external junction diodes) owns the device
+  parasitics and is recorded as a contract in `model_contract.yaml`. ams
+  model cards are company confidential and user-supplied.
 
 The native extraction smoke verifies model names, primitive MOS count, parasitic capacitors, and an ngspice operating point. It does not prove a standard-cell pin contract, corner coverage, contact-chain calibration, or timing accuracy.
 
@@ -110,41 +128,55 @@ transistor netlist
   -> Pareto filtering
 ```
 
-For the first six cells, exhaustive enumeration with early pruning and
-difference-constraint/longest-path compaction is preferred over MILP. Z3,
-CP-SAT, or MILP becomes an escalation path for DFF/latch, multiple-height,
-or otherwise complex cells.
+For the first six cells, exhaustive ordering/folding enumeration is followed
+by local/global geometry-Pareto and optional beam selection; `max_candidates`
+is not used to truncate nested loops. Difference-constraint/longest-path
+compaction remains preferred over MILP. Z3, CP-SAT, or MILP becomes an
+escalation path for DFF/latch, multiple-height, or otherwise complex cells.
 
 ### Implemented first back-end slice
 
 The repository now contains a process-independent IR path:
 
 - `CircuitIR` plus explicit PMOS/NMOS `DiffusionGraph`;
-- `ColumnIR` exhaustive ordering/folding candidates;
+- `ColumnIR` exhaustive P/N ordering alignment with deterministic LCS gaps;
+- fixed-height, rule-derived SCMOS site contracts for AMI06, AMI16, HP06,
+  CNM25, and AMS C35, with explicit overflow rejection;
 - difference-constraint compaction into `GeometryIR`;
+- row-level active/select/poly/contact geometry with shared-active bays and
+  containment checks; self-tap geometry is rendered directly by the stdcell
+  renderer so profiles without the analog PCell contract do not inherit it;
 - a layer-aware rectangular `RoutingGraph` with A*/Dijkstra search,
-  negotiated congestion history, row-conflict guards, and via-access landing
-  geometry;
-- a dumb `pya` renderer that instantiates the existing SCMOS PCells and emits
-  logical-layer geometry.
+  negotiated congestion fallback, grammar-compiled architecture policy, and
+  via-access landing geometry;
+- physical signal pin shapes and GDS text labels sourced from the same
+  candidate IR used by LEF; LEF OBS excludes exported port nets;
+- rail-correct `R0`/`MX` row metadata and explicit two-metal/three-metal
+  architecture selection.
 
-AMI06 now has authoritative geometry/connectivity gates for:
+Geometry is resolved through each profile's named SCMOS rule deck
+(`6.1`, `4.1`, `5.2.b`, `6.4`, `8.3`, and related rules); missing active
+rules fail closed. The stdcell adapter uses the diffusion-contact-to-gate
+spacing rule (`6.4`) rather than assuming the analog PCell adapter's optional
+poly-contact rule (`5.5.b`). No lambda-derived rule fallback is used.
 
-- `INV` on the two-metal classic architecture;
-- `NAND2` on the two-metal classic architecture, including shared-active
-  diffusion, contactless internal diffusion, and Netgen source/drain
-  permutation handling;
-- `NOR2` on the three-metal classic architecture, using the legal
-  `W_p = W_n = 1.5 um` DRC/LVS fixture.
+AMI06, AMI16, HP06, CNM25, and AMS C35 now have generated authoritative
+geometry/connectivity INV smoke gates. AMI06 also covers NAND2/NOR2; AMI16
+and HP06 additionally pass Magic PEX plus ngspice operating-point smoke.
+CNM25 and AMS C35 remain DRC/LVS/LEF-only because their runtime PEX
+backends are intentionally absent. Public native DRC macro decks for CNM25
+and AMS C35 did not produce a report in this KLayout batch environment, so
+they are not promoted to native signoff evidence.
 
 The larger `nor2.spice` sizing fixture remains useful for folding/search
-coverage. `--beam-width N` retains a bounded deterministic set selected by
-placement-first cheap estimates and geometry-only Pareto dominance before
-detailed graph routing. Generated manifests also include shared diffusion,
-rail/orientation, supply-contact, and feedthrough contracts;
-`--lef` emits a LEF-compatible abstract with explicit non-signoff status.
-PEX-driven timing and power characterization, Liberty emission, and signoff
-remain intentionally unimplemented.
+coverage. `--beam-width N` retains local and global geometry-Pareto fronts
+before detailed graph routing; `max_candidates` is applied only after
+detailed candidates are built and ranked. Generated manifests distinguish
+geometry-estimated feedthrough resources from native verification, include
+physical pin shapes, shared diffusion, rail/orientation, tap, supply-contact,
+and feedthrough contracts; `--lef` emits a LEF-compatible abstract with
+explicit non-signoff status. PEX-driven timing and power characterization,
+Liberty emission, and signoff remain intentionally unimplemented.
 
 ### Routing grammar and search policy
 
@@ -175,14 +207,23 @@ pattern straight/L/Z
 ```
 
 Multi-terminal nets use a Manhattan-distance MST followed by incremental
-two-terminal routes. `RoutingPolicy.from_grammar()` compiles neutral
-conductor IDs, transition edges, region constraints, and conservative
-experimental costs. A profile-provided sheet resistance or resistance-per-
-length adds a linear or `log1p(R)` route desirability term and an optional
-maximum-useful-length penalty; it never overrides native legality. The graph
-does not infer Poly/TiN semantics from names. AMI06 currently has no
-calibrated layer/contact resistance fields, so its generated grammar carries
-unknown electrical values rather than fabricated costs.
+two-terminal routes. `RoutingPolicy.for_architecture_grammar()` compiles the
+architecture's legal layers/directions together with grammar continuity,
+transition, resistance, and maximum-useful-length evidence. Unknown static
+evidence is accepted only for pre-native geometry search and is recorded in
+the candidate manifest; native probes remain the verification boundary.
+Resistance evidence contributes a linear or `log1p(R)` route desirability
+term and optional maximum-useful-length penalty; it never overrides native
+legality. The graph does not infer Poly/TiN semantics from names. AMI06
+currently has no calibrated layer/contact resistance fields, so its generated
+grammar carries unknown electrical values rather than fabricated costs.
+
+The router treats previously materialized route metal and via landings as
+physical obstacles: candidate graph edges are dilated by the exact profile
+width/spacing/enclosure rules before subsequent nets are searched.  The
+manifest and LEF `OBS` use the same final-shape IR; exported port nets are
+subtracted rather than represented as center-point blockers.  Row topology
+guards remain separate from this physical-obstacle map.
 
 AMI06 has no readable KLayout `.lylvs` source in this repository. That only
 limits static pre-inference: the existing generic SCMOS LVS backend is still
@@ -285,10 +326,17 @@ fastest isolated cell.
 
 ## Recommended order
 
-1. **AMI06 first bootstrap target.** It is currently the only active profile with shared MOS PCells, xschem/ngspice smoke, source-reference Magic PEX, and native DRC/LVS/PEX infrastructure in one path.
-2. **HP06 and AMI16 next.** Their source-reference PEX and nominal model cards pass native smoke, but they need process-specific cell geometry and characterization fixtures; they currently lack xschem/PCell stdcell contracts.
-3. **LS1u separately.** Its subcircuit model and topology smoke are useful for a second generator backend, but its RC and model maturity are not equivalent to AMI/HP.
-4. **OpenRule1um as a reference oracle only.** Reuse selected GDS/symbol cells for conformance experiments; do not use its catalog as a Liberty/timing or active PEX source.
+1. **Geometry candidates.** AMI06, AMI16, HP06, CNM25, and AMS C35 now
+   resolve explicit fixed-height contracts; those contracts are derived
+   candidates, not foundry row libraries.
+2. **AMI06 bootstrap gate.** It remains the only profile with completed
+   authoritative stdcell DRC/LVS/PEX gates, shared MOS PCells, and
+   xschem/ngspice smoke in one path.
+3. **AMI16 and HP06.** Their source-reference PEX and nominal model cards are
+   available; native stdcell pin/bulk/corner/characterization fixtures remain.
+4. **CNM25 and AMS C35.** Their geometry candidates are available, but PEX is
+   topology-only and the licensed/native process decks remain authoritative.
+5. **LS1u separately; OpenRule1um as a reference oracle only.**
 
 The implemented slice intentionally stops before shared-active geometry for
 folded wide complex cells, PEX-driven timing/power characterization, Liberty
@@ -305,8 +353,8 @@ python3 scripts/test_process_ir.py
 python3 scripts/run_pex_ci.py --static-only
 python3 scripts/run_xschem.py --profile ami06
 python3 scripts/run_xschem.py --profile ls1u
-PATH=/nix/store/d08kw4xlbyf2c8ncs635hlbnvp8hwwhn-magic-vlsi-8.3.660/bin:$PATH \
-  python3 scripts/run_pex_ci.py
+nix-shell ~/Documents/librelane --run \
+  "python3 scripts/run_pex_ci.py"
 python3 scripts/test_stdcell_spice_pex.py
 python3 scripts/test_stdcell_generator.py
 nix-shell -p klayout netgen python3 --run \
@@ -317,7 +365,7 @@ nix-shell -p klayout netgen python3 --run \
   --input common/tests/spice/stdcell/nand2_drc.spice
   --schematic common/tests/spice/stdcell/nand2_drc_reference.spice
   --workdir build/stdcell/ami06/nand2_gate"
-nix-shell -p klayout netgen magic ngspice python3 --run \
+nix-shell ~/Documents/librelane --run \
   "python3 scripts/run_stdcell_gate.py --profile ami06
   --architecture two_metal_classic --cell nand2_drc
   --input common/tests/spice/stdcell/nand2_drc.spice

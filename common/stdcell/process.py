@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from common.process_ir import ProcessIR, load_process
-from common.pcells.scmos import Profile, Technology
+from common.pcells.scmos import Profile
+from common.stdcell.technology import StdcellTechnology
 
 
 class ProcessError(ValueError):
@@ -28,7 +29,7 @@ class StdcellProcess:
     root: Path
     ir: ProcessIR
     profile: Profile
-    tech: Technology
+    tech: StdcellTechnology
     layers_by_logical: dict[str, LayerAlias]
 
     @classmethod
@@ -41,10 +42,18 @@ class StdcellProcess:
         for index in range(1, 7):
             logical = f"M{index}"
             physical = f"metal{index}"
-            logical_layers[logical] = LayerAlias(logical, physical, physical in ir.layers)
+            layer = ir.layers.get(physical)
+            available = bool(layer) and bool(layer.get("available", True))
+            logical_layers[logical] = LayerAlias(logical, physical, available)
         if not logical_layers["M1"].available or not logical_layers["M2"].available:
             raise ProcessError(f"{ir.profile}: stdcell generation requires metal1 and metal2")
-        return cls(root, ir, profile_data, Technology(profile_data), logical_layers)
+        return cls(
+            root,
+            ir,
+            profile_data,
+            StdcellTechnology.from_profile(profile_data),
+            logical_layers,
+        )
 
     @property
     def profile_name(self) -> str:
@@ -109,20 +118,91 @@ class StdcellProcess:
         return bool((self.ir.meta.get("features") or {}).get(name, False))
 
     @property
+    def stdcell_contract(self) -> dict[str, Any]:
+        contract = self.ir.cells_doc.get("stdcell") or {}
+        if not isinstance(contract, dict):
+            raise ProcessError(f"{self.profile_name}: cells.yaml stdcell contract must be a mapping")
+        return contract
+
+    @property
+    def site_height_um(self) -> float:
+        value = self.stdcell_contract.get("site_height_um")
+        if not isinstance(value, (int, float)) or float(value) <= 0:
+            raise ProcessError(
+                f"{self.profile_name}: stdcell site_height_um is required for fixed-height generation"
+            )
+        return self.snap(float(value))
+
+    def row_height_um(self, polarity: str) -> float:
+        values = self.stdcell_contract.get("row_heights_um") or {}
+        value = values.get(polarity) if isinstance(values, dict) else None
+        if not isinstance(value, (int, float)) or float(value) <= 0:
+            raise ProcessError(
+                f"{self.profile_name}: missing fixed {polarity} row height in cells.yaml"
+            )
+        return self.snap(float(value))
+
+    def row_active_capacity_um(self, polarity: str) -> float:
+        select_enc = self.tech.select_channel_enc
+        capacity = self.row_height_um(polarity) - 2 * select_enc
+        if polarity == "p":
+            capacity = min(
+                capacity,
+                self.row_height_um("p") - 2 * self.tech.nwell_active_enc,
+            )
+        return self.snap(capacity) if capacity > 0 else 0.0
+
+    @property
+    def row_gap_um(self) -> float:
+        value = self.stdcell_contract.get("row_gap_um")
+        if not isinstance(value, (int, float)) or float(value) < 0:
+            raise ProcessError(f"{self.profile_name}: invalid fixed row_gap_um")
+        return self.snap(float(value))
+
+    @property
+    def rail_margin_um(self) -> float:
+        value = self.stdcell_contract.get("rail_margin_um")
+        if not isinstance(value, (int, float)) or float(value) < 0:
+            raise ProcessError(f"{self.profile_name}: invalid fixed rail_margin_um")
+        return self.snap(float(value))
+
+    @property
+    def tap_policy(self) -> str:
+        value = self.stdcell_contract.get("tap_policy")
+        if value not in {"external_tapcell", "self_tapped"}:
+            raise ProcessError(
+                f"{self.profile_name}: tap_policy must be external_tapcell or self_tapped"
+            )
+        return str(value)
+
+    @property
+    def tapcell_contract(self) -> dict[str, Any]:
+        value = self.stdcell_contract.get("tapcell") or {}
+        if not isinstance(value, dict):
+            raise ProcessError(f"{self.profile_name}: tapcell contract must be a mapping")
+        return value
+
+    @property
     def legal_orientations(self) -> tuple[str, ...]:
+        configured = (self.stdcell_contract.get("orientations") or {}).get("legal")
+        if isinstance(configured, str):
+            configured = (configured,)
+        if configured:
+            return tuple(str(value) for value in configured)
         configured = self.ir.meta.get("legal_orientations")
         if isinstance(configured, str):
             configured = (configured,)
         if configured:
             return tuple(str(value) for value in configured)
-        return ("R0", "MY")
+        return ("R0", "MX")
 
     @property
     def row_orientation_policy(self) -> dict[str, Any]:
+        orientations = self.stdcell_contract.get("orientations") or {}
         return {
             "mode": "alternate_rows",
-            "even_row": "R0",
-            "odd_row": "MY",
+            "even_row": orientations.get("even_row", "R0"),
+            "odd_row": orientations.get("odd_row", "MX"),
             "legal_orientations": list(self.legal_orientations),
             "rail_abutment": "fixed_height_continuous_vdd_vss",
         }
@@ -153,13 +233,26 @@ class StdcellProcess:
         return None
 
 
+    def routing_grammar(self):
+        from common.routing_grammar import RoutingGrammar, inspect_profile
+
+        candidates = (
+            self.root / "build" / "routing_grammar" / f"{self.profile_name}.json",
+            self.root / "build" / "routing_grammar" / f"{self.profile_name}-native.json",
+            self.root / "build" / "routing_grammar" / f"{self.profile_name}-static.json",
+        )
+        for path in candidates:
+            if path.exists():
+                return RoutingGrammar.load(path)
+        return inspect_profile(self.profile_name, self.root)
+
     def metal_width_um(self, logical: str) -> float:
         rule_ids = {"M1": "7.1", "M2": "9.1", "M3": "15.1"}
         logical = logical.upper()
         if logical not in rule_ids:
             raise ProcessError(f"{self.profile_name}: no standard-cell width rule for {logical}")
         physical = self.physical_layer(logical)
-        return self.profile.rule_or("width", rule_ids[logical], physical, None, 3 * self.lambda_um)
+        return self.profile.rule_value("width", rule_ids[logical], physical, None)
 
     def metal_spacing_um(self, logical: str) -> float:
         rule_ids = {"M1": "7.2", "M2": "9.2", "M3": "15.2"}
@@ -167,13 +260,13 @@ class StdcellProcess:
         if logical not in rule_ids:
             raise ProcessError(f"{self.profile_name}: no standard-cell spacing rule for {logical}")
         physical = self.physical_layer(logical)
-        return self.profile.rule_or("spacing", rule_ids[logical], physical, None, 3 * self.lambda_um)
+        return self.profile.rule_value("spacing", rule_ids[logical], physical, None)
 
     def via_size_um(self, lower: str, upper: str) -> float:
         pair = (lower.upper(), upper.upper())
         if pair == ("M1", "M2"):
             return self.tech.via_size
-        if pair == ("M2", "M3"):
+        if pair == ("M2", "M3") and self.tech.via2_size is not None:
             return self.tech.via2_size
         raise ProcessError(f"{self.profile_name}: no via sizing for {lower}/{upper}")
 
@@ -199,6 +292,14 @@ class StdcellProcess:
                 for logical, alias in self.layers_by_logical.items()
                 if alias.available
             },
+            "site_height_um": self.site_height_um,
+            "row_heights_um": {
+                "n": self.row_height_um("n"),
+                "p": self.row_height_um("p"),
+            },
+            "row_gap_um": self.row_gap_um,
+            "tap_policy": self.tap_policy,
+            "tapcell": self.tapcell_contract,
             "legal_orientations": list(self.legal_orientations),
             "row_orientation_policy": self.row_orientation_policy,
             "native_probe_options": list(self.native_probe_options),

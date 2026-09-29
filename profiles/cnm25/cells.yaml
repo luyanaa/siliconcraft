@@ -1,0 +1,30 @@
+# CNM25 fixed-height stdcell geometry candidate.
+# The local APDK supplies full-custom layers, PCells, and DRC/LVS/PEX
+# collateral, but no standard-cell row/site contract; this candidate is
+# derived from the conservative SCMOS abstraction and is not signoff geometry.
+schema_version: 1
+profile: cnm25
+stdcell:
+  geometry_status: derived_candidate_not_signoff
+  geometry_basis:
+    - profiles/cnm25/layers.yaml
+    - profiles/cnm25/rules.yaml
+    - profiles/cnm25/sources.yaml
+    - local APDK manual/technology/PCells under ../apdk_cnm25_v2024_04_09
+  site_height_um: 60.0
+  row_heights_um:
+    n: 15.0
+    p: 33.0
+  row_gap_um: 3.0
+  rail_margin_um: 4.5
+  tap_policy: self_tapped
+  tapcell:
+    required: false
+    cell: TAPCELL
+    max_spacing_um: null
+  orientations:
+    even_row: R0
+    odd_row: MX
+    legal:
+      - R0
+      - MX

@@ -41,11 +41,11 @@ def lef_text(
     manifest: Mapping[str, Any],
     candidate_index: int = 0,
     *,
-    layer_widths: Mapping[str, float] | None = None,
+    layer_widths: Mapping[str, float],
 ) -> str:
     """Render one candidate as syntactically complete LEF text."""
     candidate = _candidate(manifest, candidate_index)
-    widths = {"M1": 0.9, "M2": 0.9, "M3": 0.9, **(layer_widths or {})}
+    widths = dict(layer_widths)
     geometry = candidate["geometry"]
     circuit = manifest.get("circuit", {})
     ports = list(circuit.get("ports", ()))
@@ -53,6 +53,7 @@ def lef_text(
     outputs = set(circuit.get("outputs", ()))
     supplies = set(circuit.get("supplies", ()))
     pin_access = candidate["routing"].get("pin_access_regions", {})
+    pin_shapes = candidate["routing"].get("pin_shapes", [])
     segments = candidate["routing"].get("segments", [])
     comments = [
         "# SiliconCraft geometry-plan abstract view; not signoff.",
@@ -101,20 +102,37 @@ def lef_text(
             shapes.extend(
                 (
                     segment["layer"],
-                    _centerline_rect(segment, widths.get(segment["layer"], 0.9)),
+                    _centerline_rect(segment, widths[segment["layer"]]),
                 )
                 for segment in rail_segments.get(name, [])
                 if segment["layer"] in widths
             )
         else:
+            shapes.extend(
+                (
+                    shape["layer"],
+                    _rect(shape["x0"], shape["y0"], shape["x1"], shape["y1"]),
+                )
+                for shape in pin_shapes
+                if shape.get("net") == name and shape["layer"] in widths
+            )
+            shapes.extend(
+                (
+                    segment["layer"],
+                    _centerline_rect(segment, widths[segment["layer"]]),
+                )
+                for segment in segments
+                if segment.get("net") == name
+                and segment.get("purpose") == "pin_route"
+                and segment["layer"] in widths
+            )
             access = pin_access.get(name)
-            if access is not None:
-                half = float(access["width_um"]) / 2.0
-                x = float(access["x_um"])
-                y = float(access["y_um"])
-                shapes.append((access["layer"], _rect(x - half, y - half, x + half, y + half)))
-                if access.get("access") != "legal":
-                    lines.append(f"    # pin_access={access.get('access', 'unspecified')} ;")
+            if not shapes:
+                raise ValueError(
+                    f"{candidate['cell']}: pin {name} has no physical pin shape"
+                )
+            if access is not None and access.get("access") != "legal":
+                lines.append(f"    # pin_access={access.get('access', 'unspecified')} ;")
         for layer, shape in shapes:
             lines.extend([f"      LAYER {layer} ;", f"        {shape}"])
         lines.extend(["    END", f"  END {name}"])
@@ -122,12 +140,12 @@ def lef_text(
     lines.append("  OBS")
     for blockage in candidate["routing"].get("metal_blockage_map", []):
         layer = blockage["layer"]
-        if layer not in widths:
+        if layer not in widths or blockage.get("net") in ports:
             continue
         lines.extend(
             [
                 f"    LAYER {layer} ;",
-                f"      {_centerline_rect(blockage, widths[layer])}",
+                f"      {_rect(blockage['x0'], blockage['y0'], blockage['x1'], blockage['y1'])}",
             ]
         )
     lines.extend(["  END", f"END {candidate['cell']}", "END LIBRARY", ""])

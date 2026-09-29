@@ -59,7 +59,7 @@ def main() -> int:
 
     assert ami16["flow"]["source_driven"] is True
     assert ami16["flow"]["original_process"] == "AMI_ABN"
-    assert ami16["flow"]["original_run"] == "N77H"
+    assert ami16["flow"]["original_run"] == "N88Z"
     assert ami16["physical"]["lambda_um"] == 0.8
     assert ami16_ir.device("nmos_core").simulation_name == "ami16N"
     assert ami16_ir.device("pmos_core").simulation_name == "ami16P"
@@ -146,7 +146,12 @@ def main() -> int:
     assert "resist metal1 90" in reference
     assert "areacap cap 72" in reference
     assert "overlap metal2 metal1 3" in reference
-    assert "contact " not in reference
+    assert "contact ndc 4 51000" in reference
+    assert "contact pdc 4 116000" in reference
+    assert "contact pc 4 17700" in reference
+    assert "contact ec 6 17100" in reference
+    assert "contact m2c 4 1580" in reference
+    assert "contact m3c 5 1850" in reference
     assert "2400" not in reference
     hp_input_map = (
         hp06_path.parent.parent / "reference/magic/cifin-hp06.gen"
@@ -178,7 +183,11 @@ def main() -> int:
     assert "resist rpoly 130000" in hp_reference
     assert "areacap wcap 207" in hp_reference
     assert "overlap metal3 metal2 4" in hp_reference
-    assert "contact " not in hp_reference
+    assert "contact ndc 4 2300" in hp_reference
+    assert "contact pdc 4 2000" in hp_reference
+    assert "contact pc 4 1800" in hp_reference
+    assert "contact m2c 4 880" in hp_reference
+    assert "contact m3c 5 360" in hp_reference
     assert "2400" not in hp_reference
 
     hp_models = (hp06_path.parent.parent / "models/hp06.lib").read_text()
@@ -202,7 +211,7 @@ def main() -> int:
     )
     ami16_reference = extract_section(
         assemble_technology(
-            ami16, "n77h_reference", ami16_path.parent, ami16_ir.device_bindings
+            ami16, "n88z_reference", ami16_path.parent, ami16_ir.device_bindings
         )
     )
     assert "device mosfet ami16N" in ami16_none
@@ -210,13 +219,17 @@ def main() -> int:
     assert "resist " not in ami16_none
     assert "areacap " not in ami16_none
     assert "device mosfet ami16N" in ami16_reference
-    assert "resist metal1 60" in ami16_reference
-    assert "resist poly2 25000" in ami16_reference
-    assert "areacap poly2 477" in ami16_reference
-    assert "areacap cap 395" in ami16_reference
-    assert "overlap metal2 metal1 28" in ami16_reference
-    assert "perimc poly active 30" in ami16_reference
-    assert "contact " not in ami16_reference
+    assert "resist metal1 50" in ami16_reference
+    assert "resist poly2 25200" in ami16_reference
+    assert "areacap poly2 452" in ami16_reference
+    assert "areacap cap 381" in ami16_reference
+    assert "overlap metal2 metal1 24" in ami16_reference
+    assert "perimc poly ~poly 35" in ami16_reference
+    assert "contact ndc 4 65800" in ami16_reference
+    assert "contact pdc 4 36300" in ami16_reference
+    assert "contact pc 4 25700" in ami16_reference
+    assert "contact ec 6 20200" in ami16_reference
+    assert "contact m2c 4 60" in ami16_reference
 
     ami16_models = (ami16_path.parent.parent / "models/ami16.lib").read_text()
     assert ".lib ami16" in ami16_models

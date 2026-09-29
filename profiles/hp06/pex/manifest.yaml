@@ -11,7 +11,7 @@ flow:
   original_run: N8AG
   topology_source: "NCSU CDK 1.6.0 techfile/divaEXT.rul extractMOS"
   capacitance_source: "NCSU CDK 1.6.0 techfile/layerDefinitions.tf"
-  contact_policy: "do not emit until contactResistance semantics are validated against a chain fixture"
+  contact_policy: "contact/via resistance emitted per cut from the MOSIS N8AG parametric test report; junction/substrate capacitance remains withheld pending a Magic-safe mapping"
   parasitic_ownership:
     transistor_intrinsic_capacitance: model
     gate_overlap_capacitance: model
@@ -100,13 +100,14 @@ profiles:
   n8ag_reference:
     generated: true
     status: source_reference_partial
-    description: "N8AG values from the HP_AMOS14TB NCSU CDK branch; contact/via and intrinsic junction terms are intentionally withheld pending fixtures."
+    description: "N8AG lot-consistent PEX: sheet/cap coefficients from the NCSU CDK HP_AMOS14TB branch, contact/via per cut from the MOSIS N8AG parametric test report (the run that shipped hp14tbN/P); junction/substrate capacitance remains withheld."
     source:
       process: HP_AMOS14TB
       run: N8AG
       files:
         - "ncsu-cdk-1.6.0/techfile/layerDefinitions.tf:676-728"
         - "ncsu-cdk-1.6.0/techfile/divaEXT.rul"
+        - "ncsu-cdk-1.6.0/models/MOSIS_reports/n8ag-params.txt"
         - "ncsu-cdk-1.6.0/models/hspice/public/publicModel/hp14tbN"
         - "ncsu-cdk-1.6.0/models/hspice/public/publicModel/hp14tbP"
       calibrated: false
@@ -148,6 +149,68 @@ profiles:
         value: 0.05
         unit: ohm_per_square
         source: "layerDefinitions.tf HP_AMOS14TB metal3"
+
+      # Contact/via resistance per cut (Ohms/cut) from the MOSIS N8AG
+      # parametric test report (RUN N8AG, VENDOR HP-NID, SCN05H,
+      # SMN3MLC06) - the same run that shipped the hp14tbN/P BSIM cards.
+      # The NCSU CDK HP_AMOS14TB ca/cp/via/via2 values (1.95/1.7/0.75/0.55)
+      # are not attributed to this run (the same block cites N98R/N74K for
+      # sheet resistance), so the report values keep device + RC +
+      # contact/via on the same run.  HP is a silicided process, which is
+      # why these are an order of magnitude below AMI C5N.  N+ and P+
+      # active values apply to both the diffusion cuts (ndc/pdc) and the
+      # ohmic substrate cuts (nsc/psc).  MTL1 = M1->M2 via1 (m2c), MTL2 =
+      # M2->M3 via2 (m3c) in the report's PROCESS PARAMETERS columns.
+      -
+        kind: contact
+        contact_type: ndc
+        min_size: 4
+        value: 2.3
+        unit: ohm_per_contact
+        source: "MOSIS N8AG report N+ACTV contact 2.3 ohms/cut"
+      -
+        kind: contact
+        contact_type: nsc
+        min_size: 4
+        value: 2.3
+        unit: ohm_per_contact
+        source: "MOSIS N8AG report N+ACTV contact 2.3 ohms/cut"
+      -
+        kind: contact
+        contact_type: pdc
+        min_size: 4
+        value: 2.0
+        unit: ohm_per_contact
+        source: "MOSIS N8AG report P+ACTV contact 2.0 ohms/cut"
+      -
+        kind: contact
+        contact_type: psc
+        min_size: 4
+        value: 2.0
+        unit: ohm_per_contact
+        source: "MOSIS N8AG report P+ACTV contact 2.0 ohms/cut"
+      -
+        kind: contact
+        contact_type: pc
+        min_size: 4
+        value: 1.8
+        unit: ohm_per_contact
+        source: "MOSIS N8AG report POLY contact 1.8 ohms/cut"
+      -
+        kind: contact
+        contact_type: m2c
+        min_size: 4
+        value: 0.88
+        unit: ohm_per_contact
+        source: "MOSIS N8AG report MTL1 0.88 ohms/cut (M1->M2 via1)"
+      -
+        kind: contact
+        contact_type: m3c
+        min_size: 5
+        value: 0.36
+        unit: ohm_per_contact
+        source: "MOSIS N8AG report MTL2 0.36 ohms/cut (M2->M3 via2)"
+
       # Gate-oxide poly/active capacitance stays with hp14tbN/P BSIM cards.
       -
         kind: areacap
@@ -321,6 +384,6 @@ profiles:
         unit: af_per_um
         source: "layerDefinitions.tf HP_AMOS14TB metal3/metal2"
     withheld:
-      - "contactResistance values; Magic's contact unit and the CDK layer-definition semantics need a dedicated chain fixture"
-      - "junction and substrate capacitance; the HP06 source branch does not provide a direct Magic-safe mapping here"
+      - "junction and substrate capacitance; the HP06 source branch does not provide a direct Magic-safe mapping here (BSIM CJ/CJSW remain model-owned)"
+      - "contact-chain fixture calibration against Magic hole-count semantics is a validation TODO, not a source blocker"
       - "Diva-only diode recognition and detailed polySRes body reconstruction in the Magic experiment"

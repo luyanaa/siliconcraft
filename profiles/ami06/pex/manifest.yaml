@@ -11,7 +11,7 @@ flow:
   original_run: N8BN
   topology_source: "NCSU CDK 1.6.0 techfile/divaEXT.rul extractMOS"
   capacitance_source: "NCSU CDK 1.6.0 techfile/divaMultiLevel.il and layerDefinitions.tf"
-  contact_policy: "do not emit until contactResistance semantics are validated against a chain fixture"
+  contact_policy: "contact/via resistance emitted per cut from the MOSIS N8BN parametric test report; junction/substrate capacitance remains withheld pending a Magic-safe mapping"
   parasitic_ownership:
     transistor_intrinsic_capacitance: model
     gate_overlap_capacitance: model
@@ -56,7 +56,7 @@ profiles:
   n8bn_reference:
     generated: true
     status: source_reference_partial
-    description: "N8BN values from the AMI_C5N NCSU CDK branch; contact/via and intrinsic junction terms are intentionally withheld pending fixtures."
+    description: "N8BN lot-consistent PEX: sheet/cap coefficients from the NCSU CDK AMI_C5N branch, contact/via per cut from the MOSIS N8BN parametric test report; junction/substrate capacitance remains withheld."
     source:
       process: AMI_C5N
       run: N8BN
@@ -65,6 +65,7 @@ profiles:
         - "ncsu-cdk-1.6.0/techfile/divaEXT.rul"
         - "ncsu-cdk-1.6.0/techfile/divaMultiLevel.il"
         - "ncsu-cdk-1.6.0/models/MOSIS_reports/n8bn-params.txt"
+        - "https://class.ece.iastate.edu/djchen/EE501/2016/MOSIS%20AMI0.5um%20n8bn-params_2.pdf"
       calibrated: false
     magic_directives:
       # Sheet resistance source unit: Ohms/square.
@@ -104,6 +105,73 @@ profiles:
         value: 0.05
         unit: ohm_per_square
         source: "layerDefinitions.tf AMI_C5N metal3"
+
+      # Contact/via resistance per cut (Ohms/cut) from the MOSIS N8BN
+      # parametric test report (RUN N8BN, VENDOR AMI, SCN05H, AMI C5N).
+      # The NCSU CDK AMI_C5N ca/ce/cp/via/via2 values (92.3/17.0/17.7/
+      # 0.71/0.81) are NOT this lot (they match the later T01X run), so
+      # the report values keep device + RC + contact/via on the same run.
+      # Magic's extract contact directive is milliohms per hole; the
+      # extractor divides by the estimated hole count.  N+ and P+ active
+      # values apply to both the diffusion cuts (ndc/pdc) and the ohmic
+      # substrate cuts (nsc/psc).  MTL1 = M1->M2 via1 (m2c), MTL2 =
+      # M2->M3 via2 (m3c) in the report's PROCESS PARAMETERS columns.
+      -
+        kind: contact
+        contact_type: ndc
+        min_size: 4
+        value: 51.0
+        unit: ohm_per_contact
+        source: "MOSIS N8BN report N+ACTV contact 51.0 ohms/cut"
+      -
+        kind: contact
+        contact_type: nsc
+        min_size: 4
+        value: 51.0
+        unit: ohm_per_contact
+        source: "MOSIS N8BN report N+ACTV contact 51.0 ohms/cut"
+      -
+        kind: contact
+        contact_type: pdc
+        min_size: 4
+        value: 116.0
+        unit: ohm_per_contact
+        source: "MOSIS N8BN report P+ACTV contact 116.0 ohms/cut"
+      -
+        kind: contact
+        contact_type: psc
+        min_size: 4
+        value: 116.0
+        unit: ohm_per_contact
+        source: "MOSIS N8BN report P+ACTV contact 116.0 ohms/cut"
+      -
+        kind: contact
+        contact_type: pc
+        min_size: 4
+        value: 17.7
+        unit: ohm_per_contact
+        source: "MOSIS N8BN report POLY contact 17.7 ohms/cut"
+      -
+        kind: contact
+        contact_type: ec
+        min_size: 6
+        value: 17.1
+        unit: ohm_per_contact
+        source: "MOSIS N8BN report POLY2 contact 17.1 ohms/cut; Magic ec is the poly2 backend alias"
+      -
+        kind: contact
+        contact_type: m2c
+        min_size: 4
+        value: 1.58
+        unit: ohm_per_contact
+        source: "MOSIS N8BN report MTL1 1.58 ohms/cut (M1->M2 via1)"
+      -
+        kind: contact
+        contact_type: m3c
+        min_size: 5
+        value: 1.85
+        unit: ohm_per_contact
+        source: "MOSIS N8BN report MTL2 1.85 ohms/cut (M2->M3 via2)"
 
       # Area capacitance source unit: aF/um^2.  Gate-oxide poly/active
       # capacitance is excluded because ami06N/ami06P BSIM cards own it.
@@ -292,8 +360,8 @@ profiles:
         source: "layerDefinitions.tf AMI_C5N metal3/metal2"
 
     withheld:
-      - "ca/ce/cp/via/via2 contactResistance values until Magic contact geometry is calibrated against chains"
+      - "junction and substrate capacitance; the AMI06 source branch does not provide a direct Magic-safe mapping here (BSIM CJ/CJSW remain model-owned)"
       - "poly/active intrinsic gate capacitance; ami06N/ami06P BSIM cards own it"
-      - "junction and substrate capacitance; the AMI06 source branch does not provide a direct Magic-safe mapping here"
+      - "contact-chain fixture calibration against Magic hole-count semantics is a validation TODO, not a source blocker"
       - "highres resistor body mapping; GDS CHR is recorded but not silently aliased"
       - "Diva-only diode/NPN recognition in the Magic experiment"

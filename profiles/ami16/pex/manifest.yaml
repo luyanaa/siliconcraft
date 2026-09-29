@@ -1,6 +1,7 @@
-# AMI16 PEX profiles.  Coefficients are sourced from the NCSU CDK
-# AMI_ABN branch; the Magic SCMOS file is only the backend grammar and
-# connectivity carrier.  This is not a signoff deck.
+# AMI16 PEX profiles.  Coefficients are sourced from the MOSIS N88Z
+# parametric test report (the run that shipped the ami16N/P BSIM cards);
+# the Magic SCMOS file is only the backend grammar and connectivity
+# carrier.  This is not a signoff deck.
 schema_version: 2
 profile: ami16
 default: none
@@ -8,10 +9,10 @@ flow:
   backend: magic
   source_driven: true
   original_process: AMI_ABN
-  original_run: N77H
+  original_run: N88Z
   topology_source: "NCSU CDK 1.6.0 techfile/divaEXT.rul extractMOS"
-  capacitance_source: "NCSU CDK 1.6.0 techfile/layerDefinitions.tf"
-  contact_policy: "do not emit until contactResistance semantics are validated against a chain fixture"
+  capacitance_source: "NCSU CDK 1.6.0 models/MOSIS_reports/n88z-params.txt"
+  contact_policy: "contact/via resistance emitted per cut from the MOSIS N88Z parametric test report; junction capacitance stays model-owned and electrode/NPN model cards remain withheld"
   parasitic_ownership:
     transistor_intrinsic_capacitance: model
     gate_overlap_capacitance: model
@@ -41,12 +42,12 @@ source_technology:
     pbase: "pbase"
   note: "SCMOS file supplies Magic's internal plane/connect grammar only; AMI16 GDS input and extract sections replace its process semantics. The matched scmos backend is selected only by the legacy cross-check gate."
 technology:
-  description: "AMI_ABN N77H source-reference PEX (extraction scope only)"
+  description: "AMI_ABN N88Z source-reference PEX (extraction scope only)"
 topology:
   features:
     elec: true
     npn: true
-  style: ami16_n77h
+  style: ami16_n88z
   cscale: 1
   step: 100
   sidehalo: 8
@@ -96,173 +97,234 @@ profiles:
     status: topology_only
     description: "AMI16 layer map and primitive MOS topology without PEX coefficients."
     magic_directives: []
-  n77h_reference:
+  n88z_reference:
     generated: true
     status: source_reference_partial
-    description: "N77H values from the AMI_ABN NCSU CDK branch; contact/via, intrinsic junction terms, and electrode MOS/NPN model cards are intentionally withheld pending fixtures and source cards."
+    description: "N88Z lot-consistent PEX: every sheet-resistance, area/perimeter capacitance, and contact/via coefficient from the MOSIS N88Z parametric test report (RUN N88Z, AMI ABN, SCN12) - the same run that shipped the ami16N/P BSIM cards. The former N77H (NCSU AMI_ABN branch) values were dropped because they did not match the model run; electrode MOS/NPN model cards remain withheld."
     source:
       process: AMI_ABN
-      run: N77H
+      run: N88Z
       files:
-        - "ncsu-cdk-1.6.0/techfile/layerDefinitions.tf:729-766"
-        - "ncsu-cdk-1.6.0/techfile/divaEXT.rul:34-110"
-        - "ncsu-cdk-1.6.0/techfile/ami_16.tf"
+        - "ncsu-cdk-1.6.0/models/MOSIS_reports/n88z-params.txt"
         - "ncsu-cdk-1.6.0/models/hspice/public/publicModel/ami16N"
         - "ncsu-cdk-1.6.0/models/hspice/public/publicModel/ami16P"
       calibrated: false
     magic_directives:
-      # Sheet resistance source unit: Ohms/square.
+      # Sheet resistance source unit: Ohms/square (N88Z PROCESS PARAMETERS).
       -
         kind: resist
         layers: nwell
-        value: 1465
+        value: 1524
         unit: ohm_per_square
-        source: "layerDefinitions.tf AMI_ABN nwell"
+        source: "MOSIS N88Z report N_WELL 1524 ohms/sq"
       -
         kind: resist
         layers: poly
-        value: 35
+        value: 26.1
         unit: ohm_per_square
-        source: "layerDefinitions.tf AMI_ABN poly"
+        source: "MOSIS N88Z report POLY 26.1 ohms/sq"
       -
         kind: resist
         layers: poly2
-        value: 25
+        value: 25.2
         unit: ohm_per_square
-        source: "layerDefinitions.tf AMI_ABN elec; Magic poly2 is the backend alias"
+        source: "MOSIS N88Z report POLY2 25.2 ohms/sq; Magic poly2 is the backend alias"
       -
         kind: resist
         layers: metal1
-        value: 0.06
+        value: 0.05
         unit: ohm_per_square
-        source: "layerDefinitions.tf AMI_ABN metal1"
+        source: "MOSIS N88Z report MTL1 0.05 ohms/sq"
       -
         kind: resist
         layers: metal2
         value: 0.03
         unit: ohm_per_square
-        source: "layerDefinitions.tf AMI_ABN metal2"
-      # Gate-oxide poly/active capacitance stays with ami16N/P BSIM cards.
+        source: "MOSIS N88Z report MTL2 0.03 ohms/sq"
+
+      # Contact/via resistance per cut (Ohms/cut) from the MOSIS N88Z
+      # report; one contact between MTL1 and the listed layer.  The NCSU
+      # CDK AMI_ABN ca/ce/cp/via values (68.5/16.4/34.8/0.05) belong to
+      # the N77H run, not to the N88Z model run.  N+ and P+ active values
+      # apply to both the diffusion cuts (ndc/pdc) and the ohmic substrate
+      # cuts (nsc/psc).  Magic's extract contact directive is milliohms
+      # per hole; the extractor divides by the estimated hole count.
+      -
+        kind: contact
+        contact_type: ndc
+        min_size: 4
+        value: 65.8
+        unit: ohm_per_contact
+        source: "MOSIS N88Z report N+ACTV contact 65.8 ohms/cut"
+      -
+        kind: contact
+        contact_type: nsc
+        min_size: 4
+        value: 65.8
+        unit: ohm_per_contact
+        source: "MOSIS N88Z report N+ACTV contact 65.8 ohms/cut"
+      -
+        kind: contact
+        contact_type: pdc
+        min_size: 4
+        value: 36.3
+        unit: ohm_per_contact
+        source: "MOSIS N88Z report P+ACTV contact 36.3 ohms/cut"
+      -
+        kind: contact
+        contact_type: psc
+        min_size: 4
+        value: 36.3
+        unit: ohm_per_contact
+        source: "MOSIS N88Z report P+ACTV contact 36.3 ohms/cut"
+      -
+        kind: contact
+        contact_type: pc
+        min_size: 4
+        value: 25.7
+        unit: ohm_per_contact
+        source: "MOSIS N88Z report POLY contact 25.7 ohms/cut"
+      -
+        kind: contact
+        contact_type: ec
+        min_size: 6
+        value: 20.2
+        unit: ohm_per_contact
+        source: "MOSIS N88Z report POLY2 contact 20.2 ohms/cut; Magic ec is the poly2 backend alias"
+      -
+        kind: contact
+        contact_type: m2c
+        min_size: 4
+        value: 0.06
+        unit: ohm_per_contact
+        source: "MOSIS N88Z report MTL1 0.06 ohms/cut (M1->M2 via1)"
+
+      # Area capacitance source unit: aF/um^2.  Single-plane substrate
+      # values use the N+ACTV entry where the report splits N+/P+
+      # (P+ACTV noted in the source string).  Gate-oxide poly/active
+      # capacitance stays with ami16N/ami16P BSIM cards.
       -
         kind: areacap
         layers: active
-        value: 301
+        value: 287
         unit: af_per_um2
-        source: "layerDefinitions.tf AMI_ABN active/default"
+        source: "MOSIS N88Z report Area (substrate) N+ACTV 287 (P+ACTV 296)"
       -
         kind: areacap
         layers: poly
-        value: 34
+        value: 36
         unit: af_per_um2
-        source: "layerDefinitions.tf AMI_ABN poly/default"
+        source: "MOSIS N88Z report Area (substrate) POLY 36"
       -
         kind: areacap
         layers: poly2
-        value: 745
+        value: 706
         unit: af_per_um2
-        source: "layerDefinitions.tf AMI_ABN elec/active; Magic poly2 is the backend alias"
+        source: "MOSIS N88Z report Area (N+active) POLY2 706 (P+ACTV 697); Magic poly2 is the backend alias"
       -
         kind: areacap
         layers: cap
-        value: 617
+        value: 596
         unit: af_per_um2
-        source: "layerDefinitions.tf AMI_ABN elec/poly; Magic cap is the derived overlap alias"
+        source: "MOSIS N88Z report Area (poly) POLY2 596; Magic cap is the derived inside(elec,poly) tile"
       -
         kind: areacap
         layers: metal1
-        value: 20
+        value: 13
         unit: af_per_um2
-        source: "layerDefinitions.tf AMI_ABN metal1/default"
+        source: "MOSIS N88Z report Area (substrate) MTL1 13"
       -
         kind: areacap
         layers: metal2
-        value: 12
+        value: 28
         unit: af_per_um2
-        source: "layerDefinitions.tf AMI_ABN metal2/default"
-      # Metal overlap coefficients are source values in aF/um^2.
+        source: "MOSIS N88Z report Area (substrate) MTL2 28"
+      # Two-layer overlap coefficients in aF/um^2 (metal over lower layer).
       -
         kind: overlap
         upper: metal1
         lower: "ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc"
-        value: 57
+        value: 49
         unit: af_per_um2
-        source: "layerDefinitions.tf AMI_ABN metal1/active"
+        source: "MOSIS N88Z report Area (N+active) MTL1 49"
       -
         kind: overlap
         upper: metal1
         lower: poly
-        value: 51
+        value: 45
         unit: af_per_um2
-        source: "layerDefinitions.tf AMI_ABN metal1/poly"
+        source: "MOSIS N88Z report Area (poly) MTL1 45"
       -
         kind: overlap
         upper: metal1
         lower: poly2
-        value: 51
+        value: 45
         unit: af_per_um2
-        source: "layerDefinitions.tf AMI_ABN metal1/elec"
+        source: "MOSIS N88Z report Area (poly2) MTL1 45"
       -
         kind: overlap
         upper: metal2
         lower: "ndiff,pdiff,nsd,psd,ndc,pdc,nsc,psc"
-        value: 28
+        value: 25
         unit: af_per_um2
-        source: "layerDefinitions.tf AMI_ABN metal2/active"
+        source: "MOSIS N88Z report Area (N+active) MTL2 25"
       -
         kind: overlap
         upper: metal2
         lower: poly
-        value: 24
+        value: 21
         unit: af_per_um2
-        source: "layerDefinitions.tf AMI_ABN metal2/poly"
+        source: "MOSIS N88Z report Area (poly) MTL2 21"
       -
         kind: overlap
         upper: metal2
         lower: metal1
-        value: 44
+        value: 38
         unit: af_per_um2
-        source: "layerDefinitions.tf AMI_ABN metal2/metal1"
-      # Perimeter source unit: aF/um.
+        source: "MOSIS N88Z report Area (metal1) MTL2 38"
+      # Perimeter source unit: aF/um (fringe).
       -
         kind: perimc
         layers: poly
-        outside: active
-        value: 38
+        outside: "~poly"
+        value: 44
         unit: af_per_um
-        source: "layerDefinitions.tf AMI_ABN poly/active"
+        source: "MOSIS N88Z report Fringe (substrate) POLY 44"
       -
         kind: perimc
         layers: metal1
         outside: "~metal1"
-        value: 55
+        value: 35
         unit: af_per_um
-        source: "layerDefinitions.tf AMI_ABN metal1/default"
-      -
-        kind: perimc
-        layers: metal2
-        outside: "~metal2"
-        value: 47
-        unit: af_per_um
-        source: "layerDefinitions.tf AMI_ABN metal2/default"
+        source: "MOSIS N88Z report Fringe (substrate) MTL1 35"
       -
         kind: sideoverlap
         upper: metal1
         edge: "space,nwell,pwell"
         lower: poly
-        value: 65
+        value: 55
         unit: af_per_um
-        source: "layerDefinitions.tf AMI_ABN metal1/poly"
+        source: "MOSIS N88Z report Fringe (poly) MTL1 55"
       -
         kind: sideoverlap
         upper: metal2
         edge: "space,nwell,pwell"
         lower: poly
-        value: 44
+        value: 39
         unit: af_per_um
-        source: "layerDefinitions.tf AMI_ABN metal2/poly"
+        source: "MOSIS N88Z report Fringe (poly) MTL2 39"
+      -
+        kind: sideoverlap
+        upper: metal2
+        edge: "space,nwell,pwell"
+        lower: metal1
+        value: 48
+        unit: af_per_um
+        source: "MOSIS N88Z report Fringe (metal1) MTL2 48"
     withheld:
-      - "metal2/elec overlap; layerDefinitions.tf has no AMI_ABN metal2/elec entry"
-      - "contactResistance values; Magic's contact unit and the CDK layer-definition semantics need a dedicated chain fixture"
-      - "junction and substrate capacitance; the AMI16 source branch does not provide a direct Magic-safe mapping here"
+      - "metal2/elec overlap; the N88Z report lists no MTL2-to-poly2 area entry"
+      - "perimc metal2 ~metal2; the N88Z report lists no MTL2 substrate fringe entry"
+      - "poly overlap overhang (Overlap N+ACTV 170 / P+ACTV 193); gate-overlap capacitance is owned by the ami16N/ami16P BSIM cards"
+      - "junction capacitance; CJ/CJSW stay model-owned in the ami16N/ami16P BSIM cards"
       - "electrode MOS cards ami16NE/ami16PE are not shipped by the public CDK model directory"
       - "Diva-only NPN recognition and Generic_NPN calibration in the Magic experiment"

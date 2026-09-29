@@ -14,7 +14,7 @@ end
 
 version
     version 0.1
-    description "AMI_ABN N77H source-reference PEX (extraction scope only)"
+    description "AMI_ABN N88Z source-reference PEX (extraction scope only)"
 # 382 "scmos.tech.out"
 end
 
@@ -775,7 +775,7 @@ style plot
 end
 # 1079 "scmos.tech.out"
 cifinput
-style lambda=0.8(ami16_n77h)
+style lambda=0.8(ami16_n88z)
     scalefactor 80 5
     layer nwell CWN
         labels CWN
@@ -1442,7 +1442,7 @@ end
 
 
 extract
-  style ami16_n77h
+  style ami16_n88z
     lambda 80
     cscale 1
     step 100

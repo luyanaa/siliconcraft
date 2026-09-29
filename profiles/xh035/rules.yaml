@@ -1,0 +1,62 @@
+# XH035 initial DRC contract.
+#
+# Ordinary geometry follows the public basic XH035 dimensions.  Where the
+# public value conflicts with the SCMOS_SUBM baseline, the selected value is
+# recorded explicitly.  The hvcmos table is an opt-in, provisional policy;
+# it is not an X-FAB signoff runset.
+rules:
+  grid: {x: 0.05, y: 0.05}
+  width:
+    - {id: XH035.W.NWELL, layer: nwell, value_um: 1.6, source: "XH035 public datasheet", note: "N-well minimum width"}
+    - {id: XH035.W.PWELL, layer: pwell, value_um: 1.6, source: "SCMOS_SUBM baseline", note: "P-well baseline; foundry HV hierarchy not public"}
+    - {id: XH035.W.ACTIVE, layer: active, value_um: 0.5, source: "XH035 public datasheet", note: "Active minimum width"}
+    - {id: XH035.W.POLY, layer: poly, value_um: 0.35, source: "XH035 public datasheet", note: "Poly gate/resistor minimum width"}
+    - {id: XH035.W.NSELECT, layer: nselect, value_um: 0.5, source: "SCMOS_SUBM baseline", note: "Select baseline"}
+    - {id: XH035.W.PSELECT, layer: pselect, value_um: 0.5, source: "SCMOS_SUBM baseline", note: "Select baseline"}
+    - {id: XH035.W.CC, layer: cc, value_um: 0.4, source: "XH035 public datasheet", note: "Contact minimum width"}
+    - {id: XH035.W.M1, layer: metal1, value_um: 0.5, source: "XH035 public datasheet", note: "Metal1 minimum width"}
+    - {id: XH035.W.VIA1, layer: via, value_um: 0.5, source: "XH035 public datasheet", note: "Via1 minimum width"}
+    - {id: XH035.W.M2, layer: metal2, value_um: 0.6, source: "XH035 public datasheet", note: "Metal2 minimum width"}
+    - {id: XH035.W.VIA2, layer: via2, value_um: 0.5, source: "XH035 public datasheet", note: "Via2 minimum width"}
+    - {id: XH035.W.M3, layer: metal3, value_um: 0.6, condition: metal3, source: "XH035 public datasheet", note: "Metal3 minimum width"}
+  spacing:
+    - {id: XH035.S.NWELL, layer: nwell, value_um: 1.0, source: "XH035 public datasheet", note: "N-well spacing"}
+    - {id: XH035.S.PWELL, layer: pwell, value_um: 1.0, source: "SCMOS_SUBM baseline", note: "P-well baseline"}
+    - {id: XH035.S.ACTIVE, layer: active, value_um: 0.6, source: "XH035 public datasheet", note: "Active spacing"}
+    - {id: XH035.S.POLY, layer: poly, value_um: 0.45, source: "XH035 public datasheet", note: "Poly spacing"}
+    - {id: XH035.S.NSELECT, layer: nselect, value_um: 0.6, source: "SCMOS_SUBM baseline", note: "Select spacing"}
+    - {id: XH035.S.PSELECT, layer: pselect, value_um: 0.6, source: "SCMOS_SUBM baseline", note: "Select spacing"}
+    - {id: XH035.S.CC, layer: cc, value_um: 0.4, source: "XH035 public datasheet", note: "Contact spacing"}
+    - {id: XH035.S.M1, layer: metal1, value_um: 0.525, source: "SCMOS_SUBM baseline (3lambda)", override_of: "XH035 public datasheet 0.45", note: "Selected baseline LV spacing; voltage table handles net class"}
+    - {id: XH035.S.VIA1, layer: via, value_um: 0.45, source: "XH035 public datasheet", note: "Via1 spacing"}
+    - {id: XH035.S.M2, layer: metal2, value_um: 0.5, source: "XH035 public datasheet", note: "Metal2 spacing"}
+    - {id: XH035.S.VIA2, layer: via2, value_um: 0.45, source: "XH035 public datasheet", note: "Via2 spacing"}
+    - {id: XH035.S.M3, layer: metal3, value_um: 0.5, condition: metal3, source: "XH035 public datasheet", note: "Metal3 spacing"}
+  enclosure:
+    - {id: XH035.E.NSELECT.ACTIVE, layer: nselect, layer2: active, value_um: 0.15, source: "SCMOS_SUBM baseline", note: "Select over active"}
+    - {id: XH035.E.PSELECT.ACTIVE, layer: pselect, layer2: active, value_um: 0.15, source: "SCMOS_SUBM baseline", note: "Select over active"}
+    - {id: XH035.E.ACTIVE.CC, layer: active, layer2: cc, value_um: 0.1, source: "SCMOS_SUBM baseline", note: "Active around contact"}
+    - {id: XH035.E.POLY.CC, layer: poly, layer2: cc, value_um: 0.1, source: "SCMOS_SUBM baseline", note: "Poly around contact"}
+    - {id: XH035.E.M1.CC, layer: metal1, layer2: cc, value_um: 0.05, source: "SCMOS_SUBM baseline", note: "Metal1 around contact"}
+    - {id: XH035.E.M2.VIA1, layer: metal2, layer2: via, value_um: 0.05, source: "SCMOS_SUBM baseline", note: "Metal2 around via1"}
+    - {id: XH035.E.M3.VIA2, layer: metal3, layer2: via2, value_um: 0.05, condition: metal3, source: "SCMOS_SUBM baseline", note: "Metal3 around via2"}
+  extension: []
+  area: []
+  notch: []
+  overlap: []
+hvcmos:
+  markers:
+    - {id: XH035.HV.MARK.N, marker: hvNMarker, target: nHVDiff, relation: inside, source: "Initial HVCMOS contract", note: "HV-N marker must cover derived HV diffusion"}
+    - {id: XH035.HV.MARK.P, marker: hvPMarker, target: pHVDiff, relation: inside, source: "Initial HVCMOS contract", note: "HV-P marker must cover derived HV diffusion"}
+    - {id: XH035.HV.MARK.N.EXCL, marker: hvNMarker, target: pDiff, relation: disjoint, source: "Initial HVCMOS contract", note: "HV-N marker cannot select P diffusion"}
+    - {id: XH035.HV.MARK.P.EXCL, marker: hvPMarker, target: nDiff, relation: disjoint, source: "Initial HVCMOS contract", note: "HV-P marker cannot select N diffusion"}
+  hierarchy:
+    - {id: XH035.HV.WELL.1, outer: deep_nwell, inner: pwell, source: "XH018/XH035 public module hierarchy", note: "Isolated P-well must remain within deep N-well"}
+  drift:
+    - {id: XH035.HV.DRIFT.N, marker: drift_n, target: active, relation: inside, parent: hvNMarker, source: "Initial HVCMOS contract", note: "N drift must be active and HV-marked"}
+    - {id: XH035.HV.DRIFT.P, marker: drift_p, target: active, relation: inside, parent: hvPMarker, source: "Initial HVCMOS contract", note: "P drift must be active and HV-marked"}
+  voltage_spacing:
+    - {id: XH035.HV.S.LV_LV, layer: metal1, class1: lv, class2: lv, value_um: 0.525, potential: any, source: "SCMOS_SUBM baseline (3lambda)", note: "LV-LV minimum spacing"}
+    - {id: XH035.HV.S.LV_HV, layer: metal1, class1: lv, class2: hv, value_um: 1.4, potential: any, source: "Initial policy: 8lambda; not foundry signoff", note: "LV-HV minimum spacing"}
+    - {id: XH035.HV.S.HV_HV_SAME, layer: metal1, class1: hv, class2: hv, value_um: 0.7, potential: same, source: "Initial policy: 4lambda; not foundry signoff", note: "HV-HV same-potential spacing"}
+    - {id: XH035.HV.S.HV_HV_DIFF, layer: metal1, class1: hv, class2: hv, value_um: 2.1, potential: different, source: "Initial policy: 12lambda; not foundry signoff", note: "HV-HV different-potential spacing"}

@@ -1,0 +1,28 @@
+# HP06 fixed-height stdcell geometry candidate.
+# Derived from HP_AMOS14TB SCMOS-submicron rules and the public CDK process
+# constants; not a foundry standard-cell library or signoff row contract.
+schema_version: 1
+profile: hp06
+stdcell:
+  geometry_status: derived_candidate_not_signoff
+  geometry_basis:
+    - profiles/hp06/layers.yaml
+    - profiles/hp06/rules.yaml
+    - public NCSU CDK HP_AMOS14TB globalData.il
+  site_height_um: 14.4
+  row_heights_um:
+    n: 3.3
+    p: 7.2
+  row_gap_um: 0.9
+  rail_margin_um: 1.5
+  tap_policy: self_tapped
+  tapcell:
+    required: false
+    cell: TAPCELL
+    max_spacing_um: null
+  orientations:
+    even_row: R0
+    odd_row: MX
+    legal:
+      - R0
+      - MX

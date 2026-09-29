@@ -208,8 +208,44 @@ capabilities:
   subm:
     rule_family: scmos_subm
     source: mosis_scmos_7_2
+  high_voltage:
+    layers:
+      - p_high_voltage
+      - n_high_voltage
+    magic_types:
+      - hnwell
+      - hpwell
+      - hndiff
+      - hpdiff
+      - hnfet
+      - hpfet
+      - hndc
+      - hpdc
+    source: mosis_scmos_7_2
+    note: "SCMOS 7.2 declares CVP/CVN as an undeclared option (AMI ABN only) with no rule section; the only lambda-expressed HV rules are the Magic scmos.tech.in 'AMI 1.5um high-voltage MOSFET' 20.x set. CDK thick-active (CTA/tactive) is a separate high-voltage path."
+  thick_active:
+    layers:
+      - thick_active
+    magic_types:
+      - tactive
+    source: southampton_scmos_8_0
+    note: "SCMOS 8.0 gives THICK_ACTIVE a formal rule section (24) for TSMC 4M+; NCSU CDK gates its DBM sanity rules on hvAvailable/tactive."
 
 layers:
+  - name: p_high_voltage
+    gds_layer: 21
+    gds_datatype: 0
+    cif: CVP
+    magic_type: hpwell
+    source: mosis_scmos_7_2
+    note: "High-voltage p-type marker layer; no SCMOS 7.2 rule section."
+  - name: n_high_voltage
+    gds_layer: 22
+    gds_datatype: 0
+    cif: CVN
+    magic_type: hnwell
+    source: mosis_scmos_7_2
+    note: "High-voltage n-type marker layer; no SCMOS 7.2 rule section."
   - name: mems_open
     gds_layer: 23
     gds_datatype: 0
@@ -288,6 +324,224 @@ layers:
     cif: CEL
     magic_type: poly2
     source: mosis_scmos_7_2
+
+# SCMOS 7.2 option rule families: three-way status contract.
+#   defined       = layer/option declared in SCMOS 7.2 (Tables 2/5)
+#   lambda_rules  = full lambda rule tables exist in SCMOS 7.2
+#   drc_status    = none | lambda_only | implemented | partial
+#   lvs_status    = none | recipe | implemented | not_applicable | partial
+# Reference analysis: docs/scmos72_device_extensions.md
+option_rule_families:
+  - id: electrode_capacitor
+    name: "Electrode capacitor (poly2 over poly1)"
+    option_codes: [E, A]
+    rule_sections: [11]
+    layers: [electrode]
+    defined: true
+    lambda_rules: true
+    drc_status: implemented
+    lvs_status: implemented
+    sources: [mosis_scmos_7_2, bundled_magic_source]
+    rule_summary: "11.1 width 3; 11.2 spacing 3; 11.3 poly overlap 2; 11.4 active/well edge 2; 11.5 poly contact 3."
+    native_evidence: "Magic scmos.tech.in DRC 11.x; SCNA20(ORB) `device capacitor None cap,capc/a poly,pc 120 735`; CDK CapacitorElec."
+    siliconcraft: "rules.yaml 11.x present for ami06/ami16; devices.yaml CapacitorElec; PEX elec_poly sourced (N88Z 596 aF/um2)."
+    caveats:
+      - "Magic implements 11.1 at 2 lambda (techfile comment: risking a little for floating-gate overlaps)."
+      - "SCMOS 8.0 SUBM deltas: 11.1 3->7, 11.3 2->5, 11.5 3->6."
+  - id: electrode_transistor
+    name: "Electrode-gated MOS transistor"
+    option_codes: [E, A]
+    rule_sections: [12]
+    layers: [electrode]
+    defined: true
+    lambda_rules: true
+    drc_status: implemented
+    lvs_status: implemented
+    sources: [mosis_scmos_7_2, bundled_magic_source]
+    rule_summary: "12.1 width 2; 12.2 spacing 3; 12.3 gate overlap of active 2; 12.4 active spacing 1; 12.5 poly spacing/overlap 2; 12.6 poly/active contact spacing 3."
+    native_evidence: "Magic DRC 12.x; `fet enfet/epfet` in SCNA20(ORB); CDK nmos4_elec/pmos4_elec."
+    siliconcraft: "rules.yaml 12.1 present; devices.yaml nmos4_elec/pmos4_elec (ami16)."
+    caveats:
+      - "Allowed as gate only on 1.5um-family processes (SCMOS 8.0); AMI C5N and TSMC035 forbid elec/active overlap (DBM Rule 4.0)."
+  - id: electrode_contact
+    name: "Electrode contact"
+    option_codes: [E, A]
+    rule_sections: [13]
+    layers: [electrode]
+    defined: true
+    lambda_rules: true
+    drc_status: implemented
+    lvs_status: implemented
+    sources: [mosis_scmos_7_2, bundled_magic_source]
+    rule_summary: "13.1 contact 2x2; 13.2 spacing 2; 13.3 electrode overlap on capacitor 3; 13.4 elsewhere 2; 13.5 poly/active spacing 3."
+    native_evidence: "Magic DRC 13.x; contact layer shared with CCG."
+    siliconcraft: "rules.yaml 13.1 present; elecRes in devices.yaml."
+    caveats: []
+  - id: vertical_npn
+    name: "Vertical NPN bipolar transistor"
+    option_codes: [A]
+    rule_sections: [16]
+    layers: [pbase]
+    defined: true
+    lambda_rules: true
+    drc_status: implemented
+    lvs_status: implemented
+    sources: [mosis_scmos_7_2, bundled_magic_source]
+    rule_summary: "16.1 contact 2x2; 16.2 emitter select overlap of contact 3; 16.3 pbase overlap of emitter select 2; 16.4 emitter/base select spacing 4; 16.5 pbase overlap of base select 2; 16.6 base select overlap of contact 2; 16.7 nwell overlap of pbase 6; 16.8 pbase to collector active 4; 16.9 collector active overlap of contact 2; 16.10 nwell overlap of collector active 3; 16.11 select overlap of collector active 2."
+    native_evidence: "Magic DRC 16.x (16.3 checked at 4 due to 2-lambda emitter-select CIF expansion); SCNA20(ORB) `device bjt npn emit,emc/a pbase,pbc/a nwell`; CDK Generic_NPN."
+    siliconcraft: "LVS implemented (npnTran -> Generic_NPN); rules.yaml 16.x MISSING (gap)."
+    caveats:
+      - "Magic extension rules for pbase resistors (width 2, spacing 2, rev 8.2.4) are NOT official SCMOS; keep source label."
+      - "Collector width checked via `width col,clc/a 6` instead of an explicit 16.9 check."
+  - id: linear_capacitor
+    name: "Linear capacitor (LC cap-well)"
+    option_codes: [LC]
+    rule_sections: [17, 18]
+    layers: [cap_well]
+    defined: true
+    lambda_rules: true
+    drc_status: implemented
+    lvs_status: implemented
+    sources: [mosis_scmos_7_2, bundled_magic_source]
+    rule_summary: "17.1 width 10 [SUBM 12]; 17.2 spacing 9 [SUBM 18]; 17.3 external active 5 [SUBM 6]; 17.4 active overlap 5 (CMOS34: 3) [SUBM 6]; 18.1 width 3; 18.2 poly extension of active 1/2; 18.3 active overlap of poly 3; 18.4 poly contact to active 2; 18.5 active contact to poly 4/6."
+    native_evidence: "Magic DRC 17.x/18.x (HP 1.2um linear-cap process); SCN12LC(HP) `fet wcap ndiff,ndc 1 wcap GND! 300 0` and SCNA20(ORB) `device capacitor None wcap ndiff,ndc 300 0`."
+    siliconcraft: "devices.yaml lcCap (ami06, cwell-gated); rules.yaml 17.x/18.x MISSING (gap)."
+    caveats:
+      - "CMOS34 vs CMOS14 dual values: 17.4 (3/5), 18.2 (1/2), 18.5 (4/6); small values CMOS34-only."
+      - "Magic comments 18.5/18.6 as conservative."
+  - id: buried_ccd
+    name: "Buried-channel CCD"
+    option_codes: [A]
+    rule_sections: [19]
+    layers: [buried_ccd]
+    defined: true
+    lambda_rules: true
+    drc_status: implemented
+    lvs_status: not_applicable
+    sources: [mosis_scmos_7_2, bundled_magic_source]
+    rule_summary: "19.1 channel active width 4; 19.2 spacing 4; 19.3 CCD implant overlap of channel active 2; 19.4 outside contact to CCD implant 3; 19.5 select overlap of electrode/poly 2; 19.6 poly/electrode overlap in channel 2; 19.7 contact to channel electrode 2."
+    native_evidence: "Magic DRC 19.x plus two extension checks (nbdc-poly/el 1; nbd missing-bd). CIF in/out only; no device extraction."
+    siliconcraft: "ccdAvailable flag exists; rules.yaml 19.x MISSING (gap); LVS not applicable (charge-coupled device, not a terminal device)."
+    caveats:
+      - "2um analog option only (Orbit/AMI ABN)."
+  - id: silicide_block
+    name: "Silicide block / unsilicided poly resistor"
+    option_codes: []
+    rule_sections: [20]
+    layers: [silicide_block]
+    defined: true
+    lambda_rules: true
+    drc_status: lambda_only
+    lvs_status: recipe
+    sources: [mosis_scmos_7_2, southampton_scmos_8_0]
+    rule_summary: "20.1 SB width 4; 20.2 SB spacing 4; 20.3 SB to contact 2 (no contacts inside SB); 20.4 external active 2; 20.5 external poly 2; 20.6 resistor = poly in SB, contacts outside well over field; 20.7 poly width 5; 20.8 resistor spacing in one SB 7; 20.9 SB overlap of poly 2."
+    native_evidence: "Undeclared option with full rule section. Bundled Magic techfile has rnfet/rpfet (poly gate without silicide) and poly_resist stripes but no CSB DRC; 2002a SCN3MLC/SCN3MLC_SUBM decks carry a silicide_block method."
+    siliconcraft: "devices.yaml polySRes (ami06, sblock-gated); rules.yaml 20.x MISSING (gap)."
+    caveats:
+      - "IIT HTML variant renumbers 20.6-20.9 to 20.11-20.14 and adds ESD rules 20.6-20.10; use PDF numbering as authority."
+      - "SCMOS 8.0 extends SILICIDE_BLOCK to TSMC 4M/5M/6M (rule section 20)."
+  - id: scnpc_poly_cap
+    name: "SCNPC poly capacitor (POLY_CAP1)"
+    option_codes: [SCNPC]
+    rule_sections: [23]
+    layers: [poly_cap1]
+    defined: true
+    lambda_rules: true
+    drc_status: lambda_only
+    lvs_status: none
+    sources: [mosis_scmos_7_2, southampton_scmos_8_0]
+    rule_summary: "23.1 POLY_CAP1 width 8 (real capacitor >12); 23.2 CPC spacing 4; 23.3 CPC to ACTIVE 8 (over field only); 23.4 CPC over POLY 3; 23.5 CPC over CONTACT 2; 23.6 POLY over CONTACT (in capacitor) 2; 23.7 POLY to CPC-contact 2; 23.8 unrelated METAL1 to CPC 4; 23.9 METAL2 to CPC 2."
+    native_evidence: "Distinct technology code (AMI CWL 0.8um, lambda 0.5). No public native deck; no Magic SCNPC/CPC target found."
+    siliconcraft: "devices.yaml polycapCap entry (ami06, polycapAvailable=false); rules.yaml 23.x MISSING (gap); LVS none until AMI CWL native evidence appears."
+    caveats:
+      - "Never model SCNPC as SCNLC/cap-well or as Magic `cap` (poly2-poly1 electrode cap); three distinct capacitor semantics."
+      - "Capacitor may not straddle a well boundary; only connecting METAL1 may cross."
+  - id: hvcmos
+    name: "High-voltage MOSFET (undeclared option)"
+    option_codes: []
+    rule_sections: []
+    layers: [p_high_voltage, n_high_voltage]
+    defined: true
+    lambda_rules: false
+    drc_status: none
+    lvs_status: partial
+    sources: [mosis_scmos_7_2, bundled_magic_source]
+    rule_summary: "SCMOS 7.2 has NO HV rule section; no lambda rules are implemented by default. The only lambda-expressed HV set is the Magic scmos.tech.in 'AMI 1.5um high-voltage MOSFET' 20.x (HV well spacing 12 diff-potential; HV diffusion spacing 5; HV diff to well edge 7; HV N/P diff 14; HV to normal diff 12; ohmic to opposite HV well 3; poly1 forbidden as HV gate via compose; HV diffusion contact width 6; HV channel length >= 4), available only under an explicit override."
+    lambda_implementation:
+      default: none
+      policy: override_required
+      override:
+        id: hvcmos_magic20_lambda
+        label: "Magic scmos.tech.in AMI 1.5um high-voltage MOSFET rules 20.x applied as lambda"
+        feature_flag: hvcmosLambdaOverride
+        required_acknowledgements:
+          - "HVCMOS is an undeclared SCMOS 7.2 option with no official rule section; the 20.x set is not SCMOS 7.2 rules."
+          - "The 20.x rules are process-specific to the Magic 'AMI 1.5 micron' high-voltage branch and are not generically lambda-scalable."
+          - "No public voltage rating (e.g. '12V') is substantiated by SCMOS 7.2."
+          - "CVP/CVN (GDS 21/22) remain marker layers; no spacing rules are inferred for them."
+    native_evidence: "Magic compose rules derive hnfet/hpfet = poly2 AND HV diffusion; no `fet hnfet/hpfet` extraction directive in the bundled techfile. NCSU CDK high-voltage path uses thick active (tactive/CTA) with DBM Rule 5.0 and nmos_hv/pmos_hv LVS suffixes (Nhv/Phv)."
+    siliconcraft: "No HVCMOS lambda rules. hvAvailable flag is wired to tactive in scmos_layers.py; LVS core MODEL_SUFFIX has Nhv/Phv; CVP/CVN layers are registered as markers only; rules.yaml entries with family: hvcmos require the hvcmosLambdaOverride feature (enforced by common/process_ir.py)."
+    caveats:
+      - "CVP/CVN are marker layers only: do not invent spacing rules for them."
+      - "Voltage rating (e.g. '12V') is not substantiated by any public SCMOS 7.2 source."
+      - "Magic labels the rules 'AMI 1.5 micron' while MOSIS Table 3a says AMI ABN 1.2um; CDK calls ami16 'AMI 1.6u ABN'. Preserve original labels."
+  - id: mems
+    name: "MEMS micromachining (mems_open / mems_etch_stop)"
+    option_codes: [_MEMS]
+    rule_sections: []
+    layers: [mems_open, mems_etch_stop]
+    defined: true
+    lambda_rules: false
+    drc_status: none
+    lvs_status: none
+    sources: [mosis_scmos_7_2, magic_2002a]
+    rule_summary: "No rule section. Magic scmos.tech.in: 'there is no rules enforced by Magic. Designers aimed at micromachining devices must do DRC themselves' (Marshall 1992)."
+    native_evidence: "SCNA_MEMS option on Orbit 2.0um only. Process guidelines in microns, not lambda: etch-stop ring typically 8-10 um (MOSIS newsletter 206); NIST IR 5402 records open/etch-stop tiles. Orbit later changed opening processing (Warneke 2000)."
+    siliconcraft: "memsAvailable flag exists; CDK layer map carries open(23)/pstop(24); no DRC/LVS."
+    caveats:
+      - "Historical process documentation, not a guarantee for later Orbit runs."
+  - id: tight_metal
+    name: "Tight metal rule (undeclared option)"
+    option_codes: []
+    rule_sections: []
+    layers: []
+    defined: true
+    lambda_rules: true
+    drc_status: implemented
+    lvs_status: not_applicable
+    sources: [mosis_scmos_7_2, magic_catalog]
+    rule_summary: "Table 4: metal1 spacing 3->2, metal2 spacing 4->3, metal3 spacing 4->4 (min-width wire pairs only); well/poly/contact unchanged."
+    native_evidence: "scmos-tm.tech."
+    siliconcraft: "Recorded in rule_overlays.tight_metal."
+    caveats: []
+  - id: triple_metal
+    name: "Triple metal (via2 + metal3)"
+    option_codes: [3M]
+    rule_sections: [14, 15]
+    layers: [via2, metal3]
+    defined: true
+    lambda_rules: true
+    drc_status: implemented
+    lvs_status: not_applicable
+    sources: [mosis_scmos_7_2]
+    rule_summary: "14.1 via2 2x2; 14.2 spacing 3; 14.3 metal2 overlap 1; 14.4 via1 spacing 2; 14.5 may stack over contact; 15.1 metal3 width 6 [SUBM 5]; 15.2 spacing 4 [SUBM 3]; 15.3 via2 overlap 2."
+    native_evidence: "Magic SCN3M/SCN08 styles; CDK metal3Available rules."
+    siliconcraft: "rules.yaml 14.1/15.1 with metal3/metal4 conditions."
+    caveats: []
+  - id: quad_metal
+    name: "Quad metal (via3 + metal4; SUBM only)"
+    option_codes: [4M]
+    rule_sections: [21, 22]
+    layers: [via3, metal4]
+    defined: true
+    lambda_rules: true
+    drc_status: lambda_only
+    lvs_status: not_applicable
+    sources: [mosis_scmos_7_2]
+    rule_summary: "21.1 via3 2x2; 21.2 spacing 4; 21.3 metal3 overlap 1; 22.1 metal4 width 6; 22.2 spacing 6; 22.3 via3 overlap 2. In 4M option metal3 becomes thin: 15.1=3, 15.3=1."
+    native_evidence: "Magic SCN4M_SUBM.20 (TSMC35-labeled) grammar only; no process-specific coefficients."
+    siliconcraft: "metal4 rules for ams_c35 (metal4Available)."
+    caveats: []
 
 rule_overlays:
   standard:
@@ -371,6 +625,13 @@ processes:
       - floating_gate
       - electrode_poly2
       - mems
+    option_rule_families:
+      - electrode_capacitor
+      - electrode_transistor
+      - electrode_contact
+      - vertical_npn
+      - buried_ccd
+      - mems
     variants:
       - code: SCNA
         role: analog_n_well_cmos_bjt
@@ -408,6 +669,13 @@ processes:
       - buried_ccd
       - electrode_poly2
       - high_voltage
+    option_rule_families:
+      - electrode_capacitor
+      - electrode_transistor
+      - electrode_contact
+      - vertical_npn
+      - buried_ccd
+      - hvcmos
     source: mosis_scmos_7_2
     magic:
       generic_archive_techfile: SCNA.80.tech27
@@ -433,6 +701,9 @@ processes:
     capabilities:
       - linear_capacitor
       - tight_metal
+    option_rule_families:
+      - linear_capacitor
+      - tight_metal
     source: mosis_scmos_7_2
     magic:
       bundled_historical_style: SCN12LC(HP)
@@ -454,6 +725,9 @@ processes:
       - tight_metal
     capabilities:
       - poly_capacitor
+      - tight_metal
+    option_rule_families:
+      - scnpc_poly_cap
       - tight_metal
     source: mosis_scmos_7_2
     magic:
@@ -529,6 +803,9 @@ processes:
       - subm
       - silicide_block
       - stacked_via
+    option_rule_families:
+      - triple_metal
+      - silicide_block
     source: mosis_scmos_7_2
     magic:
       archive_2001a_techfile: SCN3M_SUBM.40.HP.tech27
@@ -553,6 +830,10 @@ processes:
       - SCNLC
     capabilities:
       - metal3
+      - linear_capacitor
+      - silicide_block
+    option_rule_families:
+      - triple_metal
       - linear_capacitor
       - silicide_block
     source: mosis_scmos_7_2
@@ -584,6 +865,10 @@ processes:
       - linear_capacitor
       - silicide_block
       - stacked_via
+    option_rule_families:
+      - triple_metal
+      - linear_capacitor
+      - silicide_block
     source: mosis_scmos_7_2
     magic:
       archive_2002a_techfiles:

@@ -73,6 +73,18 @@ calibrated model, signoff DRC/LVS, or signoff PEX claim. In particular:
 - No exact GMOS10QA Magic target was found; `SCN4M_SUBM.20.tech27` is retained
   only as a TSMC35-labeled 4M/SUBM backend grammar reference.
 
+### SCMOS 7.2 device extensions
+
+[`docs/scmos72_device_extensions.md`](docs/scmos72_device_extensions.md) plus the
+`option_rule_families` registry in the historical matrix record the three-way
+status (defined / DRC+LVS / λ-scalable) of every SCMOS 7.2 option family:
+electrode capacitor/transistor/contact, vertical NPN, linear capacitor, buried
+CCD, silicide-block poly resistor, SCNPC `POLY_CAP1`, HVCMOS (CVP/CVN —
+undeclared option, no official λ rules and **none implemented by default**;
+the Magic AMI 1.5 µm 20.x set applies only under an explicit
+`hvcmosLambdaOverride` opt-in enforced by `common/process_ir.py`), and MEMS
+(declared option, no rules, process-specific µm guidelines only).
+
 The 2001a and 2002a Magic archives are separate from the bundled `scmos.tech`;
 release, target label, and conditional source context are preserved.
 
@@ -81,10 +93,18 @@ release, target label, and conditional source context are preserved.
 [`schema/stdcell_spice_pex_readiness.yaml`](schema/stdcell_spice_pex_readiness.yaml)
 and [`docs/stdcell_spice_pex.md`](docs/stdcell_spice_pex.md) record the
 generator-facing model, corner, canonical-device, Magic PEX, parasitic
-ownership, and signoff blockers. AMI06 now has process-independent INV and
+ownership, and signoff blockers. AMI06 has process-independent INV and
 two-input combinational geometry loops with authoritative DRC/LVS gates: INV
 and NAND2 use the two-metal classic path; the legal NOR2 fixture uses the
 three-metal classic path.
+
+The fixed-height geometry planner now has explicit, rule-derived candidate
+contracts for `ami06`, `ami16`, `hp06`, `cnm25`, and `ams_c35`. These contracts
+are not foundry standard-cell row libraries: public process/rule sources did
+not establish universal row heights for the four newly covered profiles.
+AMI16/HP06 use a stdcell-only SCMOS rule adapter instead of inheriting the
+shared analog PCell technology assumptions. Pin, power, bulk, PEX, corner,
+LEF, Liberty, and signoff claims remain gated separately.
 
 The implemented IR path covers CircuitIR, explicit PUN/PDN diffusion graphs,
 Euler/line-of-diffusion ordering, folding enumeration, P/N gate-column
@@ -140,10 +160,23 @@ does not create a missing static declaration, but its native extraction is
 not disabled.
 
 
-- AMI06 is the first bootstrap candidate: it has MOS PCells, xschem/ngspice
-  smoke, and source-reference Magic PEX in one path.
-- AMI16 and HP06 have native source-reference PEX and nominal model cards but
-  no stdcell geometry or xschem characterization contract.
+- AMI06 is the bootstrap reference: it has MOS PCells, xschem/ngspice smoke,
+  and source-reference Magic PEX in one path.
+- AMI16 and HP06 now have explicit fixed-height, rule-derived stdcell
+  candidate contracts, native source-reference PEX, and nominal model cards.
+  Their generated geometry remains blocked from signoff by missing native
+  pin/bulk/corner/characterization evidence.
+- CNM25 (IMB-CNM academic 2.5 µm, 2-poly/2-metal) has a conservative
+  fixed-height candidate contract in addition to its two DRC abstractions:
+  the classic-SCMOS deck (lambda=1.5 µm, native 2.5 µm contact cut) and the
+  native APDK deck. LVS uses the shared SCMOS engine; PEX remains topology
+  only, with the prepared FastCap/FastHenry flow
+  (`scripts/run_cnm25_em.py`) not emitting RC coefficients.
+- AMS C35 (0.35 µm mixed-signal, TSMC-licensed base) has a rule-derived
+  fixed-height candidate contract. Its ENG-183 exceptions (VIA 0.5 µm,
+  select/active 0.45 µm, N+/P+ enclosure 0.25 µm, stacked vias), generated
+  xschem/ngspice MOS symbols, and analog PCells remain process-specific; PEX
+  is topology-only and the licensed kit is the tapeout authority.
 - LS1u is a subcircuit/topology reference with partial model evidence.
 - OpenRule1um's 45-cell GDS/38-symbol catalog is reference-only; LEF, Liberty,
   and PEX are unavailable/deferred.
@@ -152,10 +185,12 @@ not disabled.
 
 ## Current SCMOS behavior
 
-The active AMI06, HP06, and AMI16 PEX manifests retain their source-driven
-`pearlriver-scmos.tech` carrier and process-specific coefficient sections. Each
-manifest also declares a matched legacy SCMOS backend for geometry/connectivity
-cross-checking:
+The active AMI06, HP06, AMI16, CNM25, and AMS C35 PEX/DRC contracts retain
+their source-driven process-specific coefficients. AMI06/HP06/AMI16 carry the
+`pearlriver-scmos.tech` Magic carrier; CNM25 and AMS C35 are DRC/LVS-only
+profiles (no Magic backend yet) whose native decks live under
+`profiles/<name>/reference/klayout/`. Each manifest also declares a matched
+legacy SCMOS backend where applicable for geometry/connectivity cross-checking:
 
 - AMI06 and HP06: `scmos-sub`, extraction style `lambda=0.30`;
 - AMI16: `scmos`, extraction style `lambda=0.8(scna16_ami)`.
@@ -198,7 +233,7 @@ Both SCMOS gates run from `scripts/run_pex_ci.py`.
 
 The archived decks are conservative historical references. The active process
 manifests remain authoritative for AMI_C5N/N8BN, HP_AMOS14TB/N8AG, and
-AMI_ABN/N77H.
+AMI_ABN/N88Z.
 
 ## Verification
 
@@ -245,7 +280,7 @@ nix-shell -p klayout netgen python3 --run \
   --input common/tests/spice/stdcell/nand2_drc.spice
   --schematic common/tests/spice/stdcell/nand2_drc_reference.spice
   --workdir build/stdcell/ami06/nand2_gate"
-nix-shell -p klayout netgen magic ngspice python3 --run \
+nix-shell -p klayout netgen magic-vlsi ngspice python3 --run \
   "python3 scripts/run_stdcell_gate.py --profile ami06
   --architecture two_metal_classic --cell nand2_drc
   --input common/tests/spice/stdcell/nand2_drc.spice
@@ -270,7 +305,7 @@ nix-shell -p klayout python3 --run \
 Native Magic/ngspice contracts, including the SCMOS gates:
 
 ```bash
-nix-shell -p magic ngspice python3 --run \
+nix-shell -p magic-vlsi ngspice python3 --run \
   "python3 scripts/run_pex_ci.py"
 ```
 
@@ -286,6 +321,24 @@ nix-shell -p xschem ngspice python3 --run \
 
 The same gate can be run for `ls1u`; its subcircuit binding keeps simulator
 parameters in `devices/symbol_netlist.yaml`, separate from symbol geometry.
+
+AMS C35 xschem and KLayout analog-PCell smoke:
+
+```bash
+nix-shell -p xschem ngspice python3 --run \
+  "python3 scripts/run_xschem.py --profile ams_c35"
+python3 scripts/test_ams_c35_pcells.py
+```
+
+The AMS PCell fixture can also be checked with the native reference DRC:
+
+```bash
+nix develop ~/Documents/librelane --command bash -c \
+  'SILICONCRAFT_PROFILE=ams_c35 SILICONCRAFT_OUTPUT=build/pcells/ams_c35.gds \
+   klayout -b -r scripts/run_pcells.py && \
+   klayout -b -r profiles/ams_c35/reference/klayout/ams_c35_native.lydrc \
+   -rd input=build/pcells/ams_c35.gds -rd output=build/pcells/ams_c35.lyrdb'
+```
 
 ## Repository map
 

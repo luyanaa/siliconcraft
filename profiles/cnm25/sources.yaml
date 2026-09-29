@@ -1,0 +1,33 @@
+# profiles/cnm25/sources.yaml — provenance for the CNM25 port.
+apdk:
+  name: "Academic Process Design Kit — CNM25 Edition"
+  author: "Francesc Serra Graells, IMB-CNM(CSIC)"
+  version: "v2024_04_09"
+  path: "../apdk_cnm25_v2024_04_09"
+  manual: "doc/apdk_cnm25_v2024_04_09.pdf"
+  technology_file: "glade/cnm25.tch"
+  verification:
+    drc: "glade/verification/cnm25drc.py"
+    lvs: "glade/verification/cnm25lvs.py"
+    pex_2d: "glade/verification/cnm25pex_2d.py"
+    pex_3d: "glade/verification/cnm25pex_3d.py"
+  models: "spiceopus/cnm25mod.lib"
+  bib:
+    - "doc/bib/FastCap_Users_Guide.pdf"
+    - "doc/bib/The_Gemini_Users_Guide.pdf"
+    - "doc/bib/BSIM3v3_Manual.pdf"
+  url: "http://www.cnm.es/users/pserra/apdk"
+process_summary:
+  feature_size_um: 2.5
+  poly: 2
+  metal: 2
+  grid_um: 0.25
+  devices:
+    - "bulk N/P MOSFET (BSIM3v3.2.4)"
+    - "poly-insulator-poly capacitor (POLY0/POLY1)"
+  notes:
+    - "POLY0 is used for PiP capacitors only; POLY1 is the MOS gate and the other PiP plate"
+    - "single contact layer WINDOW covers active/poly1/poly0 cuts; ca/cp/ce are derived"
+    - "no explicit p+ mask: P+ regions are GASAD minus NPLUS (pselectFromActive)"
+    - "APDK directory tree ships device/PiP PCells and full-custom verification, not a fixed-height standard-cell row/site library"
+    - "FastCap 3D capacitance only; no R extraction in the APDK — R/EM via FastHenry flow"

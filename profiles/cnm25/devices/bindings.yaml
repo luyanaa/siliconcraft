@@ -1,0 +1,63 @@
+# Process-specific binding of the canonical MOS contract to CNM25.
+# Simulation models are the APDK BSIM3v3.2.4 subcircuits (cnm25modn/p), which
+# carry Pelgrom mismatch (.param rndgauss on VTH0/U0) behind the w/l/ad/as/
+# pd/ps/m interface.
+schema_version: 1
+canonical_source: "../../../common/devices/canonical/mos.yaml"
+bindings:
+  nmos_core:
+    canonical_variant: nmos_core
+    layout:
+      gate_types: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      substrate_node: Gnd!
+    simulation:
+      representation: subckt
+      name: cnm25modN
+      prefix: x
+      model_library: "../models/cnm25.lib"
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+    lvs:
+      extracted_class: cnm25modN
+      netgen_class: cnm25modN
+      permutable:
+        -
+          - d
+          - s
+  pmos_core:
+    canonical_variant: pmos_core
+    layout:
+      gate_types: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      substrate_node: Vdd!
+    simulation:
+      representation: subckt
+      name: cnm25modP
+      prefix: x
+      model_library: "../models/cnm25.lib"
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+    lvs:
+      extracted_class: cnm25modP
+      netgen_class: cnm25modP
+      permutable:
+        -
+          - d
+          - s

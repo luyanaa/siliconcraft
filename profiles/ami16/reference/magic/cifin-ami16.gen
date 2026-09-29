@@ -1,4 +1,4 @@
-style lambda=0.8(ami16_n77h)
+style lambda=0.8(ami16_n88z)
     scalefactor 80 5
     layer nwell CWN
         labels CWN

@@ -1,0 +1,100 @@
+# profiles/ams_c35/c35b4c3_stack.yaml — C35B4C3 field-solver / RCX stack
+#
+# Nominal stack reconstructed from the ENG-182 Rev.6 direct mirror (the
+# original-fabrication document layout/pagination/revision history/date, on a
+# third-party mirror — NOT an ams/Europractice current official download).
+# Status: nominal RCX reconstruction.  The only genuinely open items are the
+# passivation actual thickness on a real die, the sidewall detail (SEM stats
+# exist, see below), corner rounding, and the vertical doping shape.
+#
+# Key corrections vs earlier drafts:
+#   - C35B4C3 is thin-METAL4: M3 becomes a normal 0.640 um layer (70-120 mOhm/sq),
+#     M4 is the top metal (0.925 um, 40-100 mOhm/sq).  ENG-183 7.2 (M4 module)
+#     antenna table confirms t1(MET3)=0.64, t1(MET4)=0.925.
+#   - No polyimide for the thin-M4 variant: passivation is SiNx (PROT2) +
+#     SiOx (PROT1).  Polyimide is mandatory only for thick-top-metal variants.
+#   - n-well junction depth: XJNW = 3.5 um (ENG-182 Rev.3 "Corrected: XJNW";
+#     the often-quoted 2.0 um is Rev.2).
+#   - Dielectric eps_r is NOT missing: ENG-182 Note 24 defines the values used
+#     to compute process area capacitance from measured dielectric thickness.
+stackup:
+  version: "eng182_rev6_nominal"
+  process: C35B4C3
+  status: nominal_reconstruction
+  units: { length: um, sheet_r: ohm_sq, eps_r: dimensionless }
+  epsilon_r_map:
+    "3.9": [TFOX, TPROT1]
+    "4.0": [TILDFOX, TILDDIFF, TPOX]
+    "4.1": [TIMD1, TIMD2, TIMD3]
+    "7.9": [TPROT2]
+    "11.7": [substrate]
+  layers:
+    # top -> bottom
+    - { name: PROT2,  kind: dielectric, thickness_um: 1.000, eps_r: 7.9, note: "SiNx-like passivation (non-stoich Si:N~1:1, ~20% H per ToF-SIMS/XPS literature)" }
+    - { name: PROT1,  kind: dielectric, thickness_um: 1.030, eps_r: 3.9, note: "SiOx-like passivation" }
+    - { name: M4,     kind: conductor,  thickness_um: 0.925, sheet_r_min_ohm_sq: 0.04, sheet_r_max_ohm_sq: 0.10, note: "thin M4 top metal; sigma_eff = 1/(Rsh*t)" }
+    - { name: IMD3,   kind: dielectric, thickness_um: 1.000, eps_r: 4.1, note: "M4-M3 ILD" }
+    - { name: M3,     kind: conductor,  thickness_um: 0.640, sheet_r_min_ohm_sq: 0.07, sheet_r_max_ohm_sq: 0.12, note: "normal layer in thin-M4 variant (not top metal)" }
+    - { name: IMD2,   kind: dielectric, thickness_um: 1.000, eps_r: 4.1, note: "M3-M2 ILD" }
+    - { name: M2,     kind: conductor,  thickness_um: 0.640, sheet_r_min_ohm_sq: 0.07, sheet_r_max_ohm_sq: 0.12, note: "" }
+    - { name: IMD1,   kind: dielectric, thickness_um: 1.000, eps_r: 4.1, note: "M2-M1 ILD" }
+    - { name: M1,     kind: conductor,  thickness_um: 0.665, sheet_r_min_ohm_sq: 0.07, sheet_r_max_ohm_sq: 0.12, note: "" }
+    - { name: ILDFOX, kind: dielectric, thickness_um: 0.645, eps_r: 4.0, note: "M1-poly/field ILD" }
+    - { name: POLY1,  kind: conductor,  thickness_um: 0.282, sheet_r_min_ohm_sq: null, sheet_r_max_ohm_sq: null, note: "silicided poly; ENG-182 poly Rsh not reproduced here" }
+    - { name: FOX,    kind: dielectric, thickness_um: 0.290, eps_r: 3.9, note: "field oxide" }
+  substrate:
+    type: bulk
+    non_epi: true
+    rho_ohm_cm: [14, 19, 24]            # min / nominal / max (ENG-182 Rev.6)
+    sigma_Sm: [7.14, 5.26, 4.17]        # 1/rho (nominal 0.19 ohm-m)
+    eps_r: 11.7
+    junction_depth_um: { n_plus: 0.2, p_plus: 0.2, nwell: 3.5 }   # XJNW Rev.3+ = 3.5
+    nwell_sheet_r_kohm_sq: [0.9, 1.0, 1.1]
+    nwell_equivalent_slab:
+      # satisfies BOTH public Rsh and XJNW without inventing an implant shape:
+      d_um: 3.5
+      rho_eq_ohm_cm: 0.35               # = Rsh(1.0k) * d(3.5um)
+      sigma_eq_Sm: 286
+      note: "equivalent conductive slab for EM substrate coupling, not a doping profile"
+    doping_profile: unavailable
+    note: "N_A(z) not public; MOS NSUB (ENG-182 Note 12) is a compact-model body/channel parameter, not a wafer profile"
+  lateral_profile:
+    sidewall_angle_deg:
+      # FIB/SEM measured min/avg/max; convention as defined in the source paper
+      M4:   [91, 104, 121]
+      M3:   [80, 91, 102]
+      M2:   [81, 93, 107]
+      M1:   [75, 93, 105]
+      POLY1: [80, 91, 98]
+      VIA3: [81, 89, 99]
+      VIA2: [79, 83, 87]
+      VIA1: [84, 88, 93]
+      CONT: [77, 88, 95]
+    nominal_alpha:
+      M4: 104
+      M3: 91
+      M2: 93
+      M1: 93
+      VIA3: 89
+      VIA2: 83
+      VIA1: 88
+      CONT: 88
+    geometry_model: "trapezoid {bottom width, top width, h} or {w_drawn, h, alpha_sidewall}"
+    corner_rounding_radius_um: null
+    corner_rounding_note: "no quantitative AMS C35 value found; keep sharp trapezoid; add r_corner only for high-frequency S-param / Ccouple calibration"
+    sidewall_frequency_note: "104-deg vs 90-deg matters ~0.8 dB coupling span at 40-80 GHz; at 1-6 GHz calibrate after eps_r, thickness, substrate"
+  electrical_width_correction:
+    # ENG-182 drawn min width -> effective electrical width (from R test structures)
+    M1: { drawn_um: 0.5, effective_um: 0.5 }
+    M2: { drawn_um: 0.6, effective_um: 0.5 }
+    M3: { drawn_um: 0.6, effective_um: 0.5 }
+    M4: { drawn_um: 0.6, effective_um: 0.6 }
+    note: "effective ~ -0.1 um width correction for M2/M3 in RCX; electrical, not SEM geometry"
+  passivation_revision_uncertainty:
+    eng182_nominal_total_um: 2.03        # PROT2 1.0 + PROT1 1.03
+    real_die_report_um: 1.6              # 2026 thin-M4 sample report
+    policy: "use ENG-182 for PDK-nominal RC; allow passivation thickness re-calibration when fitting a real die"
+  validation_geometry:
+    large_plate: "C_area/solver == C_area/ENG182 (verifies eps_r/t)"
+    isolated_min_width_wire: "C_fringe/L == C_perimeter/ENG182 (introduces sidewall trapezoid)"
+    min_width_min_space_pair: "C12/L == C_coupling/ENG182 and dC_fringe ~ -0.8 * C_coupling"

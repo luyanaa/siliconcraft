@@ -1,0 +1,75 @@
+# profiles/ams_c35/reference/rc_coefficients.yaml — ENG-182 Rev.6 RCX reference
+#
+# OpenRCX-style reference coefficient table for C35B4C3, from the ENG-182
+# Rev.6 direct mirror (third-party mirror of the original document).
+# Methodology as stated by ENG-182:
+#   - area C = eps0 * eps_r / t  (measured optical thickness + Note 24 eps_r)
+#   - perimeter/fringing C = SCAP FEM (single minimum-width wire, one edge;
+#     Institute for Microelectronics, Univ. Vienna)
+#   - same-layer coupling C = SCAP FEM (adjacent lines, min width + min space)
+#   - when an adjacent line is present, subtract ~80% of the coupling C from
+#     the original fringing C.
+# Typical values below; min/max corners live in ENG-182 tables.
+schema_version: 1
+process: C35B4C3
+source: "ENG-182 Rev.6 direct mirror"
+corner: typical
+
+sheet_resistance_ohm_sq:
+  # min..max specification
+  M1: [0.07, 0.12]
+  M2: [0.07, 0.12]
+  M3: [0.07, 0.12]     # thin-M4 variant: normal layer
+  M4: [0.04, 0.10]     # top metal
+  # (3M process top M3T is also 0.04-0.10; thin-M4 demotes M3 to normal)
+  nwell: [900, 1100]
+  n_diff: 70           # ENG-182 MOS card RSH (typical)
+  p_diff: 129
+  hres: 1204           # ENG-182 RPOLYH card (typical)
+
+via_contact_resistance_ohm:
+  VIA3: [1.2, 3.0]     # 0.5x0.5 um^2, ENG-182 Rev.6 spec
+  VIA1: [1.2, 3.0]     # reported Rev.2 family value, re-verify in Rev.6 table
+  VIA2: [1.2, 3.0]     # reported Rev.2 family value, re-verify in Rev.6 table
+  CONT_M1_NDIFF: [30.0, 60.0]   # reported Rev.2 summary, re-verify
+  CONT_M1_PDIFF: [60.0, 90.0]   # reported Rev.2 summary, re-verify
+
+vertical_capacitance:
+  # area in fF/um^2, fringe-per-edge in fF/um (typical)
+  M1_to_WELL_field: { area: 0.029, fringe: 0.044 }
+  M2_to_M1:         { area: 0.036, fringe: 0.048 }
+  M3_to_M2:         { area: 0.036, fringe: 0.048 }   # thin-M4 module
+  M4_to_M3:         { area: 0.036, fringe: 0.053 }
+  M4_to_M2:         { area: 0.014, fringe: 0.039 }
+  M4_to_M1:         { area: 0.008, fringe: 0.033 }
+  M4_to_WELL:       { area: 0.006, fringe: 0.029 }
+
+same_layer_coupling_capacitance_ff_per_um:
+  # min-width / min-spacing adjacent lines (typical)
+  Poly1_Poly1: 0.039
+  M1_M1: 0.087
+  M2_M2: 0.084
+  M3_M3: 0.085
+  M4_M4: 0.097
+
+fringe_reduction_rule:
+  delta_fringe: "-0.8 * C_coupling"
+  note: "when an adjacent line is present, the original fringing capacitance is reduced by about 80% of the coupling capacitance (ENG-182)"
+
+area_capacitance_formula:
+  c_per_area: "eps0 * eps_r / t"
+  eps_r_by_layer: "see c35b4c3_stack.yaml epsilon_r_map (Note 24)"
+  note: "validated check: M2->M1 0.036 fF/um2 = eps0*4.1/1.0um"
+
+effective_width_correction_um:
+  M1: { drawn: 0.5, effective: 0.5 }
+  M2: { drawn: 0.6, effective: 0.5 }
+  M3: { drawn: 0.6, effective: 0.5 }
+  M4: { drawn: 0.6, effective: 0.6 }
+  note: "electrical width correction from R test structures (ENG-182); use in RCX, not as SEM geometry"
+
+conductivity_backout:
+  formula: "sigma_eff = 1 / (Rsh * t)"
+  M1: { Rsh_ohm_sq: 0.08, t_um: 0.665, sigma_Sm: 1.88e7 }
+  M4: { Rsh_ohm_sq: 0.05, t_um: 0.925, sigma_Sm: 2.16e7 }
+  note: "auto-absorbs interconnect material/process effects; prefer over bulk-Al 3.5e7"

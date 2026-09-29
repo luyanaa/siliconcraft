@@ -96,10 +96,40 @@ def derive(L, F, WELL, TECH, LAMBDA, DBU_, UNIVERSE):
     gwell = andnot(L("gwell"), L("nodrc"))
     nwell = andnot(L("nwell"), L("nodrc"))
     pwell = andnot(L("pwell"), L("nodrc"))
+    deep_nwell = andnot(L("deep_nwell"), L("nodrc"))
+    deep_pwell = andnot(L("deep_pwell"), L("nodrc"))
+    hv_nwell = andnot(L("hv_nwell"), L("nodrc"))
+    hv_pwell = andnot(L("hv_pwell"), L("nodrc"))
+    hv_n_marker = andnot(
+        or_(L("hv_n_marker"), L("cvn")), L("nodrc")
+    )
+    hv_p_marker = andnot(
+        or_(L("hv_p_marker"), L("cvp")), L("nodrc")
+    )
+    hv_marker = andnot(L("hv_marker"), L("nodrc"))
+    drift_n = andnot(L("drift_n"), L("nodrc"))
+    drift_p = andnot(L("drift_p"), L("nodrc"))
+    tactive = pya.Region()
+    if F("hvAvailable"):
+        tactive = andnot(L("tactive"), L("nodrc"))
+        hv_n_marker = or_(hv_n_marker, and_(tactive, L("nactive")))
+        hv_p_marker = or_(hv_p_marker, and_(tactive, L("pactive")))
+    hv_n_marker = andnot(hv_n_marker, L("nodrc"))
+    hv_p_marker = andnot(hv_p_marker, L("nodrc"))
+    hvNMarker = hv_n_marker
+    hvPMarker = hv_p_marker
+    hvMarker = or_(hv_marker, hvNMarker, hvPMarker)
+    isoPwell = and_(pwell, deep_nwell)
+    isoNwell = and_(nwell, deep_pwell)
     active = or_(andnot(L("active"), L("nodrc")), L("nactive"), L("pactive"))
     gselect = andnot(L("gselect"), L("nodrc"))
     nselect = andnot(L("nselect"), L("nodrc"))
     pselect = andnot(L("pselect"), L("nodrc"))
+    if F("pselectFromActive"):
+        # Processes without an explicit p+ mask (e.g. CNM25: P+ regions are
+        # GASAD not covered by NPLUS) derive P-select from active minus
+        # N-select.  Opt-in only; raw pselect still wins when both exist.
+        pselect = or_(pselect, andnot(active, nselect))
     poly = andnot(L("poly"), L("nodrc"))
     metal1 = andnot(L("metal1"), L("nodrc"))
     cc = andnot(L("cc"), L("nodrc"))
@@ -164,6 +194,9 @@ def derive(L, F, WELL, TECH, LAMBDA, DBU_, UNIVERSE):
         pActive = andnot(pActive, cwell)
     if F("hvAvailable"):
         tactive = andnot(L("tactive"), L("nodrc"))
+        hvNMarker = or_(hvNMarker, and_(tactive, nActive))
+        hvPMarker = or_(hvPMarker, and_(tactive, pActive))
+        hvMarker = or_(hvMarker, tactive)
 
     # bulk/ohmic per well type (N default per MOSIS)
     if WELL == "P":
@@ -190,6 +223,11 @@ def derive(L, F, WELL, TECH, LAMBDA, DBU_, UNIVERSE):
         pOhmic = andnot(pActive, nwell)
         nNotOhmic = andnot(nActive, nwell)
         pNotOhmic = and_(pActive, nwell)
+    # HVCMOS bulk domains are explicit derived regions.  They remain part of
+    # the conventional bulk union for legacy 4T extraction, while
+    # ``isoPwell``/``isoNwell`` preserve the isolated-domain lookup.
+    nBulk = or_(nBulk, deep_nwell, hv_nwell)
+    pBulk = or_(pBulk, deep_pwell, hv_pwell)
 
     if F("elecAvailable"):
         nDiff = andnot(nNotOhmic, or_(poly, elec))
@@ -212,13 +250,27 @@ def derive(L, F, WELL, TECH, LAMBDA, DBU_, UNIVERSE):
 
     nChannelTran = butting(nChannel, nDiff, 2)
     pChannelTran = butting(pChannel, pDiff, 2)
+    nChannelTranBase = nChannelTran
+    pChannelTranBase = pChannelTran
     nChannelCap = butting(nChannel, nDiff, 1)
     pChannelCap = butting(pChannel, pDiff, 1)
-    if F("hvAvailable"):
-        hvnChannelTran = and_(nChannelTran, tactive)
+    hvnChannelTran = pya.Region()
+    hvpChannelTran = pya.Region()
+    nHVDiff = pya.Region()
+    pHVDiff = pya.Region()
+    if F("hvAvailable") or F("hvcmosAvailable"):
+        hvnChannelTran = and_(nChannelTranBase, hvNMarker)
         nChannelTran = andnot(nChannelTran, hvnChannelTran)
-        hvpChannelTran = and_(pChannelTran, tactive)
+        hvpChannelTran = and_(pChannelTranBase, hvPMarker)
         pChannelTran = andnot(pChannelTran, hvpChannelTran)
+        nHVDiff = and_(nDiff, hvNMarker)
+        pHVDiff = and_(pDiff, hvPMarker)
+    nDrift = and_(nDiff, drift_n)
+    pDrift = and_(pDiff, drift_p)
+    nDmosChannel = and_(nChannelTranBase, and_(hvNMarker, drift_n))
+    pDmosChannel = and_(pChannelTranBase, and_(hvPMarker, drift_p))
+    nDmosDiff = nDrift
+    pDmosDiff = pDrift
 
     nDiffContact = and_(ca, nDiff)
     pDiffContact = and_(ca, pDiff)
@@ -259,6 +311,7 @@ def derive(L, F, WELL, TECH, LAMBDA, DBU_, UNIVERSE):
         elecGate = and_(or_(nNotOhmic, pNotOhmic), elec)
         fieldElec = avoiding(elec, elecGate)
         CapacitorElec = inside(elec, poly)
+        polyElecCap = and_(elec, poly)  # poly1-poly2 overlap (PiP), CNM25/AMS
         TransistorElec = overlap(elec, pya.Region() - poly)
 
     if F("polycapAvailable"):

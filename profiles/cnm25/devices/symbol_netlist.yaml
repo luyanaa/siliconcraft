@@ -1,0 +1,38 @@
+# Netlist bindings for the xschem symbols (CNM25); UI geometry stays in
+# symbols.yaml.  Devices netlist as subcircuits (x prefix) with the APDK
+# w/l/m/ad/as/pd/ps interface.
+schema_version: 1
+symbols:
+  nmos4:
+    device_binding: nmos_core
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
+    template:
+      name: M1
+      w: "3u"
+      l: "3u"
+      m: "1"
+      ad: "0"
+      as: "0"
+      pd: "0"
+      ps: "0"
+  pmos4:
+    device_binding: pmos_core
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
+    template:
+      name: M1
+      w: "6u"
+      l: "3u"
+      m: "1"
+      ad: "0"
+      as: "0"
+      pd: "0"
+      ps: "0"
+  cap:
+    spiceprefix: c
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m"
+    template:
+      name: C1
+      w: "30u"
+      l: "30u"
+      m: "1"
+      model: cnm25cpoly

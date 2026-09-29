@@ -1,0 +1,20 @@
+schema_version: 1
+profile: ami06
+stdcell:
+  site_height_um: 14.4
+  row_heights_um:
+    n: 3.3
+    p: 7.2
+  row_gap_um: 0.9
+  rail_margin_um: 1.5
+  tap_policy: self_tapped
+  tapcell:
+    required: false
+    cell: TAPCELL
+    max_spacing_um: null
+  orientations:
+    even_row: R0
+    odd_row: MX
+    legal:
+      - R0
+      - MX

@@ -178,6 +178,11 @@ def main() -> int:
     assert policy.allowed_layers == ("M1", "M2", "M3")
     assert policy.layer_cost["M2"] > policy.layer_cost["M1"]
     assert policy.resistance_per_um["M1"] == 100.0
+    ami_policy = RoutingPolicy.for_architecture_grammar(
+        "two_metal_classic", ami_static, allow_unknown=True
+    )
+    assert ami_policy.allowed_layers == ("M1", "M2")
+    assert ami_policy.architecture.endswith("+grammar:ami06")
     assert policy.log_resistance is True
     assert policy.edge_cost("M1", "horizontal", 1.0) > policy.layer_cost["M1"]
     assert policy.edge_cost("M1", "horizontal", 3.0) > policy.edge_cost("M1", "horizontal", 1.0)

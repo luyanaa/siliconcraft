@@ -1,0 +1,323 @@
+# XH018 profile fragment.
+# Public X-FAB collateral exposes process modules/basic geometry, not the
+# production GDS stream map.  The 300-series map is an internal logical map
+# for contract tests and early layout experiments only.
+meta:
+  name: xh018
+  process: XH018
+  foundry: X-FAB
+  description: "X-FAB XH018 0.18um bulk modular analog/HV CMOS; initial LV + HVCMOS contract"
+  node_um: 0.18
+  lambda_um: 0.09
+  grid_um: 0.01
+  min_channel_um: 0.18
+  min_width_um: 0.22
+  model_prefix: xh018
+  well_type: n
+  rule_family: scmos_subm
+  stacked_vias: false
+  hvcmos_rule_source: "Public XH018 datasheet basic geometry plus explicit initial voltage-policy rules; HV stream map/signoff deck unavailable"
+  mask_map_status: provisional
+  gds_output_policy: "provisional_logical_map_only; X-FAB PDK GDS/DRC/LVS/PEX remains tapeout authority"
+  features:
+    elecAvailable: false
+    polycapAvailable: false
+    highresAvailable: false
+    metal3Available: true
+    metal4Available: true
+    metal5Available: true
+    metal6Available: true
+    metalcapAvailable: false
+    cwellAvailable: false
+    sblockAvailable: false
+    npnAvailable: false
+    pnpAvailable: false
+    ccdAvailable: false
+    hvAvailable: true
+    hvcmosAvailable: true
+    hvcmosRuleOverride: true
+    hvMarkerAvailable: true
+    deepNwellAvailable: true
+    deepPwellAvailable: false
+    driftAvailable: true
+    ldmosAvailable: true
+    dmosAvailable: true
+    voltageAwareSpacing: true
+    substratePexAvailable: true
+    guardRingRulesAvailable: false
+    latchupRulesAvailable: false
+    memsAvailable: false
+    pselectFromActive: false
+  license: "Public process collateral only; no foundry PDK redistribution"
+  sources:
+    - "https://www.electronicspecifier.com/wp-content/uploads/2025/07/X-Fab-XH018-Datasheet.pdf"
+    - "https://www.xfab.com/resourcexplorer/detail/a-new-methodology-for-active-substrate-parasitic-extraction-in-automotive-hv-cmos-processes"
+    - "https://www.xfab.com/resourcexplorer/detail/datasheet-xh035"
+layers:
+  -
+    name: nwell
+    purpose: drawing
+    gds:
+      - {layer: 300, datatype: 0}
+    role: well
+    note: "Logical N-well alias; public XH018 basic rule: width 0.86um, spacing 1.4um"
+  -
+    name: pwell
+    purpose: drawing
+    gds:
+      - {layer: 301, datatype: 0}
+    role: well
+    note: "Logical P-well alias"
+  -
+    name: deep_nwell
+    purpose: drawing
+    gds:
+      - {layer: 302, datatype: 0}
+    role: isolation
+    note: "Deep HV N-well domain; public HVMOS/deep-well module, stream map unavailable"
+  -
+    name: deep_pwell
+    purpose: drawing
+    gds:
+      - {layer: 303, datatype: 0}
+    role: isolation
+    available: false
+  -
+    name: hv_nwell
+    purpose: drawing
+    gds:
+      - {layer: 304, datatype: 0}
+    role: isolation
+    note: "Logical HV-N-well alias"
+  -
+    name: hv_pwell
+    purpose: drawing
+    gds:
+      - {layer: 305, datatype: 0}
+    role: isolation
+    available: false
+  -
+    name: active
+    purpose: drawing
+    gds:
+      - {layer: 310, datatype: 0}
+    role: active
+    note: "Public XH018 basic rule: width 0.22um, spacing 0.28um"
+  -
+    name: nactive
+    purpose: drawing
+    gds:
+      - {layer: 311, datatype: 0}
+    role: active
+    available: false
+  -
+    name: pactive
+    purpose: drawing
+    gds:
+      - {layer: 312, datatype: 0}
+    role: active
+    available: false
+  -
+    name: nselect
+    purpose: drawing
+    gds:
+      - {layer: 313, datatype: 0}
+    role: select
+  -
+    name: pselect
+    purpose: drawing
+    gds:
+      - {layer: 314, datatype: 0}
+    role: select
+  -
+    name: poly
+    purpose: drawing
+    gds:
+      - {layer: 320, datatype: 0}
+    role: gate
+    note: "Public XH018 basic rule: gate width 0.18um, spacing 0.25um"
+  -
+    name: cc
+    purpose: drawing
+    gds:
+      - {layer: 330, datatype: 0}
+    role: cut
+    note: "Public XH018 contact width 0.22um, spacing 0.25um"
+  -
+    name: ca
+    purpose: drawing
+    gds:
+      - {layer: 331, datatype: 0}
+    role: cut
+    available: false
+  -
+    name: cp
+    purpose: drawing
+    gds:
+      - {layer: 332, datatype: 0}
+    role: cut
+    available: false
+  -
+    name: metal1
+    purpose: drawing
+    gds:
+      - {layer: 340, datatype: 0}
+    role: metal
+    note: "Public XH018 basic rule: width/spacing 0.23um"
+  -
+    name: via
+    purpose: drawing
+    gds:
+      - {layer: 341, datatype: 0}
+    role: cut
+    note: "Public XH018 VIA1 width/spacing 0.26um"
+  -
+    name: metal2
+    purpose: drawing
+    gds:
+      - {layer: 342, datatype: 0}
+    role: metal
+    note: "Public XH018 M2 width/spacing 0.28um"
+  -
+    name: via2
+    purpose: drawing
+    gds:
+      - {layer: 343, datatype: 0}
+    role: cut
+    note: "Public XH018 VIA2 width/spacing 0.26um"
+  -
+    name: metal3
+    purpose: drawing
+    gds:
+      - {layer: 344, datatype: 0}
+    role: metal
+    note: "Public XH018 M3 width/spacing 0.28um"
+  -
+    name: via3
+    purpose: drawing
+    gds:
+      - {layer: 345, datatype: 0}
+    role: cut
+    note: "Public XH018 VIA3 width/spacing 0.26um"
+  -
+    name: metal4
+    purpose: drawing
+    gds:
+      - {layer: 346, datatype: 0}
+    role: metal
+    note: "Public XH018 M4 width/spacing 0.28um"
+  -
+    name: via4
+    purpose: drawing
+    gds:
+      - {layer: 347, datatype: 0}
+    role: cut
+    note: "Public XH018 VIA4 width/spacing 0.26um"
+  -
+    name: metal5
+    purpose: drawing
+    gds:
+      - {layer: 348, datatype: 0}
+    role: metal
+    note: "Public XH018 M5 width/spacing 0.28um"
+  -
+    name: via5
+    purpose: drawing
+    gds:
+      - {layer: 349, datatype: 0}
+    role: cut
+    note: "Logical top-via alias; public XH018 top-via rule is 0.36um/0.35um"
+  -
+    name: metal6
+    purpose: drawing
+    gds:
+      - {layer: 350, datatype: 0}
+    role: metal
+    note: "Logical top-metal alias; public XH018 top-metal rule is 0.44um/0.46um"
+  -
+    name: glass
+    purpose: drawing
+    gds:
+      - {layer: 360, datatype: 0}
+    role: misc
+  -
+    name: pad
+    purpose: drawing
+    gds:
+      - {layer: 361, datatype: 0}
+    role: pad
+  -
+    name: tactive
+    purpose: drawing
+    gds:
+      - {layer: 370, datatype: 0}
+    role: marker
+    available: false
+    note: "Legacy SCMOS thick-active alias; XH profiles use explicit HV markers"
+  -
+    name: hv_n_marker
+    purpose: drawing
+    gds:
+      - {layer: 371, datatype: 0}
+    role: marker
+    note: "Provisional logical HV-N marker; no public X-FAB GDS stream mapping"
+  -
+    name: hv_p_marker
+    purpose: drawing
+    gds:
+      - {layer: 372, datatype: 0}
+    role: marker
+    note: "Provisional logical HV-P marker; no public X-FAB GDS stream mapping"
+  -
+    name: hv_marker
+    purpose: drawing
+    gds:
+      - {layer: 373, datatype: 0}
+    role: marker
+  -
+    name: drift_n
+    purpose: drawing
+    gds:
+      - {layer: 374, datatype: 0}
+    role: implant
+    note: "Provisional N drift implant marker for LDMOS/DMOS recognition"
+  -
+    name: drift_p
+    purpose: drawing
+    gds:
+      - {layer: 375, datatype: 0}
+    role: implant
+    note: "Provisional P drift implant marker for LDMOS/DMOS recognition"
+  -
+    name: nodrc
+    purpose: drawing
+    gds:
+      - {layer: 390, datatype: 0}
+    role: misc
+  -
+    name: nolpe
+    purpose: drawing
+    gds:
+      - {layer: 391, datatype: 0}
+    role: misc
+  -
+    name: cap_id
+    purpose: drawing
+    gds:
+      - {layer: 392, datatype: 0}
+    role: misc
+    available: false
+  -
+    name: res_id
+    purpose: drawing
+    gds:
+      - {layer: 393, datatype: 0}
+    role: resistor
+    available: false
+  -
+    name: dio_id
+    purpose: drawing
+    gds:
+      - {layer: 394, datatype: 0}
+    role: misc
+    available: false

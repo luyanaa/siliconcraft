@@ -1474,6 +1474,14 @@ extract
     resist metal1 90
     resist metal2 90
     resist metal3 50
+    contact ndc 4 51000
+    contact nsc 4 51000
+    contact pdc 4 116000
+    contact psc 4 116000
+    contact pc 4 17700
+    contact ec 6 17100
+    contact m2c 4 1580
+    contact m3c 5 1850
     areacap poly 8
     areacap metal1 3
     areacap metal2 2

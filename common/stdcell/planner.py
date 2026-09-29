@@ -17,7 +17,14 @@ from common.stdcell.compaction import DifferenceConstraint, Feature, compact_lin
 from common.stdcell.geometry import GeometryIR
 from common.stdcell.netlist import CellCircuit, MosInstance
 from common.stdcell.process import StdcellProcess
-from common.stdcell.routing import RoutingGraph, RoutingNode, RoutingPolicy
+from common.stdcell.routing import (
+    NegotiatedRouter,
+    RoutingError,
+    RoutingGraph,
+    RoutingNode,
+    RoutingPolicy,
+)
+from common.stdcell.row import build_transistor_row
 from common.stdcell.topology import (
     NetworkOrdering,
     pin_permutations,
@@ -82,6 +89,7 @@ class MosFootprint:
     active_width_um: float
     active_height_um: float
     gate_xs_um: tuple[float, ...]
+    contact_xs_um: tuple[float, ...]
     left_contact_x_um: float
     right_contact_x_um: float
     gate_extension_um: float
@@ -159,6 +167,7 @@ class DevicePlacement:
                 "active_width_um": self.footprint.active_width_um,
                 "active_height_um": self.footprint.active_height_um,
                 "gate_xs_um": list(self.footprint.gate_xs_um),
+                "contact_xs_um": list(self.footprint.contact_xs_um),
                 "left_contact_x_um": self.footprint.left_contact_x_um,
                 "right_contact_x_um": self.footprint.right_contact_x_um,
             },
@@ -183,6 +192,7 @@ class CandidatePlan:
     via_blockages: tuple[Rect, ...]
     graph_routes: dict[str, tuple[dict[str, Any], ...]]
     feedthrough_columns: tuple[float, ...]
+    pin_shapes: tuple[Rect, ...]
     feedthrough_layer: str
     pin_access: dict[str, dict[str, Any]]
     metrics: dict[str, Any]
@@ -192,6 +202,7 @@ class CandidatePlan:
     supply_contact_plan: tuple[dict[str, Any], ...] = ()
     topology_candidates: tuple[dict[str, Any], ...] = ()
     pin_permutations: tuple[tuple[str, ...], ...] = ()
+    row_geometry: dict[str, Any] = field(default_factory=dict)
     sizing_variant: dict[str, Any] = field(default_factory=dict)
     orientation_policy: dict[str, Any] = field(default_factory=dict)
 
@@ -207,6 +218,7 @@ class CandidatePlan:
                 "height_um": self.height_um,
                 "ir": self.geometry_ir.as_dict(),
                 "diffusion_bridges": [rect.as_dict() for rect in self.diffusion_bridges],
+                "rows": self.row_geometry,
             },
             "placement": {
                 **self.columns.as_dict(),
@@ -237,11 +249,12 @@ class CandidatePlan:
                 "topology_candidates": list(self.topology_candidates),
                 "pin_permutations": [list(order) for order in self.pin_permutations],
                 "sizing_variant": self.sizing_variant,
-                "routing_fallback": "explicit_diffusion_breaks",
+                "diffusion_break_policy": "explicit_physical_break_columns",
             },
             "routing": {
                 "segments": [segment.as_dict() for segment in self.segments],
                 "metal_blockage_map": [rect.as_dict() for rect in self.blockages],
+                "pin_shapes": [rect.as_dict() for rect in self.pin_shapes],
                 "via_blockage_map": [rect.as_dict() for rect in self.via_blockages],
                 "graph_routes": {
                     net: list(route) for net, route in self.graph_routes.items()
@@ -269,11 +282,35 @@ def _ceil_grid(process: StdcellProcess, value: float) -> float:
 def _footprint(process: StdcellProcess, device: MosInstance, nf: int, width_per_finger: float) -> MosFootprint:
     tech = process.tech
     length = device.length_um or process.lmin_um
-    poly_pitch = length + tech.poly_spacing
-    poly_edge = tech.poly_contact_spacing + tech.contact_size + tech.active_contact_enc
-    active_width = 2 * poly_edge + (nf - 1) * poly_pitch + length
-    active_height = max(width_per_finger, tech.active_min)
-    select_enc = max(tech.select_active_enc, 3 * process.lambda_um)
+    metal_pad = tech.contact_size + 2 * tech.metal_contact_enc
+    via_m2_pad = tech.via_size / 2.0 + tech.via_upper_enc
+    contact_gate_spacing = max(
+        tech.active_contact_gate_spacing,
+        process.metal_width_um("M1") / 2.0
+        + metal_pad / 2.0
+        + process.metal_spacing_um("M1")
+        + process.grid_um
+        - tech.contact_size / 2.0
+        - length / 2.0,
+        2 * via_m2_pad
+        + process.metal_spacing_um("M2")
+        + process.grid_um
+        - tech.contact_size / 2.0
+        - length / 2.0,
+    )
+    if process.ir.rule_family == "scmos":
+        contact_gate_spacing = max(
+            contact_gate_spacing,
+            metal_pad / 2.0
+            + process.metal_spacing_um("M1")
+            - length / 2.0,
+        )
+    contact_bay_width = 2 * contact_gate_spacing + tech.contact_size
+    poly_edge = contact_gate_spacing + tech.contact_size + tech.active_contact_enc
+    active_width = 2 * poly_edge + nf * length + (nf - 1) * contact_bay_width
+    contact_stack_min = 2 * tech.active_contact_enc + tech.contact_size
+    active_height = max(width_per_finger, tech.active_min, contact_stack_min)
+    select_enc = tech.select_channel_enc
     select_width = active_width + 2 * select_enc
     select_height = active_height + 2 * select_enc
     if process.polarity_for_model(device.model) == "p":
@@ -287,33 +324,49 @@ def _footprint(process: StdcellProcess, device: MosInstance, nf: int, width_per_
         height = select_height
     active_left = -active_width / 2.0
     active_right = active_width / 2.0
-    if nf == 1:
-        left_contact = active_left + tech.active_contact_enc + tech.contact_size / 2.0
-        right_contact = active_right - tech.active_contact_enc - tech.contact_size / 2.0
-    else:
-        parallel_step = 2 * (process.lambda_um + tech.poly_contact_spacing) + length
-        first = active_left + tech.active_contact_enc + tech.contact_size / 2.0
-        contact_xs = tuple(first + index * parallel_step for index in range(nf + 1))
-        left_contact = contact_xs[0]
-        right_contact = contact_xs[-1]
-    gate_span = (nf - 1) * poly_pitch + length
+    gate_span = nf * length + (nf - 1) * contact_bay_width
     gate_left = -gate_span / 2.0
-    gate_xs = tuple(gate_left + index * poly_pitch + length / 2.0 for index in range(nf))
+    gate_xs = tuple(
+        gate_left + index * (length + contact_bay_width) + length / 2.0
+        for index in range(nf)
+    )
+    contact_xs = [
+        active_left + tech.active_contact_enc + tech.contact_size / 2.0
+    ]
+    contact_xs.extend(
+        gate_xs[index]
+        + length / 2.0
+        + contact_gate_spacing
+        + tech.contact_size / 2.0
+        for index in range(nf - 1)
+    )
+    contact_xs.append(
+        active_right - tech.active_contact_enc - tech.contact_size / 2.0
+    )
+    if abs(contact_xs[-1] - (active_right - tech.active_contact_enc - tech.contact_size / 2.0)) > 1e-9:
+        raise PlannerError(f"{device.name}: finger contact bays escape active geometry")
     return MosFootprint(
         width_um=width,
         height_um=height,
         active_width_um=active_width,
         active_height_um=active_height,
         gate_xs_um=gate_xs,
-        left_contact_x_um=left_contact,
-        right_contact_x_um=right_contact,
-        gate_extension_um=2 * process.lambda_um,
+        contact_xs_um=tuple(contact_xs),
+        left_contact_x_um=contact_xs[0],
+        right_contact_x_um=contact_xs[-1],
+        gate_extension_um=tech.gate_extension,
     )
 
 
 def _nf_options(process: StdcellProcess, device: MosInstance) -> tuple[int, ...]:
     total_width = device.width_um * device.nf
-    maximum = min(3, max(1, int(total_width / process.tech.active_min + 1e-9)))
+    polarity = process.polarity_for_model(device.model)
+    capacity = process.row_active_capacity_um(polarity)
+    maximum = (
+        max(1, math.ceil(total_width / capacity))
+        if capacity > 0
+        else 1
+    )
     options = set(range(1, maximum + 1))
     options.add(device.nf)
     return tuple(sorted(options))
@@ -380,7 +433,7 @@ def _shared_diffusion_layout(
             y1 = left.y_um + y_half
             bridges.append(Rect("ACTIVE", x0, y0, x1, y1, net, "shared_diffusion"))
             select = "PSELECT" if left.polarity == "p" else "NSELECT"
-            select_enc = max(process.tech.select_active_enc, 3 * process.lambda_um)
+            select_enc = process.tech.select_channel_enc
             bridges.append(
                 Rect(
                     select,
@@ -462,24 +515,10 @@ def _column_layout(
     tuple[dict[str, Any], ...],
 ]:
     model_to_polarity = {model: polarity for polarity, model in process.model_names.items()}
-    devices_by_gate: dict[str, list[MosInstance]] = {}
-    for device in circuit.devices:
-        if device.model not in model_to_polarity:
-            raise PlannerError(
-                f"{circuit.name}: model {device.model!r} is not bound by {process.profile_name}"
-            )
-        devices_by_gate.setdefault(device.gate, []).append(device)
-    gate_order: list[str] = []
-    for column in column_ir.columns:
-        if column.kind != "gate":
-            continue
-        for gate in (column.gate_net, column.p_gate_net, column.n_gate_net):
-            if gate and gate not in gate_order:
-                gate_order.append(gate)
-    gate_order.extend(gate for gate in circuit.inputs if gate not in gate_order)
-    gate_order.extend(sorted(gate for gate in devices_by_gate if gate not in gate_order))
-    if any(len(devices_by_gate[gate]) > 2 for gate in gate_order):
-        raise PlannerError(f"{circuit.name}: more than two devices on gate {gate_order!r} is not supported")
+    device_map = {device.name: device for device in circuit.devices}
+    slot_columns = column_ir.physical_gate_slots
+    if not slot_columns:
+        raise PlannerError(f"{circuit.name}: column IR has no physical gate slots")
 
     footprints: dict[str, MosFootprint] = {}
     for device in circuit.devices:
@@ -487,96 +526,144 @@ def _column_layout(
         total_width = device.width_um * device.nf
         width_per_finger = total_width / nf
         footprints[device.name] = _footprint(process, device, nf, width_per_finger)
+        polarity = model_to_polarity[device.model]
+        if footprints[device.name].height_um > process.row_height_um(polarity) + 1e-9:
+            raise PlannerError(
+                f"{circuit.name}: {device.name} does not fit fixed {polarity} row "
+                f"height {process.row_height_um(polarity):g}um"
+            )
 
-    column_widths = {
-        gate: max(footprints[device.name].width_um for device in devices_by_gate[gate])
-        for gate in gate_order
-    }
-    margin = max(2 * process.lambda_um, process.tech.contact_size)
-    gap = max(2 * process.lambda_um, process.tech.poly_spacing)
-    features = tuple(
-        Feature(gate, column_widths[gate] / 2.0, "gate")
-        for gate in gate_order
+    slot_widths = []
+    for slot in slot_columns:
+        present = [
+            device_map[name]
+            for name in (slot.p_device, slot.n_device)
+            if name is not None
+        ]
+        if not present:
+            raise PlannerError(f"{circuit.name}: empty physical gate slot")
+        slot_widths.append(max(footprints[device.name].width_um for device in present))
+
+    margin = process.rail_margin_um
+    slot_features = tuple(
+        Feature(f"slot_{index}", width / 2.0, "gate_slot")
+        for index, width in enumerate(slot_widths)
     )
+    gap = process.tech.poly_spacing
     constraints = tuple(
         DifferenceConstraint(
             left=left.name,
             right=right.name,
             minimum_distance_um=left.half_width_um + right.half_width_um + gap,
-            reason="gate_column_spacing",
+            reason="row_slot_spacing",
         )
-        for left, right in zip(features, features[1:])
+        for left, right in zip(slot_features, slot_features[1:])
     )
-    compacted = compact_linear(features, constraints, left_edge_um=margin)
+    compacted = compact_linear(slot_features, constraints, left_edge_um=margin)
     centers = {
-        gate: _ceil_grid(process, compacted.coordinates_um[gate])
-        for gate in gate_order
+        index: _ceil_grid(process, compacted.coordinates_um[f"slot_{index}"])
+        for index in range(len(slot_columns))
     }
     width = _ceil_grid(process, compacted.width_um + margin)
 
-    by_p = [device for device in circuit.devices if model_to_polarity[device.model] == "p"]
-    by_n = [device for device in circuit.devices if model_to_polarity[device.model] == "n"]
-    p_height = max(footprints[device.name].height_um for device in by_p)
-    n_height = max(footprints[device.name].height_um for device in by_n)
-    rail_width = process.metal_width_um("M1")
-    row_gap = max(2 * process.lambda_um, process.tech.poly_spacing)
-    bottom_margin = rail_width + 2 * process.lambda_um
-    top_margin = bottom_margin
-    height = _ceil_grid(process, bottom_margin + n_height + row_gap + p_height + top_margin)
-    n_y = bottom_margin + n_height / 2.0
-    p_y = height - top_margin - p_height / 2.0
+    site_height = process.site_height_um
+    n_height = process.row_height_um("n")
+    p_height = process.row_height_um("p")
+    expected_height = _ceil_grid(
+        process,
+        process.rail_margin_um + n_height + process.row_gap_um + p_height + process.rail_margin_um,
+    )
+    if abs(expected_height - site_height) > process.grid_um / 2.0:
+        raise PlannerError(
+            f"{circuit.name}: fixed site height {site_height:g}um disagrees with row contract "
+            f"{expected_height:g}um"
+        )
+    n_y = process.rail_margin_um + n_height / 2.0
+    p_y = site_height - process.rail_margin_um - p_height / 2.0
 
     placements: dict[str, DevicePlacement] = {}
-    for device in circuit.devices:
-        polarity = model_to_polarity[device.model]
-        footprint = footprints[device.name]
-        y = p_y if polarity == "p" else n_y
-        placements[device.name] = DevicePlacement(
-            device=device,
-            polarity=polarity,
-            x_um=centers[device.gate],
-            y_um=y,
-            width_per_finger_um=device.width_um * device.nf / fold_map[device.name],
-            length_um=device.length_um or process.lmin_um,
-            nf=fold_map[device.name],
-            footprint=footprint,
-        )
+    placed_names: set[str] = set()
+    for slot_index, slot in enumerate(slot_columns):
+        for device_name in (slot.p_device, slot.n_device):
+            if device_name is None:
+                continue
+            device = device_map[device_name]
+            polarity = model_to_polarity[device.model]
+            nf = fold_map[device.name]
+            placement = DevicePlacement(
+                device=device,
+                polarity=polarity,
+                x_um=centers[slot_index],
+                y_um=p_y if polarity == "p" else n_y,
+                width_per_finger_um=device.width_um * device.nf / nf,
+                length_um=device.length_um or process.lmin_um,
+                nf=nf,
+                footprint=footprints[device.name],
+            )
+            placements[device.name] = placement
+            placed_names.add(device.name)
+    if placed_names != set(device_map):
+        missing = sorted(set(device_map) - placed_names)
+        raise PlannerError(f"{circuit.name}: physical slots omitted devices {missing}")
+
     placements, diffusion_bridges, supply_contact_plan = _shared_diffusion_layout(
         process, circuit, column_ir, placements
     )
-    tap_half_extent = (
-        process.tech.contact_size / 2.0
-        + process.tech.active_contact_enc
-        + process.tech.select_active_enc
-    )
-    right_edge = max(
-        placement.x_um + placement.footprint.width_um / 2.0
-        for placement in placements.values()
-    )
-    tap_clearance = max(2 * process.lambda_um, process.metal_spacing_um("M1"))
-    tap_x = _ceil_grid(process, right_edge + tap_clearance + tap_half_extent)
-    width = _ceil_grid(process, max(width, tap_x + tap_half_extent))
-    support_taps = (
-        {
-            "cell": "ptap",
-            "net": "VSS",
-            "x_um": tap_x,
-            "y_um": _ceil_grid(process, height / 2.0),
-            "rows": 1,
-            "columns": 1,
-        },
-    )
-    geometry_ir = GeometryIR(features, constraints, compacted, height)
+    support_taps: tuple[dict[str, Any], ...] = ()
+    if process.tap_policy == "self_tapped":
+        right_edge = max(
+            placement.x_um + placement.footprint.width_um / 2.0
+            for placement in placements.values()
+        )
+        tap_half_extent = (
+            process.tech.contact_size / 2.0
+            + process.tech.active_contact_enc
+            + process.tech.select_active_enc
+        )
+        tap_clearance = max(process.tech.poly_spacing, process.metal_spacing_um("M1"))
+        tap_x = _ceil_grid(process, right_edge + tap_clearance + tap_half_extent)
+        width = _ceil_grid(process, max(width, tap_x + tap_half_extent))
+        support_taps = (
+            {
+                "cell": "ntap",
+                "net": "VDD",
+                "x_um": tap_x,
+                "y_um": p_y,
+                "rows": 1,
+                "columns": 1,
+            },
+            {
+                "cell": "ptap",
+                "net": "VSS",
+                "x_um": tap_x,
+                "y_um": n_y,
+                "rows": 1,
+                "columns": 1,
+            },
+        )
+    geometry_ir = GeometryIR(slot_features, constraints, compacted, site_height)
     return (
         placements,
         width,
-        height,
+        site_height,
         n_y,
         geometry_ir,
         support_taps,
         diffusion_bridges,
         supply_contact_plan,
     )
+
+
+def _safe_column_layout(
+    process: StdcellProcess,
+    circuit: CellCircuit,
+    fold_map: dict[str, int],
+    column_ir: ColumnIR,
+) -> tuple | None:
+    try:
+        return _column_layout(process, circuit, fold_map, column_ir)
+    except PlannerError:
+        return None
 
 
 def _add_segment(
@@ -630,64 +717,218 @@ def _segment_bbox(segment: Segment) -> tuple[float, float, float, float]:
     return min(segment.x0, segment.x1), min(segment.y0, segment.y1), max(segment.x0, segment.x1), max(segment.y0, segment.y1)
 
 
-def _segments_conflict(left: Segment, right: Segment) -> bool:
+def _segments_conflict(
+    process: StdcellProcess,
+    left: Segment,
+    right: Segment,
+) -> bool:
     if left.layer != right.layer or left.net == right.net:
         return False
     lx0, ly0, lx1, ly1 = _segment_bbox(left)
     rx0, ry0, rx1, ry1 = _segment_bbox(right)
-    return lx0 <= rx1 and rx0 <= lx1 and ly0 <= ry1 and ry0 <= ly1
+    clearance = (
+        process.metal_width_um(left.layer) / 2.0
+        + process.metal_width_um(right.layer) / 2.0
+        + process.metal_spacing_um(left.layer)
+    )
+    return (
+        lx0 <= rx1 + clearance
+        and rx0 <= lx1 + clearance
+        and ly0 <= ry1 + clearance
+        and ry0 <= ly1 + clearance
+    )
+
+
+def _routing_edge_shapes(process: StdcellProcess, edge) -> tuple[tuple[str, float, float, float, float], ...]:
+    if edge.kind == "wire":
+        width = process.metal_width_um(edge.start.layer)
+        half = width / 2.0
+        return (
+            (
+                edge.start.layer,
+                min(edge.start.x_um, edge.end.x_um) - half,
+                min(edge.start.y_um, edge.end.y_um) - half,
+                max(edge.start.x_um, edge.end.x_um) + half,
+                max(edge.start.y_um, edge.end.y_um) + half,
+            ),
+        )
+    lower, upper = sorted((edge.start.layer, edge.end.layer))
+    via_size = process.via_size_um(lower, upper)
+    enclosures = (
+        ((lower, process.tech.via_lower_enc), (upper, process.tech.via_upper_enc))
+        if (lower, upper) == ("M1", "M2")
+        else ((lower, process.tech.via2_lower_enc), (upper, process.tech.via2_upper_enc))
+    )
+    return tuple(
+        (
+            layer,
+            edge.start.x_um - via_size / 2.0 - enclosure,
+            edge.start.y_um - via_size / 2.0 - enclosure,
+            edge.start.x_um + via_size / 2.0 + enclosure,
+            edge.start.y_um + via_size / 2.0 + enclosure,
+        )
+        for layer, enclosure in enclosures
+    )
+
+
+def _physical_shape_records(
+    process: StdcellProcess,
+    segments: list[Segment],
+    via_blockages: list[Rect],
+) -> tuple[tuple[str, float, float, float, float, str | None], ...]:
+    records = [
+        (
+            segment.layer,
+            min(segment.x0, segment.x1) - process.metal_width_um(segment.layer) / 2.0,
+            min(segment.y0, segment.y1) - process.metal_width_um(segment.layer) / 2.0,
+            max(segment.x0, segment.x1) + process.metal_width_um(segment.layer) / 2.0,
+            max(segment.y0, segment.y1) + process.metal_width_um(segment.layer) / 2.0,
+            segment.net,
+        )
+        for segment in segments
+        if segment.layer in {"M1", "M2", "M3"}
+    ]
+    via_layers = {
+        "VIA12": (("M1", process.tech.via_lower_enc), ("M2", process.tech.via_upper_enc)),
+        "VIA23": (("M2", process.tech.via2_lower_enc), ("M3", process.tech.via2_upper_enc)),
+    }
+    for via in via_blockages:
+        for layer, enclosure in via_layers.get(via.layer, ()):
+            records.append(
+                (
+                    layer,
+                    via.x0 - enclosure,
+                    via.y0 - enclosure,
+                    via.x1 + enclosure,
+                    via.y1 + enclosure,
+                    via.net,
+                )
+            )
+    return tuple(records)
+
+
+def _physical_route_blocked_edges(
+    process: StdcellProcess,
+    graph: RoutingGraph,
+    segments: list[Segment],
+    via_blockages: list[Rect],
+    net: str | None,
+) -> set[tuple[RoutingNode, RoutingNode, str]]:
+    """Block graph edges by dilated physical metal/via geometry.
+
+    ``net`` is excluded from its own existing shapes so one net can extend
+    across a shared tree.  ``None`` blocks against every existing shape for
+    static obstacles and negotiated routing.
+    """
+    shapes = _physical_shape_records(process, segments, via_blockages)
+    blocked: set[tuple[RoutingNode, RoutingNode, str]] = set()
+    for edges in graph.adjacency.values():
+        for edge in edges:
+            if edge.key in blocked:
+                continue
+            candidate_shapes = _routing_edge_shapes(process, edge)
+            for candidate_layer, cx0, cy0, cx1, cy1 in candidate_shapes:
+                for (
+                    shape_layer,
+                    sx0,
+                    sy0,
+                    sx1,
+                    sy1,
+                    shape_net,
+                ) in shapes:
+                    if candidate_layer != shape_layer or (net is not None and net == shape_net):
+                        continue
+                    spacing = process.metal_spacing_um(candidate_layer)
+                    if (
+                        cx0 <= sx1 + spacing
+                        and sx0 <= cx1 + spacing
+                        and cy0 <= sy1 + spacing
+                        and sy0 <= cy1 + spacing
+                    ):
+                        blocked.add(edge.key)
+                        break
+                if edge.key in blocked:
+                    break
+    return blocked
 
 
 
 def _feedthrough_positions(
     process: StdcellProcess,
     width: float,
-    count: int,
+    height: float,
     layer: str,
-    placements: dict[str, DevicePlacement],
-    extra_blocked_xs: tuple[float, ...] = (),
+    segments: list[Segment],
+    via_blockages: list[Rect],
+    pin_shapes: list[Rect],
 ) -> tuple[float, ...]:
-    if count == 0:
-        return ()
-    track_half_width = process.metal_width_um(layer) / 2.0
-    contact_half_width = process.tech.contact_size / 2.0
-    clearance = track_half_width + contact_half_width + process.grid_um
-    blocked_xs = tuple(
-        point[0]
-        for placement in placements.values()
-        for _, point in placement.routable_diffusion_points()
-    ) + tuple(extra_blocked_xs)
-    lower = track_half_width
-    upper = width - track_half_width
-    selected: list[float] = []
-    for index in range(count):
-        ideal = _ceil_grid(process, width * (index + 1) / (count + 1))
-        found = None
-        max_steps = int(math.ceil(width / process.grid_um)) + 1
-        for step in range(max_steps):
-            offsets = (0.0,) if step == 0 else (step * process.grid_um, -step * process.grid_um)
-            for offset in offsets:
-                candidate = _ceil_grid(process, ideal + offset)
-                if candidate < lower or candidate > upper:
-                    continue
-                if any(abs(candidate - blocked) < clearance for blocked in blocked_xs):
-                    continue
-                if any(
-                    abs(candidate - prior)
-                    < process.metal_width_um(layer) + process.metal_spacing_um(layer)
-                    for prior in selected
-                ):
-                    continue
-                found = candidate
-                break
-            if found is not None:
-                break
-        if found is None:
-            raise PlannerError(
-                f"cannot place {layer} feedthrough {index + 1}/{count} "
-                f"without crossing active contacts"
+    """Estimate the maximum legal pass-through tracks from final route shapes.
+
+    This is a geometry-backed pre-signoff metric, not a native DRC result.  It
+    includes horizontal and vertical target-layer metal, pin landings, and via
+    landing enclosures before packing vertical sacrificial tracks.
+    """
+    track_half = process.metal_width_um(layer) / 2.0
+    spacing = process.metal_spacing_um(layer)
+    obstacles: list[tuple[float, float, float, float]] = []
+
+    def add_obstacle(
+        x0: float,
+        y0: float,
+        x1: float,
+        y1: float,
+        physical_half: float = 0.0,
+    ) -> None:
+        clearance = track_half + spacing + physical_half
+        obstacles.append(
+            (
+                min(x0, x1) - clearance,
+                min(y0, y1) - clearance,
+                max(x0, x1) + clearance,
+                max(y0, y1) + clearance,
             )
-        selected.append(found)
+        )
+
+    for segment in segments:
+        if segment.layer != layer:
+            continue
+        add_obstacle(
+            segment.x0,
+            segment.y0,
+            segment.x1,
+            segment.y1,
+            process.metal_width_um(layer) / 2.0,
+        )
+    via_layers = {
+        "VIA12": {"M2": process.tech.via_upper_enc},
+        "VIA23": {"M2": process.tech.via2_lower_enc, "M3": process.tech.via2_upper_enc},
+    }
+    for via in via_blockages:
+        enclosure = via_layers.get(via.layer, {}).get(layer)
+        if enclosure is None:
+            continue
+        add_obstacle(via.x0, via.y0, via.x1, via.y1, enclosure)
+    for shape in pin_shapes:
+        if shape.layer == layer:
+            add_obstacle(shape.x0, shape.y0, shape.x1, shape.y1)
+
+    lower = track_half
+    upper = width - track_half
+    if upper < lower:
+        return ()
+    pitch = process.metal_width_um(layer) + spacing
+    selected: list[float] = []
+    candidate = _ceil_grid(process, lower)
+    while candidate <= upper + 1e-9:
+        if not any(
+            x0 <= candidate <= x1 and y0 <= height and y1 >= 0
+            for x0, y0, x1, y1 in obstacles
+        ):
+            if not selected or candidate - selected[-1] >= pitch - process.grid_um / 2.0:
+                selected.append(candidate)
+                candidate = _ceil_grid(process, candidate + pitch)
+                continue
+        candidate = _ceil_grid(process, candidate + process.grid_um)
     return tuple(selected)
 
 def _graph_route_net(
@@ -718,6 +959,19 @@ def _graph_route_net(
             for edge in edges
             if edge.kind == "wire"
             and (edge.start in occupied_nodes or edge.end in occupied_nodes)
+        )
+        dynamic_blocked.update(
+            _physical_route_blocked_edges(
+                process,
+                graph,
+                [segment for segment in segments if segment.purpose == "graph_route"],
+                [
+                    via
+                    for via in via_blockages
+                    if via.purpose == "graph_route_via"
+                ],
+                net,
+            )
         )
         path = graph.route_two_terminal(
             (start,), (trunk,), usage=usage, blocked=dynamic_blocked
@@ -767,6 +1021,195 @@ def _graph_route_net(
     return tuple(route_edges)
 
 
+def _via_center_clear(
+    process: StdcellProcess,
+    x_um: float,
+    y_um: float,
+    via_blockages: list[Rect],
+) -> bool:
+    size = process.tech.via_size
+    clearance = size + process.tech.via_spacing + process.grid_um
+    return all(
+        via.layer != "VIA12"
+        or abs(x_um - (via.x0 + via.x1) / 2.0) >= clearance - 1e-9
+        or abs(y_um - (via.y0 + via.y1) / 2.0) >= clearance - 1e-9
+        for via in via_blockages
+    )
+
+
+def _add_pin_via(
+    process: StdcellProcess,
+    x_um: float,
+    y_um: float,
+    net: str,
+    pin_shapes: list[Rect],
+    via_blockages: list[Rect],
+) -> tuple[float, float]:
+    """Materialize a poly/contact/M1/M2 pin landing.
+
+    Non-submicron SCMOS has an explicit via-to-poly/active restriction.  In
+    that family the M1/M2 via is offset from the poly contact and connected by
+    an M1 bridge; the shared analog PCell adapter does not define this pin
+    contract.
+    """
+    tech = process.tech
+    contact_half = tech.contact_size / 2.0
+    poly_pad = max(tech.poly_min, tech.contact_size + 2 * tech.poly_contact_enc)
+    metal_pad = tech.contact_size + 2 * tech.metal_contact_enc
+    via_size = process.via_size_um("M1", "M2")
+    via_m1_pad = via_size + 2 * tech.via_lower_enc
+    via_x = x_um
+    if tech.via_poly_spacing > 0.0:
+        offset = tech.via_poly_spacing + poly_pad / 2.0 + via_size / 2.0
+        candidates = (
+            x_um + offset,
+            x_um - offset,
+            x_um + 2.0 * offset,
+            x_um - 2.0 * offset,
+        )
+        via_x = next(
+            process.snap(candidate)
+            for candidate in candidates
+            if _via_center_clear(process, process.snap(candidate), y_um, via_blockages)
+        )
+    via_blockages.append(
+        Rect(
+            "VIA12",
+            via_x - via_size / 2.0,
+            y_um - via_size / 2.0,
+            via_x + via_size / 2.0,
+            y_um + via_size / 2.0,
+            net,
+            "pin_via",
+        )
+    )
+    pin_shapes.extend(
+        (
+            Rect(
+                "POLY",
+                x_um - poly_pad / 2.0,
+                y_um - poly_pad / 2.0,
+                x_um + poly_pad / 2.0,
+                y_um + poly_pad / 2.0,
+                net,
+                "pin_poly_landing",
+            ),
+            Rect(
+                "CC",
+                x_um - contact_half,
+                y_um - contact_half,
+                x_um + contact_half,
+                y_um + contact_half,
+                net,
+                "pin_contact",
+            ),
+            Rect(
+                "M1",
+                x_um - metal_pad / 2.0,
+                y_um - metal_pad / 2.0,
+                x_um + metal_pad / 2.0,
+                y_um + metal_pad / 2.0,
+                net,
+                "pin_m1_landing",
+            ),
+            Rect(
+                "M2",
+                via_x - process.metal_width_um("M2") / 2.0,
+                y_um - process.metal_width_um("M2") / 2.0,
+                via_x + process.metal_width_um("M2") / 2.0,
+                y_um + process.metal_width_um("M2") / 2.0,
+                net,
+                "pin_m2",
+            ),
+        )
+    )
+    if abs(via_x - x_um) > 1e-9:
+        half = max(process.metal_width_um("M1"), metal_pad, via_m1_pad) / 2.0
+        pin_shapes.append(
+            Rect(
+                "M1",
+                min(x_um, via_x) - half,
+                y_um - half,
+                max(x_um, via_x) + half,
+                y_um + half,
+                net,
+                "pin_m1_bridge",
+            )
+        )
+    return via_x, y_um
+
+
+def _add_metal_pin_via(
+    process: StdcellProcess,
+    x_um: float,
+    y_um: float,
+    net: str,
+    pin_shapes: list[Rect],
+    via_blockages: list[Rect],
+) -> tuple[float, float]:
+    metal_pad = process.tech.contact_size + 2 * process.tech.metal_contact_enc
+    via_m1_pad = process.tech.via_size + 2 * process.tech.via_lower_enc
+    via_size = process.via_size_um("M1", "M2")
+    required = via_size + process.tech.via_spacing
+    half = max(process.metal_width_um("M1"), metal_pad, via_m1_pad) / 2.0
+    spacing = process.metal_spacing_um("M1")
+    via_x = x_um
+    for direction in (-1.0, 1.0, -2.0, 2.0):
+        candidate = process.snap(x_um + direction * required)
+        bridge_x0 = min(x_um, candidate) - half
+        bridge_x1 = max(x_um, candidate) + half
+        if not _via_center_clear(process, candidate, y_um, via_blockages):
+            continue
+        if any(
+            existing.layer == "M1"
+            and existing.net != net
+            and bridge_x0 < existing.x1 + spacing
+            and bridge_x1 > existing.x0 - spacing
+            and y_um - half < existing.y1 + spacing
+            and y_um + half > existing.y0 - spacing
+            for existing in pin_shapes
+        ):
+            continue
+        via_x = candidate
+        break
+    via_blockages.append(
+        Rect(
+            "VIA12",
+            via_x - via_size / 2.0,
+            y_um - via_size / 2.0,
+            via_x + via_size / 2.0,
+            y_um + via_size / 2.0,
+            net,
+            "pin_via",
+        )
+    )
+    pin_shapes.append(
+        Rect(
+            "M2",
+            via_x - process.metal_width_um("M2") / 2.0,
+            y_um - process.metal_width_um("M2") / 2.0,
+            via_x + process.metal_width_um("M2") / 2.0,
+            y_um + process.metal_width_um("M2") / 2.0,
+            net,
+            "pin_m2",
+        )
+    )
+    if abs(via_x - x_um) > 1e-9:
+        half = max(process.metal_width_um("M1"), metal_pad, via_m1_pad) / 2.0
+        pin_shapes.append(
+            Rect(
+                "M1",
+                min(x_um, via_x) - half,
+                y_um - half,
+                max(x_um, via_x) + half,
+                y_um + half,
+                net,
+                "pin_m1_bridge",
+            )
+        )
+    return via_x, y_um
+
+
 def _route(
     process: StdcellProcess,
     circuit: CellCircuit,
@@ -780,6 +1223,7 @@ def _route(
     list[Segment],
     list[Rect],
     list[Rect],
+    list[Rect],
     dict[str, dict[str, Any]],
     dict[str, tuple[dict[str, Any], ...]],
     tuple[float, ...],
@@ -789,16 +1233,22 @@ def _route(
     segments: list[Segment] = []
     blockages: list[Rect] = []
     via_blockages: list[Rect] = []
+    pin_shapes: list[Rect] = []
     rail_width = process.metal_width_um("M1")
     segments.append(Segment("M1", 0.0, rail_width / 2, width, rail_width / 2, "VSS", "rail"))
     segments.append(Segment("M1", 0.0, height - rail_width / 2, width, height - rail_width / 2, "VDD", "rail"))
 
     for tap in support_taps:
+        rail_y = (
+            height - rail_width / 2.0
+            if tap["net"].lower().startswith(("vdd", "vcc", "vp"))
+            else rail_width / 2.0
+        )
         _add_segment(
             segments,
             "M1",
             (tap["x_um"], tap["y_um"]),
-            (tap["x_um"], rail_width / 2.0),
+            (tap["x_um"], rail_y),
             tap["net"],
             "support_tap_drop",
         )
@@ -817,8 +1267,9 @@ def _route(
                 _add_segment(segments, "M1", point, (point[0], rail_y), node, "supply_drop")
         gate_xs.setdefault(placement.device.gate, []).append(placement.x_um)
 
+    gate_center_y = _ceil_grid(process, height / 2.0)
     for gate, xs in gate_xs.items():
-        x = sum(xs) / len(xs)
+        x = _ceil_grid(process, sum(xs) / len(xs))
         gate_devices = [device for device in placements.values() if device.device.gate == gate]
         low = min(
             device.y_um
@@ -832,7 +1283,27 @@ def _route(
             + device.footprint.gate_extension_um
             for device in gate_devices
         )
-        segments.append(Segment("POLY", x, low, x, high, gate, "gate_connection"))
+        for device in gate_devices:
+            gate_y = device.y_um + (
+                device.footprint.active_height_um / 2.0
+                + device.footprint.gate_extension_um / 2.0
+            ) * (1.0 if device.polarity == "n" else -1.0)
+            _add_segment(
+                segments,
+                "POLY",
+                (device.x_um, gate_y),
+                (x, gate_y),
+                gate,
+                "gate_connection",
+            )
+        _add_segment(
+            segments,
+            "POLY",
+            (x, low),
+            (x, high),
+            gate,
+            "gate_connection",
+        )
 
     internal = [node for node in sorted(net_points) if node not in circuit.supplies]
     p_row = max(
@@ -852,7 +1323,9 @@ def _route(
         process,
         n_top + process.metal_width_um("M1") / 2.0 + process.metal_spacing_um("M1"),
     )
-    via_landing_half = process.via_size_um("M1", "M2") / 2.0 + process.lambda_um
+    via_landing_half = process.via_size_um("M1", "M2") / 2.0 + max(
+        process.tech.via_lower_enc, process.tech.via_upper_enc
+    )
     track_spacing = process.metal_width_um("M1") / 2.0 + via_landing_half + process.metal_spacing_um("M1")
     p_track_start = _ceil_grid(
         process,
@@ -902,8 +1375,20 @@ def _route(
         if rows.get("p") and rows.get("n") and rows["p"] != rows["n"]
     }
     p_only_track_ys = set(track_ys[node] for node in p_only)
-    policy = RoutingPolicy.for_architecture(architecture)
-    graph = RoutingGraph.rectangular(graph_xs, graph_ys, tuple(policy.layer_cost), policy)
+    grammar = process.routing_grammar()
+    try:
+        policy = RoutingPolicy.for_architecture_grammar(
+            architecture,
+            grammar,
+            # Unknown grammar states are allowed only for this pre-native
+            # candidate search; native DRC/LVS gates remain mandatory.
+            allow_unknown=True,
+        )
+    except RoutingError as exc:
+        raise PlannerError(str(exc)) from exc
+    graph = RoutingGraph.rectangular(
+        graph_xs, graph_ys, tuple(policy.layer_cost), policy
+    )
     row_ys = {n_y, p_row}
     blocked = {
         edge.key
@@ -941,84 +1426,192 @@ def _route(
     route_order = [node for node in internal if node not in p_only] + [
         node for node in internal if node in p_only
     ]
-    for node in route_order:
-        graph_routes[node] = _graph_route_net(
-            process,
-            node,
-            net_points[node],
-            track_ys[node],
-            graph,
-            graph_usage,
-            blocked,
-            occupied_nodes,
-            segments,
-            via_blockages,
-            track_layer="M2" if node in p_only else "M1",
-        )
+    internal_segment_start = len(segments)
+    internal_via_start = len(via_blockages)
+    try:
+        for node in route_order:
+            graph_routes[node] = _graph_route_net(
+                process,
+                node,
+                net_points[node],
+                track_ys[node],
+                graph,
+                graph_usage,
+                blocked,
+                occupied_nodes,
+                segments,
+                via_blockages,
+                track_layer="M2" if node in p_only else "M1",
+            )
+    except RoutingError:
+        del segments[internal_segment_start:]
+        del via_blockages[internal_via_start:]
+        graph_routes = {}
+        negotiated_nets: dict[
+            str, tuple[tuple[RoutingNode, ...], tuple[RoutingNode, ...]]
+        ] = {}
+        for node in internal:
+            if len(net_points[node]) < 2:
+                continue
+            trunk = RoutingNode(
+                min(point[0] for point in net_points[node]),
+                track_ys[node],
+                "M2" if node in p_only else "M1",
+            )
+            for point_index, point in enumerate(net_points[node]):
+                negotiated_nets[f"{node}:{point_index}"] = (
+                    (RoutingNode(point[0], point[1], "M1"),),
+                    (trunk,),
+                )
+        negotiated = NegotiatedRouter(graph, max_iterations=64)
+        negotiated_paths = negotiated.route(negotiated_nets, blocked=blocked)
+        route_edges_by_net: dict[str, list[dict[str, Any]]] = {}
+        for route_name, path in negotiated_paths.items():
+            net = route_name.rsplit(":", 1)[0]
+            route_edges = route_edges_by_net.setdefault(net, [])
+            for edge in path:
+                if edge.kind == "wire":
+                    _add_segment(
+                        segments,
+                        edge.start.layer,
+                        (edge.start.x_um, edge.start.y_um),
+                        (edge.end.x_um, edge.end.y_um),
+                        net,
+                        "graph_route",
+                    )
+                else:
+                    lower, upper = sorted((edge.start.layer, edge.end.layer))
+                    via_name = "VIA12" if (lower, upper) == ("M1", "M2") else "VIA23"
+                    via_size = process.via_size_um(lower, upper)
+                    via_blockages.append(
+                        Rect(
+                            via_name,
+                            edge.start.x_um - via_size / 2.0,
+                            edge.start.y_um - via_size / 2.0,
+                            edge.start.x_um + via_size / 2.0,
+                            edge.start.y_um + via_size / 2.0,
+                            net,
+                            "graph_route_via",
+                        )
+                    )
+                route_edges.append(
+                    {
+                        "kind": edge.kind,
+                        "layer": edge.start.layer,
+                        "to_layer": edge.end.layer,
+                        "x0": edge.start.x_um,
+                        "y0": edge.start.y_um,
+                        "x1": edge.end.x_um,
+                        "y1": edge.end.y_um,
+                        "cost": edge.cost,
+                    }
+                )
+        graph_routes = {
+            net: tuple(route_edges_by_net.get(net, ())) for net in internal
+        }
 
     if architecture == "two_metal_classic":
         feedthrough_layer = "M2"
-        count = max(1, int(width / max(12 * process.lambda_um, process.grid_um)))
     elif architecture == "two_metal_dense":
         feedthrough_layer = "M2"
-        count = 0
     elif architecture == "three_metal_classic":
+        if not process.has_layer("M3"):
+            raise PlannerError(f"{process.profile_name}: three_metal_classic requires M3")
         feedthrough_layer = "M3"
-        count = max(1, int(width / max(12 * process.lambda_um, process.grid_um)))
     else:
         raise PlannerError(f"unsupported routing architecture {architecture!r}")
-    route_blocked_xs = tuple(
-        sorted(
-            {
-                segment.x0
-                for segment in segments
-                if segment.layer == feedthrough_layer
-                and segment.purpose == "graph_route"
-                and segment.x0 == segment.x1
-            }
-        )
-    )
-    feedthrough = _feedthrough_positions(
-        process,
-        width,
-        count,
-        feedthrough_layer,
-        placements,
-        extra_blocked_xs=route_blocked_xs,
-    )
 
-    pin_layer = "M2" if architecture == "three_metal_classic" else feedthrough_layer
+    pin_layer = "M2"
     pin_access: dict[str, dict[str, Any]] = {}
     for input_name in circuit.inputs:
         xs = gate_xs.get(input_name)
         if not xs:
             raise PlannerError(f"{circuit.name}: input {input_name} has no MOS gate")
         x = _ceil_grid(process, sum(xs) / len(xs))
+        pin_x, pin_y = _add_pin_via(
+            process, x, gate_center_y, input_name, pin_shapes, via_blockages
+        )
         pin_access[input_name] = {
             "layer": pin_layer,
-            "x_um": x,
-            "y_um": _ceil_grid(process, height / 2),
+            "x_um": pin_x,
+            "y_um": pin_y,
             "width_um": process.metal_width_um(pin_layer),
-            "access": "legal_region_pending_drc",
+            "access": "physical_geometry_pending_drc",
         }
     for output_name in circuit.outputs:
         points = net_points.get(output_name, [])
         if not points:
             raise PlannerError(f"{circuit.name}: output {output_name} has no diffusion terminal")
-        x = _ceil_grid(process, max(point[0] for point in points))
+        point_x, point_y = max(points, key=lambda point: (point[0], -point[1]))
+        x = _ceil_grid(process, point_x)
+        _add_segment(
+            segments,
+            "M1",
+            (point_x, point_y),
+            (x, gate_center_y),
+            output_name,
+            "pin_route",
+        )
+        pin_x, pin_y = _add_metal_pin_via(
+            process, x, gate_center_y, output_name, pin_shapes, via_blockages
+        )
         pin_access[output_name] = {
             "layer": pin_layer,
-            "x_um": x,
-            "y_um": _ceil_grid(process, height / 2),
+            "x_um": pin_x,
+            "y_um": pin_y,
             "width_um": process.metal_width_um(pin_layer),
-            "access": "legal_region_pending_drc",
+            "access": "physical_geometry_pending_drc",
         }
-
-    blockages.extend(
-        Rect(segment.layer, min(segment.x0, segment.x1), min(segment.y0, segment.y1), max(segment.x0, segment.x1), max(segment.y0, segment.y1), segment.net, segment.purpose)
-        for segment in segments
-        if segment.purpose not in {"feedthrough", "rail"} and segment.layer in {"M2", "M3"}
+    feedthrough = _feedthrough_positions(
+        process,
+        width,
+        height,
+        feedthrough_layer,
+        segments,
+        via_blockages,
+        pin_shapes,
     )
+
+    port_nets = set(circuit.ports)
+    for segment in segments:
+        if (
+            segment.layer not in {"M1", "M2", "M3"}
+            or segment.purpose == "rail"
+            or segment.net in port_nets
+        ):
+            continue
+        half = process.metal_width_um(segment.layer) / 2.0
+        blockages.append(
+            Rect(
+                segment.layer,
+                min(segment.x0, segment.x1) - half,
+                min(segment.y0, segment.y1) - half,
+                max(segment.x0, segment.x1) + half,
+                max(segment.y0, segment.y1) + half,
+                segment.net,
+                "physical_obstacle",
+            )
+        )
+    for via in via_blockages:
+        if via.net in port_nets:
+            continue
+        via_layers = (
+            (("M1", process.tech.via_lower_enc), ("M2", process.tech.via_upper_enc))
+            if via.layer == "VIA12"
+            else (("M2", process.tech.via2_lower_enc), ("M3", process.tech.via2_upper_enc))
+        )
+        for metal, enclosure in via_layers:
+            blockages.append(
+                Rect(
+                    metal,
+                    via.x0 - enclosure,
+                    via.y0 - enclosure,
+                    via.x1 + enclosure,
+                    via.y1 + enclosure,
+                    via.net,
+                    "physical_obstacle",
+                )
+            )
     conflicts: list[dict[str, Any]] = []
     route_segments = [
         segment
@@ -1027,9 +1620,24 @@ def _route(
     ]
     for index, left in enumerate(route_segments):
         for right in route_segments[index + 1 :]:
-            if _segments_conflict(left, right):
+            if _segments_conflict(process, left, right):
                 conflicts.append({"left": left.as_dict(), "right": right.as_dict()})
-    return segments, blockages, via_blockages, pin_access, graph_routes, feedthrough, feedthrough_layer, tuple(conflicts)
+    if conflicts:
+        raise RoutingError(
+            f"{circuit.name}: physical route conflicts remain "
+            f"after geometry-aware routing ({len(conflicts)})"
+        )
+    return (
+        segments,
+        blockages,
+        via_blockages,
+        pin_shapes,
+        pin_access,
+        graph_routes,
+        feedthrough,
+        feedthrough_layer,
+        tuple(conflicts),
+    )
 
 
 def _cheap_routing_estimate(
@@ -1074,15 +1682,19 @@ def _cheap_routing_estimate(
         elif has_p_row:
             estimated_m2 += span_x + process.grid_um
             estimated_vias += 2
-    if architecture == "two_metal_dense":
-        feedthrough_count = 0
-    else:
-        feedthrough_count = max(1, int(width / max(12 * process.lambda_um, process.grid_um)))
+    feedthrough_layer = "M3" if architecture == "three_metal_classic" else "M2"
+    track_width = process.metal_width_um(feedthrough_layer)
+    track_pitch = track_width + process.metal_spacing_um(feedthrough_layer)
+    available_width = width - track_width
+    estimated_feedthrough_count = (
+        0 if available_width < 0 else int(available_width // track_pitch) + 1
+    )
     return {
         "cell_area_um2": width * height,
         "internal_m2_length_um": estimated_m2,
         "via_count": estimated_vias,
-        "feedthrough_count": feedthrough_count,
+        "estimated_feedthrough_count": estimated_feedthrough_count,
+        "estimated_route_permeability_per_um": estimated_feedthrough_count / max(width, process.grid_um),
         "estimated_route_span_um": estimated_span,
         "cross_row_net_count": cross_row_nets,
         "status": "pre_route_estimate",
@@ -1104,8 +1716,26 @@ def _select_beam(
             gate_mismatches=column_ir.gate_mismatches,
         )
         pareto_inputs.append({"metrics": estimate})
-    front = pareto_front(pareto_inputs)
-    front_set = set(front)
+
+    local_groups: dict[tuple[object, ...], list[int]] = {}
+    for index, option in enumerate(options):
+        column_ir = option["column_ir"]
+        sizing = option["sizing_variant"]
+        group_key = (
+            column_ir.p_order.devices,
+            column_ir.n_order.devices,
+            sizing["scale"],
+        )
+        local_groups.setdefault(group_key, []).append(index)
+    local_front: set[int] = set()
+    for indices in local_groups.values():
+        local_front.update(
+            indices[position]
+            for position in pareto_front([pareto_inputs[index] for index in indices])
+        )
+    global_front = set(pareto_front(pareto_inputs))
+    preferred = local_front | global_front
+
     def sort_key(index: int) -> tuple[object, ...]:
         column_ir = options[index]["column_ir"]
         estimate = options[index]["estimate"]
@@ -1116,15 +1746,20 @@ def _select_beam(
             float(estimate["cell_area_um2"]),
             float(estimate["internal_m2_length_um"]),
             float(estimate["via_count"]),
-            float(estimate["feedthrough_count"]),
+            -float(
+                estimate.get(
+                    "estimated_route_permeability_per_um",
+                    estimate.get("feedthrough_count", 0),
+                )
+            ),
             index,
         )
 
-    ordered = sorted(front, key=sort_key)
+    ordered = sorted(preferred, key=sort_key)
     ordered.extend(
         index
         for index in sorted(range(len(options)), key=sort_key)
-        if index not in front_set
+        if index not in preferred
     )
     return [options[index] for index in ordered[:beam_width]]
 
@@ -1144,6 +1779,19 @@ def generate_candidates(
         raise PlannerError("beam_width must be >= 1")
     if not circuit.devices_for_model(process.model_names.values()):
         raise PlannerError(f"{circuit.name}: no devices match {process.profile_name} bindings")
+    grammar = process.routing_grammar()
+    grammar_active_probes = grammar.metadata.get("active_probes", "not_run")
+    grammar_native_verified = grammar_active_probes in {"complete", "verified", "passed"}
+    grammar_contract = {
+        "profile": grammar.profile,
+        "source_kind": grammar.source_kind,
+        "source_files": list(grammar.source_files),
+        "active_probes": grammar_active_probes,
+        "native_verified": grammar_native_verified,
+        "unknown_status_allowed_for_search": True,
+        "unknown_status_policy": "pre_native_geometry_search_only",
+        "policy_compilation": "architecture_plus_process_grammar",
+    }
     topology_manifest = tuple(option.as_dict() for option in topology_options(circuit))
     input_permutations = pin_permutations(circuit)
     weak_names = weak_device_names(circuit)
@@ -1184,12 +1832,15 @@ def generate_candidates(
     layout_options: list[dict[str, object]] = []
     for variant_circuit, sizing_variant in sizing_variants:
         nf_options = [_nf_options(process, device) for device in variant_circuit.devices]
-        column_irs = enumerate_column_ir(variant_circuit, process, limit=8)
+        column_irs = enumerate_column_ir(variant_circuit, process, limit=None)
         for column_ir in column_irs:
             for folds in product(*nf_options):
-                if len(layout_options) >= max_candidates:
-                    break
                 fold_map = {device.name: nf for device, nf in zip(variant_circuit.devices, folds)}
+                layout_result = _safe_column_layout(
+                    process, variant_circuit, fold_map, column_ir
+                )
+                if layout_result is None:
+                    continue
                 (
                     placements,
                     width,
@@ -1199,7 +1850,16 @@ def generate_candidates(
                     support_taps,
                     diffusion_bridges,
                     supply_contact_plan,
-                ) = _column_layout(process, variant_circuit, fold_map, column_ir)
+                ) = layout_result
+                p_row = build_transistor_row(
+                    process, "p", column_ir.p_order.devices, placements
+                ).as_dict()
+                n_row = build_transistor_row(
+                    process, "n", column_ir.n_order.devices, placements
+                ).as_dict()
+                p_row["orientation"] = process.row_orientation_policy["odd_row"]
+                n_row["orientation"] = process.row_orientation_policy["even_row"]
+                row_geometry = {"p": p_row, "n": n_row}
                 layout_options.append(
                     {
                         "circuit": variant_circuit,
@@ -1212,6 +1872,7 @@ def generate_candidates(
                         "support_taps": support_taps,
                         "diffusion_bridges": diffusion_bridges,
                         "supply_contact_plan": supply_contact_plan,
+                        "row_geometry": row_geometry,
                         "topology_candidates": topology_manifest,
                         "pin_permutations": input_permutations,
                         "sizing_variant": sizing_variant,
@@ -1226,12 +1887,8 @@ def generate_candidates(
                         ),
                     }
                 )
-            if len(layout_options) >= max_candidates:
-                break
-        if len(layout_options) >= max_candidates:
-            break
     if beam_width is not None:
-        layout_options = _select_beam(layout_options, min(beam_width, max_candidates))
+        layout_options = _select_beam(layout_options, beam_width)
 
     candidates: list[CandidatePlan] = []
     for index, option in enumerate(layout_options):
@@ -1245,25 +1902,30 @@ def generate_candidates(
         support_taps = option["support_taps"]
         diffusion_bridges = option["diffusion_bridges"]
         supply_contact_plan = option["supply_contact_plan"]
-        (
-            segments,
-            blockages,
-            via_blockages,
-            pin_access,
-            graph_routes,
-            feedthrough,
-            feedthrough_layer,
-            conflicts,
-        ) = _route(
-            process,
-            variant_circuit,
-            architecture,
-            placements,
-            width,
-            height,
-            n_y,
-            support_taps,
-        )
+        row_geometry = option["row_geometry"]
+        try:
+            (
+                segments,
+                blockages,
+                via_blockages,
+                pin_shapes,
+                pin_access,
+                graph_routes,
+                feedthrough,
+                feedthrough_layer,
+                conflicts,
+            ) = _route(
+                process,
+                variant_circuit,
+                architecture,
+                placements,
+                width,
+                height,
+                n_y,
+                support_taps,
+            )
+        except RoutingError:
+            continue
         internal_m2 = sum(
             abs(segment.y1 - segment.y0) + abs(segment.x1 - segment.x0)
             for segment in segments
@@ -1290,11 +1952,18 @@ def generate_candidates(
         )
         metrics = {
             "cell_area_um2": width * height,
+            "row_active_capacity_um": {
+                "n": process.row_active_capacity_um("n"),
+                "p": process.row_active_capacity_um("p"),
+            },
             "internal_m2_length_um": internal_m2,
             "internal_m2_segment_count": internal_m2_segments,
             "via_count": via_count,
+            "estimated_feedthrough_count": len(feedthrough),
+            "native_verified_feedthrough_count": None,
             "feedthrough_count": len(feedthrough),
             "route_permeability_per_um": len(feedthrough) / route_width,
+            "feedthrough_metric_status": "geometry_estimate_not_native_verified",
             "pin_access_count": len(pin_access),
             "diffusion_breaks": column_ir.diffusion_breaks,
             "shared_diffusion_edges": column_ir.shared_diffusion_edges,
@@ -1302,6 +1971,7 @@ def generate_candidates(
             "aligned_gate_columns": column_ir.aligned_gate_columns,
             "line_of_diffusion_edge_count": len(diffusion_bridges) // 2,
             "contactless_internal_diffusion_count": contactless_internal,
+            "routing_grammar": grammar_contract,
             "routing_estimate": option["estimate"],
             "worst_case_delay": None,
             "input_capacitance": None,
@@ -1315,9 +1985,10 @@ def generate_candidates(
             "drc": "not_run",
             "lvs": "not_run",
             "pex": "not_run",
-            "pin_access": "planned",
-            "rail_and_bulk_connectivity": "planned",
+            "pin_access": "physical_geometry_pending_drc",
+            "routing_grammar": grammar_contract,
             "routing_contract": "planned" if internal_m2_allowed else "requires_routing_refinement",
+            "tap_policy": process.tap_policy,
             "internal_m2_limit_segments": classic_limit,
             "internal_m2_segment_count": internal_m2_segments,
             "internal_m2_within_limit": internal_m2_allowed,
@@ -1325,7 +1996,9 @@ def generate_candidates(
             "feedthrough_resource_contract": {
                 "preserve_over_cell_columns": True,
                 "layer": feedthrough_layer,
-                "count": len(feedthrough),
+                "estimated_count": len(feedthrough),
+                "native_verified_count": None,
+                "metric_status": "geometry_estimate_not_native_verified",
             },
             "rail_contract": {
                 "fixed_height": True,
@@ -1353,6 +2026,7 @@ def generate_candidates(
                 blockages=tuple(blockages),
                 via_blockages=tuple(via_blockages),
                 graph_routes=graph_routes,
+                pin_shapes=tuple(pin_shapes),
                 feedthrough_columns=feedthrough,
                 feedthrough_layer=feedthrough_layer,
                 pin_access=pin_access,
@@ -1365,8 +2039,36 @@ def generate_candidates(
                 pin_permutations=option["pin_permutations"],
                 sizing_variant=option["sizing_variant"],
                 orientation_policy=option["orientation_policy"],
+                row_geometry=row_geometry,
             )
         )
+    if len(candidates) > max_candidates:
+        front = pareto_front(candidates)
+        front_set = set(front)
+
+        def final_key(position: int) -> tuple[object, ...]:
+            candidate = candidates[position]
+            metrics = candidate.metrics
+            return (
+                float(metrics["cell_area_um2"]),
+                float(metrics["internal_m2_length_um"]),
+                float(metrics["via_count"]),
+                -float(metrics["route_permeability_per_um"]),
+                int(metrics["diffusion_breaks"]),
+                int(metrics["gate_mismatches"]),
+                position,
+            )
+
+        ordered = sorted(front, key=final_key)
+        ordered.extend(
+            position
+            for position in sorted(range(len(candidates)), key=final_key)
+            if position not in front_set
+        )
+        candidates = [
+            replace(candidates[position], index=index)
+            for index, position in enumerate(ordered[:max_candidates])
+        ]
     if not candidates:
         raise PlannerError(f"{circuit.name}: no folding candidates")
     return tuple(candidates)

@@ -89,28 +89,49 @@ def run():
     kinds = table.get("devices", {})
 
     # ---- MOSFETs (Diva extractMOS: W from S/D-butting edges, L = area/W)
-    for entry in kinds.get("mos4", []):
+    def extract_mos(entry, kind):
         dev = entry["name"]
         channel = D.get(entry["channel"])
-        diff = D.get(entry["diff"])
-        if channel is None or diff is None or channel.is_empty() or diff.is_empty():
-            continue
-        shared = coincident(channel, diff)
+        if kind == "ldmos":
+            source_diff = D.get(entry["source_diff"])
+            drain_diff = D.get(entry["drain_diff"])
+        else:
+            source_diff = D.get(entry["diff"])
+            drain_diff = source_diff
+        if (
+            channel is None
+            or source_diff is None
+            or drain_diff is None
+            or channel.is_empty()
+            or source_diff.is_empty()
+            or drain_diff.is_empty()
+        ):
+            return
+        source_shared = coincident(channel, source_diff)
+        drain_shared = coincident(channel, drain_diff)
+        shared = source_shared | drain_shared
         if shared.is_empty():
-            continue
+            return
         devno = 0
-        for cpoly in channel.merge().each():
-            cpoly = pya.Polygon(cpoly)
-            sedges = pya.Edges()
-            for e in cpoly.each_edge():
-                if not (pya.Edges(e) & shared).is_empty():
-                    sedges += e
-            W = sedges.length() * DBU / 2.0
+        for raw_channel in channel.merge().each():
+            cpoly = pya.Polygon(raw_channel)
+            edge_roles = []
+            for edge in cpoly.each_edge():
+                edge_region = pya.Edges(edge)
+                if not (edge_region & shared).is_empty():
+                    if kind == "ldmos" and not (edge_region & drain_shared).is_empty():
+                        role = "drain"
+                    else:
+                        role = "source"
+                    edge_roles.append((edge, role))
+            if not edge_roles:
+                continue
+            W = sum(edge.length() for edge, _ in edge_roles) * DBU / 2.0
             if W <= 0:
                 continue
             devno += 1
             area = cpoly.area() * DBU * DBU
-            L = area / W
+            length = area / W
             center = cpoly.bbox().center()
             g = comp_at(center, "poly")
             if g is None:
@@ -118,30 +139,63 @@ def run():
                 continue
             if entry.get("bulk_net") == "substrate":
                 b_net = N.substrate_net()
+            elif entry.get("bulk_net") == "auto_hv":
+                b = comp_at(center, "isoPwell")
+                b_net = net_of(b) if b is not None else N.substrate_net()
             else:
                 b = comp_at(center, entry["bulk_net"])
                 b_net = net_of(b) if b is not None else None
             sides = []
-            for e in sedges.each():
-                pt = offset_pt(e, cpoly)
-                ci = comp_at(pt, entry["diff"])
+            for edge, role in edge_roles:
+                pt = offset_pt(edge, cpoly)
+                diff_layer = (
+                    entry["drain_diff"] if role == "drain" else entry.get("source_diff", entry["diff"])
+                )
+                ci = comp_at(pt, diff_layer)
                 if ci is None:
-                    warnings.append(f"{dev}: side net not found at {pt}")
+                    # Derived HV/DRIFT regions are recognition masks, not
+                    # independent conductors in the SCMOS net graph.
+                    physical_layer = {
+                        "nHVDiff": "nDiff",
+                        "pHVDiff": "pDiff",
+                        "nDmosDiff": "nDiff",
+                        "pDmosDiff": "pDiff",
+                    }.get(diff_layer)
+                    if physical_layer:
+                        ci = comp_at(pt, physical_layer)
+                if ci is None:
+                    warnings.append(f"{dev}: {role} net not found at {pt}")
                     continue
-                sides.append(ci)
+                sides.append((ci, role))
             if len(sides) != 2:
                 warnings.append(f"{dev}: expected 2 diff sides, got {len(sides)}")
                 continue
-            s0, s1 = sides
-            island = comps[s0][1]
-            ad = island.area() * DBU * DBU
-            pd = island.perimeter() * DBU
+            if kind == "mos4":
+                # Preserve the reference extractor's terminal ordering for
+                # interchangeable SCMOS source/drain terminals.
+                drain, source = sides[0][0], sides[1][0]
+            else:
+                source = next((ci for ci, role in sides if role == "source"), sides[0][0])
+                drain = next((ci for ci, role in sides if role == "drain"), sides[-1][0])
+            source_poly = comps[source][1]
+            drain_poly = comps[drain][1]
+            ad = drain_poly.area() * DBU * DBU
+            a_s = source_poly.area() * DBU * DBU
+            pd = drain_poly.perimeter() * DBU
+            ps = source_poly.perimeter() * DBU
             model = PREFIX + MODEL_SUFFIX[entry["model_suffix"]]
-            add(dev, f"m{devno} {net_of(s0)} {net_of(g)} {net_of(s1)} "
-                    f"{b_net if b_net else 'SUBS'} {model} "
-                    f"w={W:.6g} l={L:.6g} ad={ad:.6g} as={ad:.6g} "
-                    f"pd={pd:.6g} ps={pd:.6g}")
+            add(
+                dev,
+                f"m{devno} {net_of(drain)} {net_of(g)} {net_of(source)} "
+                f"{b_net if b_net else 'SUBS'} {model} "
+                f"w={W:.6g} l={length:.6g} ad={ad:.6g} as={a_s:.6g} "
+                f"pd={pd:.6g} ps={ps:.6g}",
+            )
 
+    for entry in kinds.get("mos4", []):
+        extract_mos(entry, "mos4")
+    for entry in kinds.get("ldmos", []):
+        extract_mos(entry, "ldmos")
     # ---- resistors (Diva: W = butting-edge length/2, L = (P-Wtot)/2)
     for entry in kinds.get("resistor", []):
         key = entry["name"]

@@ -15,7 +15,7 @@ import yamlish  # noqa: E402
 from common.process_ir import load_process, profile_names  # noqa: E402
 
 
-EXPECTED_PROFILES = {"ami06", "ami16", "hp06", "ls1u", "openrule1um"}
+EXPECTED_PROFILES = {"ami06", "ami16", "hp06", "cnm25", "ams_c35", "ls1u", "openrule1um"}
 
 
 def model_sections(path: Path) -> set[str]:
@@ -81,8 +81,14 @@ def main() -> int:
     assert matrix["kind"] == "stdcell_spice_pex_readiness"
     assert matrix["status"] == "preparation_contract"
     policy = matrix["policy"]
-    assert policy["generator_implementation"] == "not_implemented"
-    assert policy["active_stdcell_profiles"] == []
+    assert policy["generator_implementation"] == "geometry_candidate_planner"
+    assert policy["active_stdcell_profiles"] == [
+        "ami06",
+        "ami16",
+        "hp06",
+        "cnm25",
+        "ams_c35",
+    ]
     assert "simulator_model_library_and_section" in policy["required_inputs"]
     assert "lef" in policy["required_output_views"]
     assert "liberty" in policy["required_output_views"]
@@ -96,14 +102,23 @@ def main() -> int:
 
     profiles = matrix["profiles"]
     assert set(profiles) == EXPECTED_PROFILES
-    assert set(profile_names(ROOT)) == EXPECTED_PROFILES
+    assert set(profile_names(ROOT)) >= EXPECTED_PROFILES
     for name, spec in profiles.items():
         process = load_process(name, ROOT)
         assert_model_contract(name, process, spec, canonical["terminal_order"])
         assert_pex_contract(name, process, spec)
         blockers = set(spec["readiness"]["blockers"])
-        assert "no_stdcell_geometry_contract" in blockers
+        assert blockers, f"{name}: no readiness blockers"
         assert spec["readiness"]["signoff"] == "blocked"
+
+    ami06_blockers = set(profiles["ami06"]["readiness"]["blockers"])
+    assert "native_pin_access_not_verified" in ami06_blockers
+    for name in ("ami16", "hp06", "cnm25", "ams_c35", "ls1u", "openrule1um"):
+        blockers = set(profiles[name]["readiness"]["blockers"])
+        if name in {"ami16", "hp06", "cnm25", "ams_c35"}:
+            assert "no_stdcell_geometry_contract" not in blockers, name
+        else:
+            assert "no_stdcell_geometry_contract" in blockers, name
 
     for name in ("ami06", "ami16", "hp06"):
         spec = profiles[name]
@@ -115,7 +130,11 @@ def main() -> int:
             "snfp",
         }
         assert spec["pex"]["status"] == "source_reference_partial"
-        assert "contact_and_via_resistance" in spec["pex"]["withheld_terms"]
+        assert "contact_and_via_resistance" not in spec["pex"]["withheld_terms"]
+        assert "contact_and_via_resistance" in spec["pex"]["pex_owned_terms"]
+        assert "direct_junction_and_substrate_capacitance_mapping" in spec["pex"][
+            "withheld_terms"
+        ]
 
     ls1u = profiles["ls1u"]
     assert ls1u["spice"]["representation"] == "subckt"

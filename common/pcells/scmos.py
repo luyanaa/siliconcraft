@@ -51,10 +51,9 @@ class Profile:
             for item in self.layers_doc.get("layers", [])
         }
         self.pcells = self.pcells_doc.get("pcells", {})
-        self.lambda_um = float(self.meta.get("lambda_um", 0.5))
+        self.lambda_um = float(self.meta["lambda_um"])
         self.grid_um = float(self.meta["grid_um"])
         self.rule_family = self.ir.rule_family
-        self.submicron = self.rule_family == "scmos_subm"
 
     def has_feature(self, name: str) -> bool:
         return bool(self.features.get(name, False))
@@ -133,11 +132,6 @@ class Profile:
             )
         return candidates[0]
 
-    def rule_or(self, group, rule_id, layer, layer2, fallback):
-        try:
-            return self.rule_value(group, rule_id, layer, layer2)
-        except ProfileError:
-            return fallback
 
     def validate_pcell(self, name: str, kind: str):
         spec = self.pcells.get(name)
@@ -155,54 +149,83 @@ class Technology:
 
     def __init__(self, profile: Profile):
         self.profile = profile
-        q = profile.lambda_um
-        self.contact_size = profile.rule_or("width", "6.1", "ca", None, 2 * q)
-        self.contact_spacing = profile.rule_or("spacing", "6.3", "ca", None, 3 * q)
-        self.active_min = profile.rule_or("width", "2.1", "active", None, 3 * q)
-        self.poly_min = profile.rule_or("width", "3.1", "poly", None, 2 * q)
-        self.poly_spacing = profile.rule_or(
-            "spacing", "3.2", "poly", None, 3 * q if profile.submicron else 2 * q
+        self.contact_size = self._rule("width", "6.1", "ca", None)
+        self.contact_spacing = self._rule("spacing", "6.3", "ca", None)
+        self.active_min = self._rule("width", "2.1", "active", None)
+        self.poly_min = self._rule("width", "3.1", "poly", None)
+        self.poly_spacing = self._rule("spacing", "3.2", "poly", None)
+        self.poly_contact_spacing = self._rule(
+            "spacing", "5.5.b", "cp", "poly"
         )
-        self.poly_contact_spacing = profile.rule_or(
-            "spacing", "6.4", "poly", "ca", 2 * q
+        self.poly_contact_enc = self._rule(
+            "enclosure", "5.2.b", "poly", "cp"
         )
-        self.active_contact_enc = profile.rule_or(
-            "enclosure", "6.2.b", "active", "ca", q
+        self.active_contact_enc = self._rule(
+            "enclosure", "6.2.b", "active", "ca"
         )
-        self.select_active_enc = profile.rule_or(
-            "enclosure", "4.2", "nselect", "active", 2 * q
+        self.select_active_enc = self._rule(
+            "enclosure", "4.2", "nselect", "active"
         )
-        self.select_contact_enc = profile.rule_or(
-            "enclosure", "4.3", "nselect", "ca", q
+        self.select_channel_enc = max(
+            self._rule("enclosure", "4.1", "nselect", "nChannel"),
+            self._rule("enclosure", "4.1", "pselect", "pChannel"),
         )
-        self.metal_contact_enc = profile.rule_or(
-            "enclosure", "7.3", "metal1", "ca", q
+        self.gate_extension = self._rule(
+            "spacing", "5.4", "cp", "Gate"
         )
-        self.nwell_active_enc = 6 * q if profile.submicron else 5 * q
-        self.nwell_contact_enc = 3 * q
-        self.nwell_min_width = 12 * q if profile.submicron else 10 * q
-        self.via_size = profile.rule_or("width", "8.1", "via", None, 2 * q)
-        self.via_spacing = profile.rule_or("spacing", "8.2", "via", None, 3 * q)
-        self.via_lower_enc = profile.rule_or(
-            "enclosure", "8.3", "metal1", "via", q
+        self.select_contact_enc = self._rule(
+            "enclosure", "4.3", "nselect", "ca"
         )
-        self.via_upper_enc = profile.rule_or(
-            "enclosure", "9.3", "metal2", "via", q
+        self.metal_contact_enc = self._rule(
+            "enclosure", "7.3", "metal1", "ca"
         )
-        self.via2_size = profile.rule_or("width", "14.1", "via2", None, 2 * q)
-        self.via2_spacing = profile.rule_or("spacing", "14.2", "via2", None, 3 * q)
-        self.via2_lower_enc = profile.rule_or(
-            "enclosure", "14.3", "metal2", "via2", q
+        self.nwell_active_enc = self._rule(
+            "spacing", "1.3", "nwell", None
         )
-        self.via2_upper_enc = profile.rule_or(
-            "enclosure", "15.3", "metal3", "via2", 2 * q
+        self.nwell_contact_enc = self.nwell_active_enc
+        self.nwell_min_width = self._rule(
+            "width", "1.1", "nwell", None
         )
-        self.poly_elec_enc = profile.rule_or(
-            "enclosure", "11.3", "poly", "CapacitorElec", 1.5
+        self.via_size = self._rule("width", "8.1", "via", None)
+        self.via_spacing = self._rule("spacing", "8.2", "via", None)
+        self.via_lower_enc = self._rule(
+            "enclosure", "8.3", "metal1", "via"
         )
-        self.cap_elec_min = profile.rule_or(
-            "width", "11.1", "CapacitorElec", None, 2.1
+        self.via_upper_enc = self._rule(
+            "enclosure", "9.3", "metal2", "via"
         )
+        self.via2_size = self._rule("width", "14.1", "via2", None)
+        self.via2_spacing = self._rule("spacing", "14.2", "via2", None)
+        self.via2_lower_enc = self._rule(
+            "enclosure", "14.3", "metal2", "via2"
+        )
+        self.via2_upper_enc = self._rule(
+            "enclosure", "15.3", "metal3", "via2"
+        )
+        self.poly_elec_enc = self._rule(
+            "enclosure", "11.3", "poly", "CapacitorElec"
+        )
+        self.cap_elec_min = self._rule(
+            "width", "11.1", "CapacitorElec", None
+        )
+        if profile.has_feature("metal4Available"):
+            self.via3_size = self._rule("width", "28.1", "via3", None)
+            self.via3_spacing = self._rule("spacing", "28.2", "via3", None)
+            self.via3_lower_enc = self._rule(
+                "enclosure", "28.3", "metal3", "via3"
+            )
+            self.via3_upper_enc = self._rule(
+                "enclosure", "29.3", "metal4", "via3"
+            )
+
+    def _rule(
+        self,
+        group: str,
+        rule_id: str,
+        layer: str,
+        layer2: str | None,
+    ) -> float:
+        return self.profile.rule_value(group, rule_id, layer, layer2)
 
     def snap(self, value: float) -> float:
         return self.profile.snap(value)
@@ -279,10 +302,7 @@ class MosPCell(_BasePCell):
         active = "active"
         select = "nselect" if self.polarity == "n" else "pselect"
         self._rect(active, active_left, active_bottom, active_right, active_top)
-        select_enc = max(
-            self.tech.select_active_enc,
-            3 * self.tech.profile.lambda_um,
-        )
+        select_enc = self.tech.select_channel_enc
         self._rect(
             select,
             active_left - select_enc,
@@ -308,7 +328,7 @@ class MosPCell(_BasePCell):
                 well_top += extra
             self._rect("nwell", well_left, well_bottom, well_right, well_top)
 
-        gate_extension = 2 * self.tech.profile.lambda_um
+        gate_extension = self.tech.gate_extension
         gate_span = (f - 1) * poly_pitch + l
         gate_left = -gate_span / 2.0
         for index in range(f):
@@ -346,7 +366,7 @@ class MosPCell(_BasePCell):
             )
         else:
             parallel_step = 2 * (
-                self.tech.profile.lambda_um + self.tech.poly_contact_spacing
+                self.tech.gate_extension / 2.0 + self.tech.poly_contact_spacing
             ) + l
             first = active_left + self.tech.active_contact_enc
             contact_xs = [
@@ -471,11 +491,18 @@ class ViaPCell(_BasePCell):
             spacing = self.tech.via_spacing
             lower_enc = self.tech.via_lower_enc
             upper_enc = self.tech.via_upper_enc
-        else:
+        elif self.via_name == "via23":
             size = self.tech.via2_size
             spacing = self.tech.via2_spacing
             lower_enc = self.tech.via2_lower_enc
             upper_enc = self.tech.via2_upper_enc
+        elif self.via_name == "via34":
+            size = self.tech.via3_size
+            spacing = self.tech.via3_spacing
+            lower_enc = self.tech.via3_lower_enc
+            upper_enc = self.tech.via3_upper_enc
+        else:
+            raise ProfileError(f"unsupported via PCell {self.via_name}")
         cut_w = columns * size + (columns - 1) * spacing
         cut_h = rows * size + (rows - 1) * spacing
         left = -cut_w / 2.0
@@ -552,8 +579,9 @@ class ElectricalCapPCell(_BasePCell):
         )
 
         # The electrical and poly layers are the capacitor terminals.  A
-        # contact/metal strap is intentionally outside this PCell contract:
-        # AMI06 Rule 11.6 forbids unrelated metal1 overlap of CapacitorElec.
+        # contact/metal strap is intentionally outside this generic PCell
+        # contract; the profile's native capacitor-contact rules stay
+        # process-specific.
 
 
 class SiliconcraftLibrary(_Library):
@@ -572,6 +600,8 @@ class SiliconcraftLibrary(_Library):
         if self.profile.has_feature("metal3Available"):
             self.layout().register_pcell("via12", ViaPCell(self.tech, "via12"))
             self.layout().register_pcell("via23", ViaPCell(self.tech, "via23"))
+        if self.profile.has_feature("metal4Available"):
+            self.layout().register_pcell("via34", ViaPCell(self.tech, "via34"))
         if self.profile.has_feature("elecAvailable"):
             self.layout().register_pcell("cap_elec", ElectricalCapPCell(self.tech))
         self.register(library_name or f"siliconcraft_{profile_name}")

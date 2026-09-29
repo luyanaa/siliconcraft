@@ -1,0 +1,85 @@
+# profiles/ams_c35/pcells.yaml — KLayout analog PCell contract
+#
+# Geometry is generated in microns and snapped to meta.grid_um.  The common
+# SCMOS PCell implementation consumes these logical layers and rule values;
+# extraction and foundry sign-off remain separate contracts.
+
+pcells:
+  nmos:
+    kind: mos4
+    polarity: n
+    canonical_device: nmos_core
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 1.5, min: 0.6}
+      l_um: {type: float, default: 0.6, min: 0.4}
+  pmos:
+    kind: mos4
+    polarity: p
+    canonical_device: pmos_core
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 1.5, min: 0.6}
+      l_um: {type: float, default: 0.6, min: 0.4}
+  ntap:
+    kind: tap
+    polarity: n
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  ptap:
+    kind: tap
+    polarity: p
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via12:
+    kind: via
+    cut: via
+    lower: metal1
+    upper: metal2
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via23:
+    kind: via
+    cut: via2
+    lower: metal2
+    upper: metal3
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via34:
+    kind: via
+    cut: via3
+    lower: metal3
+    upper: metal4
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  cap_elec:
+    kind: capacitor
+    top: elec
+    bottom: poly
+    terminals:
+      - TOP
+      - BOTTOM
+    parameters:
+      width_um: {type: float, default: 3.0, min: 3.0}
+      height_um: {type: float, default: 3.0, min: 3.0}

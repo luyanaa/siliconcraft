@@ -133,6 +133,8 @@ def main() -> int:
 
     layers = {entry["name"]: entry for entry in matrix["layers"]}
     expected_layers = {
+        "p_high_voltage": (21, "CVP"),
+        "n_high_voltage": (22, "CVN"),
         "mems_open": (23, "COP"),
         "mems_etch_stop": (24, "CPS"),
         "poly_cap1": (28, "CPC"),
@@ -151,6 +153,77 @@ def main() -> int:
     for name, (gds_layer, cif) in expected_layers.items():
         assert layers[name]["gds_layer"] == gds_layer
         assert layers[name]["cif"] == cif
+
+    # --- SCMOS 7.2 option rule families (three-way status contract) -------
+    capabilities = matrix["capabilities"]
+    assert set(capabilities["high_voltage"]["layers"]) == {
+        "p_high_voltage",
+        "n_high_voltage",
+    }
+    assert capabilities["thick_active"]["layers"] == ["thick_active"]
+
+    families = {entry["id"]: entry for entry in matrix["option_rule_families"]}
+    assert set(families) == {
+        "electrode_capacitor",
+        "electrode_transistor",
+        "electrode_contact",
+        "vertical_npn",
+        "linear_capacitor",
+        "buried_ccd",
+        "silicide_block",
+        "scnpc_poly_cap",
+        "hvcmos",
+        "mems",
+        "tight_metal",
+        "triple_metal",
+        "quad_metal",
+    }
+    # full-λ families with native DRC and extraction
+    for fam_id in (
+        "electrode_capacitor",
+        "electrode_transistor",
+        "electrode_contact",
+        "vertical_npn",
+        "linear_capacitor",
+        "buried_ccd",
+    ):
+        fam = families[fam_id]
+        assert fam["defined"] is True
+        assert fam["lambda_rules"] is True
+        assert fam["drc_status"] == "implemented"
+    # λ tables only, no native deck
+    assert families["silicide_block"]["drc_status"] == "lambda_only"
+    assert families["silicide_block"]["lvs_status"] == "recipe"
+    assert families["scnpc_poly_cap"]["drc_status"] == "lambda_only"
+    assert families["scnpc_poly_cap"]["lvs_status"] == "none"
+    # HV: defined layers, no official λ rules; λ rules are override-gated only
+    hv = families["hvcmos"]
+    assert hv["defined"] is True
+    assert hv["lambda_rules"] is False
+    assert hv["rule_sections"] == []
+    assert hv["drc_status"] == "none"
+    assert hv["lvs_status"] == "partial"
+    impl = hv["lambda_implementation"]
+    assert impl["default"] == "none"
+    assert impl["policy"] == "override_required"
+    assert impl["override"]["id"] == "hvcmos_magic20_lambda"
+    assert impl["override"]["feature_flag"] == "hvcmosLambdaOverride"
+    assert len(impl["override"]["required_acknowledgements"]) >= 4
+    # MEMS: defined layers, no rules at all
+    mems = families["mems"]
+    assert mems["defined"] is True
+    assert mems["lambda_rules"] is False
+    assert mems["drc_status"] == "none"
+    assert mems["lvs_status"] == "none"
+    # CCD is a charge-coupled device: LVS is not applicable, not missing
+    assert families["buried_ccd"]["lvs_status"] == "not_applicable"
+    # every process reference resolves
+    for entry in processes.values():
+        for fam_id in entry.get("option_rule_families", []):
+            assert fam_id in families, f"{entry['name']} references unknown family {fam_id}"
+    assert "hvcmos" in processes["ami_abn_12"]["option_rule_families"]
+    assert "scnpc_poly_cap" in processes["ami_cwl"]["option_rule_families"]
+    assert "mems" in processes["orbit_20"]["option_rule_families"]
 
     pex = matrix["magic_pex_method"]
     assert {

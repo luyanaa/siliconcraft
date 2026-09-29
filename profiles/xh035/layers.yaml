@@ -1,0 +1,329 @@
+# XH035 profile fragment.
+#
+# The public X-FAB datasheet publishes basic geometry and module names, not the
+# production GDS stream map.  The 100-series map below is therefore an
+# internal logical map for synthetic DRC/LVS work only; it is not a tapeout
+# interchange map.
+meta:
+  name: xh035
+  process: XH035
+  foundry: X-FAB
+  description: "X-FAB XH035 0.35um bulk modular analog/HV CMOS; initial LV + HVCMOS contract"
+  node_um: 0.35
+  lambda_um: 0.175
+  grid_um: 0.05
+  min_channel_um: 0.35
+  min_width_um: 0.5
+  model_prefix: xh035
+  well_type: n
+  rule_family: scmos_subm
+  stacked_vias: false
+  hvcmos_rule_source: "Public XH035 datasheet basic geometry plus explicit initial voltage-policy rules; HV stream map/signoff deck unavailable"
+  mask_map_status: provisional
+  gds_output_policy: "provisional_logical_map_only; X-FAB PDK GDS/DRC/LVS/PEX remains tapeout authority"
+  features:
+    elecAvailable: false
+    polycapAvailable: false
+    highresAvailable: false
+    metal3Available: true
+    metal4Available: false
+    metal5Available: false
+    metal6Available: false
+    metalcapAvailable: false
+    cwellAvailable: false
+    sblockAvailable: false
+    npnAvailable: false
+    pnpAvailable: false
+    ccdAvailable: false
+    hvAvailable: true
+    hvcmosAvailable: true
+    hvcmosRuleOverride: true
+    hvMarkerAvailable: true
+    deepNwellAvailable: true
+    deepPwellAvailable: false
+    driftAvailable: true
+    ldmosAvailable: true
+    dmosAvailable: true
+    voltageAwareSpacing: true
+    substratePexAvailable: true
+    guardRingRulesAvailable: false
+    latchupRulesAvailable: false
+    memsAvailable: false
+    pselectFromActive: false
+  license: "Public process collateral only; no foundry PDK redistribution"
+  sources:
+    - "https://datasheet.datasheetarchive.com/originals/crawler/xfab.com/dd47a8c450bf3db21dd51bcf6966ea4f.pdf"
+    - "https://cdn.thomasnet.com/ccp/30121834/147470.pdf"
+    - "https://www.xfab.com/resourcexplorer/detail/datasheet-xh035"
+    - "https://www.xfab.com/resourcexplorer/detail/a-new-methodology-for-active-substrate-parasitic-extraction-in-automotive-hv-cmos-processes"
+layers:
+  -
+    name: nwell
+    purpose: drawing
+    gds:
+      - {layer: 100, datatype: 0}
+    role: well
+    note: "Logical N-well alias; public XH035 basic rule: width 1.6um, spacing 1.0um"
+  -
+    name: pwell
+    purpose: drawing
+    gds:
+      - {layer: 101, datatype: 0}
+    role: well
+    note: "Logical P-well alias; hierarchy use is profile-specific"
+  -
+    name: deep_nwell
+    purpose: drawing
+    gds:
+      - {layer: 102, datatype: 0}
+    role: isolation
+    note: "Deep-N-well marker/domain; public module exists, foundry stream name not published"
+  -
+    name: deep_pwell
+    purpose: drawing
+    gds:
+      - {layer: 103, datatype: 0}
+    role: isolation
+    available: false
+    note: "Reserved for a future explicit deep-P-well variant"
+  -
+    name: hv_nwell
+    purpose: drawing
+    gds:
+      - {layer: 104, datatype: 0}
+    role: isolation
+    note: "Logical HV-N-well alias"
+  -
+    name: hv_pwell
+    purpose: drawing
+    gds:
+      - {layer: 105, datatype: 0}
+    role: isolation
+    available: false
+    note: "Reserved for a future explicit HV-P-well variant"
+  -
+    name: active
+    purpose: drawing
+    gds:
+      - {layer: 110, datatype: 0}
+    role: active
+    note: "Public XH035 basic rule: width 0.5um, spacing 0.6um"
+  -
+    name: nactive
+    purpose: drawing
+    gds:
+      - {layer: 111, datatype: 0}
+    role: active
+    available: false
+  -
+    name: pactive
+    purpose: drawing
+    gds:
+      - {layer: 112, datatype: 0}
+    role: active
+    available: false
+  -
+    name: nselect
+    purpose: drawing
+    gds:
+      - {layer: 113, datatype: 0}
+    role: select
+  -
+    name: pselect
+    purpose: drawing
+    gds:
+      - {layer: 114, datatype: 0}
+    role: select
+  -
+    name: poly
+    purpose: drawing
+    gds:
+      - {layer: 120, datatype: 0}
+    role: gate
+    note: "Public XH035 basic rule: gate/resistor width 0.35um, spacing 0.45um"
+  -
+    name: cc
+    purpose: drawing
+    gds:
+      - {layer: 130, datatype: 0}
+    role: cut
+    note: "Public XH035 contact width/spacing 0.4um"
+  -
+    name: ca
+    purpose: drawing
+    gds:
+      - {layer: 131, datatype: 0}
+    role: cut
+    available: false
+  -
+    name: cp
+    purpose: drawing
+    gds:
+      - {layer: 132, datatype: 0}
+    role: cut
+    available: false
+  -
+    name: metal1
+    purpose: drawing
+    gds:
+      - {layer: 140, datatype: 0}
+    role: metal
+    note: "Public XH035 basic rule: width 0.5um, spacing 0.45um"
+  -
+    name: via
+    purpose: drawing
+    gds:
+      - {layer: 141, datatype: 0}
+    role: cut
+    note: "Public XH035 VIA1 basic width 0.5um, spacing 0.45um"
+  -
+    name: metal2
+    purpose: drawing
+    gds:
+      - {layer: 142, datatype: 0}
+    role: metal
+    note: "Public XH035 basic rule: width 0.6um, spacing 0.5um"
+  -
+    name: via2
+    purpose: drawing
+    gds:
+      - {layer: 143, datatype: 0}
+    role: cut
+    note: "Public XH035 VIA2 basic width 0.5um, spacing 0.45um"
+  -
+    name: metal3
+    purpose: drawing
+    gds:
+      - {layer: 144, datatype: 0}
+    role: metal
+    note: "Public XH035 basic rule: width 0.6um, spacing 0.5um"
+  -
+    name: via3
+    purpose: drawing
+    gds:
+      - {layer: 145, datatype: 0}
+    role: cut
+    available: false
+  -
+    name: metal4
+    purpose: drawing
+    gds:
+      - {layer: 146, datatype: 0}
+    role: metal
+    available: false
+  -
+    name: via4
+    purpose: drawing
+    gds:
+      - {layer: 147, datatype: 0}
+    role: cut
+    available: false
+  -
+    name: metal5
+    purpose: drawing
+    gds:
+      - {layer: 148, datatype: 0}
+    role: metal
+    available: false
+  -
+    name: via5
+    purpose: drawing
+    gds:
+      - {layer: 149, datatype: 0}
+    role: cut
+    available: false
+  -
+    name: metal6
+    purpose: drawing
+    gds:
+      - {layer: 150, datatype: 0}
+    role: metal
+    available: false
+  -
+    name: glass
+    purpose: drawing
+    gds:
+      - {layer: 160, datatype: 0}
+    role: misc
+  -
+    name: pad
+    purpose: drawing
+    gds:
+      - {layer: 161, datatype: 0}
+    role: pad
+  -
+    name: tactive
+    purpose: drawing
+    gds:
+      - {layer: 170, datatype: 0}
+    role: marker
+    available: false
+    note: "Legacy SCMOS thick-active alias; XH profiles use explicit HV markers"
+  -
+    name: hv_n_marker
+    purpose: drawing
+    gds:
+      - {layer: 171, datatype: 0}
+    role: marker
+    note: "Provisional logical HV-N marker; no public X-FAB GDS stream mapping"
+  -
+    name: hv_p_marker
+    purpose: drawing
+    gds:
+      - {layer: 172, datatype: 0}
+    role: marker
+    note: "Provisional logical HV-P marker; no public X-FAB GDS stream mapping"
+  -
+    name: hv_marker
+    purpose: drawing
+    gds:
+      - {layer: 173, datatype: 0}
+    role: marker
+    note: "Optional common HV marker"
+  -
+    name: drift_n
+    purpose: drawing
+    gds:
+      - {layer: 174, datatype: 0}
+    role: implant
+    note: "Provisional N drift implant marker for LDMOS/DMOS recognition"
+  -
+    name: drift_p
+    purpose: drawing
+    gds:
+      - {layer: 175, datatype: 0}
+    role: implant
+    note: "Provisional P drift implant marker for LDMOS/DMOS recognition"
+  -
+    name: nodrc
+    purpose: drawing
+    gds:
+      - {layer: 190, datatype: 0}
+    role: misc
+  -
+    name: nolpe
+    purpose: drawing
+    gds:
+      - {layer: 191, datatype: 0}
+    role: misc
+  -
+    name: cap_id
+    purpose: drawing
+    gds:
+      - {layer: 192, datatype: 0}
+    role: misc
+    available: false
+  -
+    name: res_id
+    purpose: drawing
+    gds:
+      - {layer: 193, datatype: 0}
+    role: resistor
+    available: false
+  -
+    name: dio_id
+    purpose: drawing
+    gds:
+      - {layer: 194, datatype: 0}
+    role: misc
+    available: false

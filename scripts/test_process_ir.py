@@ -11,7 +11,13 @@ ROOT = SCRIPT_DIR.parent
 sys.path.insert(0, str(ROOT))
 
 from common.devices.netlist import validate_netlist_contracts  # noqa: E402
-from common.process_ir import load_process, profile_names  # noqa: E402
+from common.process_ir import (  # noqa: E402
+    HVCMOS_LAMBDA_OVERRIDE,
+    ProcessIRError,
+    load_process,
+    profile_names,
+    validate_hvcmos_lambda_override,
+)
 
 
 def main() -> int:
@@ -54,6 +60,38 @@ def main() -> int:
     openrule_model = processes["openrule1um"].model_ir("or1_nmos")
     assert openrule_model.capabilities.simulator
     assert openrule_model.authority == "simulation"
+
+    # --- HVCMOS lambda-rule override gate (SCMOS 7.2 has no HV rules) ------
+    hv_rule = {"id": "HV.1", "family": "hvcmos", "layer": "nwell",
+               "value_um": 7.2, "source": "scmos.tech.in 20.x", "note": "override-gated"}
+    src = Path("rules.yaml")
+    rules_with_hv = {"rules": {"spacing": [{"id": "1.2", "layer": "nwell",
+                                            "value_um": 5.4}, hv_rule]}}
+    try:
+        validate_hvcmos_lambda_override(rules_with_hv, {"features": {}}, src)
+    except ProcessIRError as exc:
+        assert "hvcmos" in str(exc) and HVCMOS_LAMBDA_OVERRIDE in str(exc)
+    else:
+        raise AssertionError("hvcmos lambda rules accepted without override")
+    # explicit opt-in feature permits the gated rules
+    validate_hvcmos_lambda_override(
+        rules_with_hv, {"features": {HVCMOS_LAMBDA_OVERRIDE: True}}, src
+    )
+    # override flag without any hvcmos rule is an error too
+    try:
+        validate_hvcmos_lambda_override(
+            {"rules": {"width": [{"id": "3.1", "layer": "poly", "value_um": 0.6}]}},
+            {"features": {HVCMOS_LAMBDA_OVERRIDE: True}},
+            src,
+        )
+    except ProcessIRError as exc:
+        assert "remove the flag" in str(exc)
+    else:
+        raise AssertionError("orphan hvcmosLambdaOverride flag accepted")
+    # no profile may carry the flag or the family today (default = none)
+    for name, process in processes.items():
+        features = process.meta.get("features") or {}
+        assert not features.get(HVCMOS_LAMBDA_OVERRIDE), f"{name}: hvcmos override on by default"
 
     print(f"ProcessIR contract checks: PASS ({len(processes)} profiles)")
     return 0

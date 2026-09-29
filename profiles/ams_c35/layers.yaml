@@ -1,0 +1,173 @@
+# profiles/ams_c35/layers.yaml — normalized from austriamicrosystems 0.35um
+# C35 process family (ENG-183 Rev 5.0 "0.35 um CMOS C35 Design Rules").
+#
+# C35 is the 0.35um mixed-signal CMOS process family from
+# austriamicrosystems (ams), licensed from TSMC and fully compatible with the
+# TSMC 0.35um mixed-signal base process.  MOSIS SCMOS maps the TSMC 0.35um
+# 2P4M option to SCN4ME_SUBM with lambda = 0.20um; this profile uses that
+# abstraction with the explicit ams exceptions recorded in rules.yaml
+# (via size override, select/active overlap 0.45, N+/P+ enclosure of
+# diffusion contacts 0.25, stacked vias allowed).
+#
+# Variant: C35B4C3 (4-metal core + PIP capacitor + high-resistive poly).
+# C35B4C3 GDS streams are kept separately in gds_layer_map.yaml.  That file
+# records the public C35B4 HIT-Kit runset snapshot, while these entries are the
+# siliconcraft logical-layer aliases consumed by all geometry generators.
+# The current licensed AMS/CMC kit remains the tapeout authority.
+meta:
+  name: ams_c35
+  process: C35B4C3
+  foundry: austriamicrosystems
+  description: "ams C35 0.35um mixed-signal CMOS (TSMC-licensed base); SCN4ME_SUBM SCMOS_SUBM abstraction at lambda 0.2um with ENG-183 exceptions"
+  node_um: 0.35
+  lambda_um: 0.2
+  grid_um: 0.025
+  min_channel_um: 0.35
+  min_width_um: 0.3
+  model_prefix: c35
+  well_type: n
+  rule_family: scmos_subm
+  stacked_vias: true
+  features:
+    elecAvailable: true
+    polycapAvailable: true
+    highresAvailable: true
+    metal3Available: true
+    metal4Available: true
+    metalcapAvailable: false
+    cwellAvailable: false
+    sblockAvailable: false
+    npnAvailable: false
+    pnpAvailable: false
+    ccdAvailable: false
+    hvAvailable: false
+    memsAvailable: false
+    pselectFromActive: false
+  license: "ams ENG documents are company confidential; this profile records rule values from the public ENG-183 Rev 5.0 copy (educational use)."
+  gds_layer_map: "gds_layer_map.yaml"
+  gds_output_policy: "reference_map_only; current licensed AMS/CMC stream map and foundry DRC/LVS required for tapeout"
+  sources:
+    - "https://opencourses.emu.edu.tr/pluginfile.php/31894/mod_resource/content/1/Process%20Design%20Rules.pdf (ENG-183 Rev 5.0)"
+    - "https://raw.githubusercontent.com/jjwikner/daisy/c6d8341f36d734a55b9ac0902547744c93cd4cd6/daisy/pdk/ams035/pv/calibre/cac35b4rules_all.run (public C35B4 HIT-Kit rule snapshot; layer declarations)"
+    - "https://www.cmc.ca/ams-350-nm-cmos-basic/ (official C35B4C3 process identity)"
+    - "https://www.cmc.ca/ams-0-35-%C2%B5m-design-kits/ (licensed kit/DRM access requirement)"
+layers:
+  -
+    name: nwell
+    purpose: drawing
+    gds:
+      - {layer: 5, datatype: 0}
+    role: well
+    note: "ams NTUB; width >= 1.7um, same-potential spacing >= 1.0um"
+  -
+    name: active
+    purpose: drawing
+    gds:
+      - {layer: 10, datatype: 0}
+    role: active
+    note: "ams DIFF; width >= 0.4um (device) / 0.3um (interconnect), spacing >= 0.6um"
+  -
+    name: poly
+    purpose: drawing
+    gds:
+      - {layer: 20, datatype: 0}
+    role: gate
+    note: "ams POLY1; gate length >= 0.35um, interconnect width >= 0.35um, spacing >= 0.45um"
+  -
+    name: elec
+    purpose: drawing
+    gds:
+      - {layer: 30, datatype: 0}
+    role: capacitor
+    note: "ams POLY2; PiP capacitor plate (CPOLY = POLY1 & POLY2), width >= 0.65um"
+  -
+    name: nselect
+    purpose: drawing
+    gds:
+      - {layer: 23, datatype: 0}
+    role: select
+    note: "ams NPLUS; N+ implant, width >= 0.6um, overlap of DIFF >= 0.45um (exception)"
+  -
+    name: pselect
+    purpose: drawing
+    gds:
+      - {layer: 24, datatype: 0}
+    role: select
+    note: "ams PPLUS; P+ implant, width >= 0.6um, overlap of DIFF >= 0.45um (exception)"
+  -
+    name: cc
+    purpose: drawing
+    gds:
+      - {layer: 34, datatype: 0}
+    role: cut
+    note: "ams CONT; single contact layer (DIFF/POLY1/POLY2 cuts), fixed 0.4um; ca/cp/ce derived"
+  -
+    name: metal1
+    purpose: drawing
+    gds:
+      - {layer: 35, datatype: 0}
+    role: metal
+    note: "ams MET1; width >= 0.5um, spacing >= 0.45um"
+  -
+    name: via
+    purpose: drawing
+    gds:
+      - {layer: 36, datatype: 0}
+    role: cut
+    note: "ams VIA1; fixed 0.5um (exception override of SCMOS 2lambda), spacing >= 0.45um"
+  -
+    name: metal2
+    purpose: drawing
+    gds:
+      - {layer: 37, datatype: 0}
+    role: metal
+    note: "ams MET2; width >= 0.6um, spacing >= 0.5um"
+  -
+    name: via2
+    purpose: drawing
+    gds:
+      - {layer: 38, datatype: 0}
+    role: cut
+    note: "ams VIA2; fixed 0.5um (exception override), spacing >= 0.45um"
+  -
+    name: metal3
+    purpose: drawing
+    gds:
+      - {layer: 39, datatype: 0}
+    role: metal
+    note: "ams MET3; width >= 0.6um, spacing >= 0.6um"
+  -
+    name: via3
+    purpose: drawing
+    gds:
+      - {layer: 41, datatype: 0}
+    role: cut
+    note: "ams VIA3 (Metal 4 module); fixed 0.5um (exception override), spacing >= 0.45um"
+  -
+    name: metal4
+    purpose: drawing
+    gds:
+      - {layer: 42, datatype: 0}
+    role: metal
+    note: "ams MET4 (thin Metal 4 module); width >= 0.6um, spacing >= 0.6um"
+  -
+    name: highres
+    purpose: drawing
+    gds:
+      - {layer: 29, datatype: 0}
+    role: resistor
+    note: "ams HRES; high-resistive poly, width >= 0.6um, spacing >= 0.6um"
+  -
+    name: pad
+    purpose: drawing
+    gds:
+      - {layer: 40, datatype: 0}
+    role: pad
+    note: "ams PAD; width >= 15um (bonding pad >= 85um), spacing >= 15um"
+  -
+    name: glass
+    purpose: drawing
+    gds:
+      - {layer: 40, datatype: 0}
+    role: misc
+    note: "ams PAD aliased as SCMOS glass (pad opening); metal enclosure of pad >= 5um"

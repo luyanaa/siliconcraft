@@ -25,8 +25,97 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from common.pcells.scmos import Profile, register_profile  # noqa: E402
+from common.gds_layer_map import (  # noqa: E402
+    auxiliary_stream,
+    gds_text_stream,
+    validate_layout_layer_pairs,
+    validate_profile_gds_map,
+)
+from common.stdcell.process import StdcellProcess  # noqa: E402
 
+def render_tap(top, layout, layer, process, tap):
+    """Render the small self-tap geometry without the analog PCell library."""
+    tech = process.tech
+    rows = max(1, int(tap["rows"]))
+    columns = max(1, int(tap["columns"]))
+    size = tech.contact_size
+    spacing = tech.contact_spacing
+    contact_w = columns * size + (columns - 1) * spacing
+    contact_h = rows * size + (rows - 1) * spacing
+    left = -contact_w / 2.0
+    bottom = -contact_h / 2.0
+    x_offset = float(tap["x_um"])
+    y_offset = float(tap["y_um"])
+
+    def rect(logical, x0, y0, x1, y1):
+        top.shapes(layer(logical)).insert(
+            pya.Box(
+                db(x_offset + x0, layout.dbu),
+                db(y_offset + y0, layout.dbu),
+                db(x_offset + x1, layout.dbu),
+                db(y_offset + y1, layout.dbu),
+            )
+        )
+
+    for column in range(columns):
+        for row in range(rows):
+            x = left + column * (size + spacing)
+            y = bottom + row * (size + spacing)
+            rect("cc", x, y, x + size, y + size)
+    active_enc = tech.active_contact_enc
+    active_left = left - active_enc
+    active_bottom = bottom - active_enc
+    active_right = left + contact_w + active_enc
+    active_top = bottom + contact_h + active_enc
+    if active_right - active_left < tech.active_min:
+        extra = (tech.active_min - (active_right - active_left)) / 2.0
+        active_left -= extra
+        active_right += extra
+    if active_top - active_bottom < tech.active_min:
+        extra = (tech.active_min - (active_top - active_bottom)) / 2.0
+        active_bottom -= extra
+        active_top += extra
+    rect("active", active_left, active_bottom, active_right, active_top)
+    metal_enc = tech.metal_contact_enc
+    rect(
+        "metal1",
+        left - metal_enc,
+        bottom - metal_enc,
+        left + contact_w + metal_enc,
+        bottom + contact_h + metal_enc,
+    )
+    select = "nselect" if tap["cell"].lower() == "ntap" else "pselect"
+    select_layer = process.ir.layers.get(select)
+    select_available = bool(select_layer and select_layer.get("available", True))
+    select_enc = tech.select_active_enc
+    if select_available:
+        rect(
+            select,
+            active_left - select_enc,
+            active_bottom - select_enc,
+            active_right + select_enc,
+            active_top + select_enc,
+        )
+    elif not (
+        select == "pselect"
+        and process.ir.layers_doc.get("meta", {}).get("features", {}).get("pselectFromActive")
+    ):
+        raise RuntimeError(f"{process.profile_name}: tap requires layer {select}")
+    if select == "nselect":
+        well_extent = tech.nwell_active_enc
+        well_left = active_left - well_extent
+        well_bottom = active_bottom - well_extent
+        well_right = active_right + well_extent
+        well_top = active_top + well_extent
+        if well_right - well_left < tech.nwell_min_width:
+            extra = (tech.nwell_min_width - (well_right - well_left)) / 2.0
+            well_left -= extra
+            well_right += extra
+        if well_top - well_bottom < tech.nwell_min_width:
+            extra = (tech.nwell_min_width - (well_top - well_bottom)) / 2.0
+            well_bottom -= extra
+            well_top += extra
+        rect("nwell", well_left, well_bottom, well_right, well_top)
 
 def db(value: float, dbu: float) -> int:
     return int(round(float(value) / dbu))
@@ -62,10 +151,10 @@ def main() -> int:
     payload = json.loads(manifest_path.read_text())
     candidate = payload["candidates"][candidate_index]
     profile_name = payload["process"]["profile"]
+    process = StdcellProcess.load(profile_name, ROOT)
+    profile = process.profile
     profile_dir = ROOT / "profiles" / profile_name
-    profile = Profile(profile_dir)
-    library_name = f"siliconcraft_{profile_name}"
-    register_profile(profile_dir, library_name)
+    validate_profile_gds_map(profile_dir, profile.layers_doc)
 
     layout = pya.Layout()
     layout.dbu = 0.001
@@ -80,107 +169,75 @@ def main() -> int:
         "M2": "metal2",
         "M3": "metal3",
         "POLY": "poly",
+        "CC": "cc",
+        "CP": "cc",
         "VIA12": "via",
         "VIA23": "via2",
     }
     layer_cache = {}
 
     def layer(logical):
-        if logical not in layer_cache:
-            physical_name = physical[logical]
-            layer_cache[logical] = layout.layer(profile.layer_info(physical_name))
-        return layer_cache[logical]
+        key = str(logical).upper()
+        physical_name = physical.get(key, str(logical).lower())
+        if physical_name not in layer_cache:
+            layer_cache[physical_name] = layout.layer(profile.layer_info(physical_name))
+        return layer_cache[physical_name]
 
-    for device in candidate["devices"]:
-        pcell_name = "nmos" if device["polarity"] == "n" else "pmos"
-        pcell = layout.create_cell(
-            pcell_name,
-            library_name,
-            {
-                "nf": device["nf"],
-                "m": 1,
-                "w_um": device["width_per_finger_um"],
-                "l_um": device["length_um"],
-                "left_contact": "left" not in device.get("contactless_sides", ()),
-                "right_contact": "right" not in device.get("contactless_sides", ()),
-            },
-        )
-        if pcell is None:
-            raise RuntimeError(f"KLayout failed to instantiate {pcell_name}")
-        top.insert(
-            pya.CellInstArray(
-                pcell.cell_index(),
-                pya.Trans(db(device["x_um"], layout.dbu), db(device["y_um"], layout.dbu)),
-            )
-        )
-
-    pmos = [device for device in candidate["devices"] if device["polarity"] == "p"]
-    if pmos:
-        x0 = min(device["x_um"] - device["footprint"]["width_um"] / 2.0 for device in pmos)
-        y0 = min(device["y_um"] - device["footprint"]["height_um"] / 2.0 for device in pmos)
-        x1 = max(device["x_um"] + device["footprint"]["width_um"] / 2.0 for device in pmos)
-        y1 = max(device["y_um"] + device["footprint"]["height_um"] / 2.0 for device in pmos)
-        top.shapes(layer("NWELL")).insert(
-            pya.Box(
-                db(x0, layout.dbu),
-                db(y0, layout.dbu),
-                db(x1, layout.dbu),
-                db(y1, layout.dbu),
-            )
-        )
-    for bridge in candidate["geometry"].get("diffusion_bridges", ()):
-        logical = bridge["layer"]
-        if logical not in physical:
-            continue
-        top.shapes(layer(logical)).insert(
-            pya.Box(
-                db(bridge["x0"], layout.dbu),
-                db(bridge["y0"], layout.dbu),
-                db(bridge["x1"], layout.dbu),
-                db(bridge["y1"], layout.dbu),
-            )
-        )
+    rows = candidate["geometry"].get("rows", {})
+    if not rows:
+        raise RuntimeError("candidate manifest has no row-level geometry")
+    for row in rows.values():
+        for shape_group in ("active", "select", "wells", "gates", "contacts"):
+            for shape in row.get(shape_group, ()):
+                if (
+                    str(shape["layer"]).upper() == "PSELECT"
+                    and not bool(
+                        process.ir.layers.get("pselect")
+                        and process.ir.layers["pselect"].get("available", True)
+                    )
+                    and process.ir.layers_doc.get("meta", {}).get("features", {}).get("pselectFromActive")
+                ):
+                    continue
+                top.shapes(layer(shape["layer"])).insert(
+                    pya.Box(
+                        db(shape["x0"], layout.dbu),
+                        db(shape["y0"], layout.dbu),
+                        db(shape["x1"], layout.dbu),
+                        db(shape["y1"], layout.dbu),
+                    )
+                )
 
     cell_width = candidate["geometry"]["width_um"]
     cell_height = candidate["geometry"]["height_um"]
     support_taps = candidate.get("support_taps", ())
     for tap in support_taps:
-        tap_cell = layout.create_cell(
-            tap["cell"],
-            library_name,
-            {"rows": tap["rows"], "columns": tap["columns"]},
+        render_tap(top, layout, layer, process, tap)
+
+    substrate_stream = auxiliary_stream(profile_dir, "substrate_universe")
+    if substrate_stream is not None:
+        # Legacy SCMOS profiles use this helper layer for substrate extraction.
+        # AMS C35 deliberately leaves it unset: 90/0 is not a C35 stream.
+        max_support_x = max(
+            [cell_width, *(tap["x_um"] for tap in support_taps)]
         )
-        if tap_cell is None:
-            raise RuntimeError(f"KLayout failed to instantiate {tap['cell']}")
-        top.insert(
-            pya.CellInstArray(
-                tap_cell.cell_index(),
-                pya.Trans(db(tap["x_um"], layout.dbu), db(tap["y_um"], layout.dbu)),
+        top.shapes(layout.layer(*substrate_stream)).insert(
+            pya.Box(
+                db(-20.0, layout.dbu),
+                db(-20.0, layout.dbu),
+                db(max_support_x + 20.0, layout.dbu),
+                db(cell_height + 20.0, layout.dbu),
             )
         )
 
-    # Preserve the substrate universe used by the authoritative SCMOS
-    # extraction/DRC decks; without it pBulk is clipped at the top-cell bbox.
-    max_support_x = max(
-        [cell_width, *(tap["x_um"] for tap in support_taps)]
-    )
-    top.shapes(layout.layer(90, 0)).insert(
-        pya.Box(
-            db(-20.0, layout.dbu),
-            db(-20.0, layout.dbu),
-            db(max_support_x + 20.0, layout.dbu),
-            db(cell_height + 20.0, layout.dbu),
-        )
-    )
-
     widths = {
-        "M1": profile.rule_or("width", "7.1", "metal1", None, 3 * profile.lambda_um),
-        "M2": profile.rule_or("width", "9.1", "metal2", None, 3 * profile.lambda_um),
-        "M3": profile.rule_or("width", "15.1", "metal3", None, 3 * profile.lambda_um),
-        "POLY": profile.rule_or("width", "3.1", "poly", None, 2 * profile.lambda_um),
-        "VIA12": 2 * profile.lambda_um,
-        "VIA23": 2 * profile.lambda_um,
+        "M1": process.metal_width_um("M1"),
+        "M2": process.metal_width_um("M2"),
+        "POLY": profile.rule_value("width", "3.1", "poly", None),
+        "VIA12": process.via_size_um("M1", "M2"),
     }
+    if process.has_layer("M3"):
+        widths["M3"] = process.metal_width_um("M3")
+        widths["VIA23"] = process.via_size_um("M2", "M3")
     for segment in candidate["routing"]["segments"]:
         logical = segment["layer"]
         if logical not in physical:
@@ -198,9 +255,15 @@ def main() -> int:
         )
 
     via_layers = {
-        "VIA12": ("M1", "M2", "8.3", "9.3", "via"),
-        "VIA23": ("M2", "M3", "14.3", "15.3", "via2"),
+        "VIA12": ("M1", "M2", process.tech.via_lower_enc, process.tech.via_upper_enc),
     }
+    if process.has_layer("M3"):
+        via_layers["VIA23"] = (
+            "M2",
+            "M3",
+            process.tech.via2_lower_enc,
+            process.tech.via2_upper_enc,
+        )
     for via in candidate["routing"]["via_blockage_map"]:
         top.shapes(layer(via["layer"])).insert(
             pya.Box(
@@ -210,14 +273,8 @@ def main() -> int:
                 db(via["y1"], layout.dbu),
             )
         )
-        lower, upper, lower_rule, upper_rule, rule_layer = via_layers[via["layer"]]
+        lower, upper, lower_enc, upper_enc = via_layers[via["layer"]]
         via_size = max(via["x1"] - via["x0"], via["y1"] - via["y0"])
-        lower_enc = profile.rule_or(
-            "enclosure", lower_rule, physical[lower], rule_layer, profile.lambda_um
-        )
-        upper_enc = profile.rule_or(
-            "enclosure", upper_rule, physical[upper], rule_layer, profile.lambda_um
-        )
         center_x = (via["x0"] + via["x1"]) / 2.0
         center_y = (via["y0"] + via["y1"]) / 2.0
         for metal, enclosure in ((lower, lower_enc), (upper, upper_enc)):
@@ -230,10 +287,20 @@ def main() -> int:
                     db(center_y + landing_half, layout.dbu),
                 )
             )
+    for shape in candidate["routing"].get("pin_shapes", ()):
+        top.shapes(layer(shape["layer"])).insert(
+            pya.Box(
+                db(shape["x0"], layout.dbu),
+                db(shape["y0"], layout.dbu),
+                db(shape["x1"], layout.dbu),
+                db(shape["y1"], layout.dbu),
+            )
+        )
 
-    text_layer = layout.layer(64, 0)
-
-    def label(name, x_um, y_um):
+    def label(name, x_um, y_um, logical_layer_name="M1"):
+        text_layer = layout.layer(
+            *gds_text_stream(profile_dir, logical_layer_name, "net")
+        )
         top.shapes(text_layer).insert(
             pya.Text(name, pya.Trans(pya.DPoint(x_um, y_um).to_itype(layout.dbu)))
         )
@@ -247,12 +314,22 @@ def main() -> int:
         ]
         if gate_segments:
             segment = gate_segments[0]
-            label(name, segment["x0"], (segment["y0"] + segment["y1"]) / 2.0)
+            label(
+                name,
+                segment["x0"],
+                (segment["y0"] + segment["y1"]) / 2.0,
+                segment["layer"],
+            )
             continue
         net_segments = [segment for segment in segments if segment["net"] == name]
         if net_segments:
             segment = net_segments[0]
-            label(name, (segment["x0"] + segment["x1"]) / 2.0, (segment["y0"] + segment["y1"]) / 2.0)
+            label(
+                name,
+                (segment["x0"] + segment["x1"]) / 2.0,
+                (segment["y0"] + segment["y1"]) / 2.0,
+                segment["layer"],
+            )
 
     for supply in ("VDD", "VSS"):
         rails = [
@@ -262,36 +339,29 @@ def main() -> int:
         ]
         if rails:
             rail = rails[0]
-            label(supply, (rail["x0"] + rail["x1"]) / 2.0, (rail["y0"] + rail["y1"]) / 2.0)
+            label(
+                supply,
+                (rail["x0"] + rail["x1"]) / 2.0,
+                (rail["y0"] + rail["y1"]) / 2.0,
+                rail["layer"],
+            )
 
     for tap in support_taps:
-        label(tap["net"], tap["x_um"], tap["y_um"])
+        label(tap["net"], tap["x_um"], tap["y_um"], "M1")
 
-    for device in candidate["devices"]:
-        footprint = device["footprint"]
-        contactless = set(device.get("contactless_sides", ()))
-        if "left" not in contactless:
-            label(
-                device["left_net"],
-                device["x_um"] + footprint["left_contact_x_um"],
-                device["y_um"],
-            )
-        if "right" not in contactless:
-            label(
-                device["right_net"],
-                device["x_um"] + footprint["right_contact_x_um"],
-                device["y_um"],
-            )
-
-    for device in candidate["devices"]:
-        if device["polarity"] != "p":
-            continue
-        # Label the n-well away from the active/poly center so LVS can name
-        label(
-            "VDD",
-            device["x_um"],
-            device["y_um"] + device["footprint"]["height_um"] / 2.0 - profile.lambda_um,
-        )
+    for row in rows.values():
+        for name, x_um, y_um in row.get("labels", ()):
+            label(name, x_um, y_um, "M1")
+        for well in row.get("wells", ()):
+            if well.get("net"):
+                # Keep the well label inside NWELL but outside active/poly;
+                # a center label can land on the row's common gate.
+                label(
+                    well["net"],
+                    well["x0"] + profile.lambda_um,
+                    (well["y0"] + well["y1"]) / 2.0,
+                )
+    validate_layout_layer_pairs(layout, profile_dir)
 
     output = output if output.is_absolute() else ROOT / output
     output.parent.mkdir(parents=True, exist_ok=True)

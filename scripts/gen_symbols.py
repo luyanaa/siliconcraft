@@ -17,6 +17,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "scripts"))
+
+import yamlish  # noqa: E402
 
 from common.devices.netlist import netlist_contract  # noqa: E402
 from common.process_ir import load_process  # noqa: E402
@@ -104,6 +107,27 @@ def emit_gnd(entry):
             "L 4 -1.5 19 1.5 19 {}\n")
 
 
+def emit_box(entry):
+    """Generic N-terminal box symbol: rectangle with pins placed by the
+    'side' hint in the pin entry (west/east/south/north); default west.
+    Pin coordinates are emitted by gen() from the yaml pins."""
+    w = entry.get("box_w", 30)
+    h = entry.get("box_h", 20)
+    return (f"L 4 {-w/2} {-h/2} {w/2} {-h/2} {{}}\n"
+            f"L 4 {w/2} {-h/2} {w/2} {h/2} {{}}\n"
+            f"L 4 {w/2} {h/2} {-w/2} {h/2} {{}}\n"
+            f"L 4 {-w/2} {h/2} {-w/2} {-h/2} {{}}\n")
+
+
+def emit_bjt(entry):
+    """Three-terminal BJT: collector east, base west, emitter south.
+    Emits a simple transistor-style body; pins come from the yaml."""
+    return ("L 4 -15 0 0 0 {}\n"
+            "L 4 0 0 15 0 {}\n"
+            "L 4 0 0 0 10 {}\n"
+            "L 4 0 10 0 20 {}\n")
+
+
 def template_string(template):
     fields = []
     for key, value in template.items():
@@ -155,6 +179,12 @@ def gen(profile_dir, sym_name, ui_entry, netlist_entry, contract=None):
         lines.append(emit_gnd(entry))
     elif kind == "lab_pin":
         lines.append(emit_lab_pin(entry))
+    elif kind == "box":
+        lines.append(emit_box(entry))
+    elif kind == "bjt":
+        lines.append(emit_bjt(entry))
+    else:
+        raise SystemExit(f"unknown symbol kind {kind!r} for {sym_name}")
     for pin in pins:
         goto = " goto=0" if kind == "gnd" else ""
         lines.append(
@@ -180,8 +210,18 @@ def main():
     symbols_path = profile_dir / "symbols.yaml"
     if not symbols_path.exists():
         raise SystemExit(f"no symbols.yaml in {profile_dir}")
-    table = process.symbols
-    netlist_table = process.symbol_netlist
+    table = dict(process.symbols)
+    netlist_table = dict(process.symbol_netlist)
+    # Merge generated APDK library symbols (profiles/<p>/symbols.gen.yaml
+    # and devices/symbol_netlist.gen.yaml, emitted by the APDK extractor).
+    gen_sym = profile_dir / "symbols.gen.yaml"
+    if gen_sym.exists():
+        doc = yamlish.load(gen_sym.read_text())
+        table.update(doc.get("symbols", {}))
+    gen_nl = profile_dir / "devices" / "symbol_netlist.gen.yaml"
+    if gen_nl.exists():
+        doc = yamlish.load(gen_nl.read_text())
+        netlist_table.update(doc.get("symbols", {}))
     if not table:
         raise SystemExit(f"{symbols_path}: missing 'symbols' section")
 

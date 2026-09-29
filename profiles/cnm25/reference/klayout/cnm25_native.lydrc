@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description>CNM25 native DRC (1:1 port of the APDK cnm25drc.py)</description>
+ <version/>
+ <category>drc</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>true</show-in-menu>
+ <group-name>drc_scripts</group-name>
+ <menu-path>tools_menu.drc.end</menu-path>
+ <interpreter>dsl</interpreter>
+ <dsl-interpreter-name>drc-dsl-xml</dsl-interpreter-name>
+ <text>
+#
+#    CNM25 native DRC — 1:1 port of the APDK verification/cnm25drc.py
+#
+#    Rules: APDK CNM25 design rules 0.0 .. 10.1 (doc/apdk_cnm25_v2024_04_09.pdf
+#    Table 2), um values on the 0.25um design grid.
+#
+#    Usage: klayout -b -r cnm25_native.lydrc -rd input=in.gds -rd output=out.lyrdb
+#
+########################
+if $input
+  if $topcell
+    source($input, $topcell)
+  else
+    source($input)
+  end
+end
+
+if $output
+  report(&quot;CNM25 native DRC&quot;, $output)
+else
+  report(&quot;CNM25 native DRC&quot;, &quot;cnm25_native.lyrdb&quot;)
+end
+
+GRID = 0.25
+
+# raw layers (APDK names, GDS number/datatype from cnm25.tch)
+NTUB   = input(1, 0)   # N-well
+GASAD  = input(2, 0)   # active area
+POLY0  = input(3, 0)   # PiP capacitor poly
+POLY1  = input(4, 0)   # gate / interconnect poly
+NPLUS  = input(5, 0)   # N implant
+WINDOW = input(6, 0)   # contact window
+METAL  = input(7, 0)   # metal 1
+CAPS   = input(8, 0)   # passivation window
+METAL2 = input(9, 0)   # metal 2
+VIA    = input(10, 0)  # metal1-metal2 via
+
+# derived layers (cnm25drc.py)
+gate          = POLY1 &amp; GASAD
+ngate         = gate &amp; NPLUS
+pgate         = gate - ngate
+cpoly         = POLY1 &amp; POLY0
+polygatecont  = POLY1 &amp; WINDOW
+polycapcont   = POLY0 &amp; WINDOW
+activecont    = GASAD &amp; WINDOW
+allcon        = polygatecont + polycapcont + activecont
+badcon        = allcon - METAL
+metal1via     = METAL &amp; VIA
+badvia        = metal1via - METAL2
+diff          = GASAD - gate
+ndiff         = diff &amp; NPLUS
+pdiff         = diff - NPLUS
+ntap          = ndiff &amp; NTUB
+ptap          = pdiff - NTUB
+
+########################
+# 0.0 off-grid (0.25um x 0.25um)
+########################
+NTUB.ongrid(GRID).output(&quot;0.0&quot;, &quot;0.0: NTUB off-grid&quot;)
+GASAD.ongrid(GRID).output(&quot;0.0&quot;, &quot;0.0: GASAD off-grid&quot;)
+POLY0.ongrid(GRID).output(&quot;0.0&quot;, &quot;0.0: POLY0 off-grid&quot;)
+POLY1.ongrid(GRID).output(&quot;0.0&quot;, &quot;0.0: POLY1 off-grid&quot;)
+NPLUS.ongrid(GRID).output(&quot;0.0&quot;, &quot;0.0: NPLUS off-grid&quot;)
+WINDOW.ongrid(GRID).output(&quot;0.0&quot;, &quot;0.0: WINDOW off-grid&quot;)
+METAL.ongrid(GRID).output(&quot;0.0&quot;, &quot;0.0: METAL off-grid&quot;)
+VIA.ongrid(GRID).output(&quot;0.0&quot;, &quot;0.0: VIA off-grid&quot;)
+METAL2.ongrid(GRID).output(&quot;0.0&quot;, &quot;0.0: METAL2 off-grid&quot;)
+CAPS.ongrid(GRID).output(&quot;0.0&quot;, &quot;0.0: CAPS off-grid&quot;)
+
+########################
+# 1.x N-well
+########################
+NTUB.width(8.0, euclidian).output(&quot;1.1&quot;, &quot;1.1: NTUB width &lt; 8um&quot;)
+NTUB.isolated(8.0, euclidian).output(&quot;1.2&quot;, &quot;1.2: NTUB spacing &lt; 8um&quot;)
+NTUB.notch(8.0, euclidian).output(&quot;1.2&quot;, &quot;1.2: NTUB notch &lt; 8um&quot;)
+
+########################
+# 2.x GASAD
+########################
+GASAD.width(2.0, euclidian).output(&quot;2.1&quot;, &quot;2.1: GASAD width &lt; 2um&quot;)
+GASAD.isolated(4.0, euclidian).output(&quot;2.2&quot;, &quot;2.2: GASAD spacing &lt; 4um&quot;)
+GASAD.notch(4.0, euclidian).output(&quot;2.2&quot;, &quot;2.2: GASAD notch &lt; 4um&quot;)
+NTUB.enclosing(pdiff, 5.0, euclidian).output(&quot;2.3&quot;, &quot;2.3: NTUB enclosure of P+ active &lt; 5um&quot;)
+NTUB.separation(ndiff, 5.0, euclidian).output(&quot;2.4&quot;, &quot;2.4: NTUB spacing to N+ active &lt; 5um&quot;)
+
+########################
+# 3.x Poly0
+########################
+POLY0.width(2.5, euclidian).output(&quot;3.1&quot;, &quot;3.1: POLY0 width &lt; 2.5um&quot;)
+POLY0.isolated(6.0, euclidian).output(&quot;3.2&quot;, &quot;3.2: POLY0 spacing &lt; 6um&quot;)
+POLY0.notch(6.0, euclidian).output(&quot;3.2&quot;, &quot;3.2: POLY0 notch &lt; 6um&quot;)
+POLY0.separation(GASAD, 6.0, euclidian).output(&quot;3.3&quot;, &quot;3.3: POLY0 spacing to GASAD &lt; 6um&quot;)
+
+########################
+# 4.x Poly1
+########################
+gate.width(3.0, euclidian).output(&quot;4.1.a&quot;, &quot;4.1.a: POLY1 width inside GASAD &lt; 3um&quot;)
+(POLY1 - gate).width(2.5, euclidian).output(&quot;4.1.b&quot;, &quot;4.1.b: POLY1 width outside GASAD &lt; 2.5um&quot;)
+POLY1.isolated(3.0, euclidian).output(&quot;4.2&quot;, &quot;4.2: POLY1 spacing &lt; 3um&quot;)
+POLY1.notch(3.0, euclidian).output(&quot;4.2&quot;, &quot;4.2: POLY1 notch &lt; 3um&quot;)
+# extension checks via shared edges; split by edge orientation because CNM25
+# PCells draw gates R90 (vertical) while hand layouts may use horizontal ones:
+# horizontal edges need vertical margin, vertical edges need horizontal margin.
+_gate = GASAD &amp; POLY1
+_h = (_gate.edges &amp; POLY1.edges).select { |e| e.dy == 0 }
+_v = (_gate.edges &amp; POLY1.edges).select { |e| e.dx == 0 }
+_h.not_inside(GASAD.sized(0.0, -3.0)).output(&quot;4.3&quot;, &quot;4.3: GASAD extension of POLY1 &lt; 3um&quot;)
+_v.not_inside(GASAD.sized(-3.0, 0.0)).output(&quot;4.3&quot;, &quot;4.3: GASAD extension of POLY1 &lt; 3um&quot;)
+_h2 = (_gate.edges &amp; GASAD.edges).select { |e| e.dy == 0 }
+_v2 = (_gate.edges &amp; GASAD.edges).select { |e| e.dx == 0 }
+_h2.not_inside(POLY1.sized(0.0, -2.5)).output(&quot;4.4&quot;, &quot;4.4: POLY1 extension of GASAD &lt; 2.5um&quot;)
+_v2.not_inside(POLY1.sized(-2.5, 0.0)).output(&quot;4.4&quot;, &quot;4.4: POLY1 extension of GASAD &lt; 2.5um&quot;)
+POLY1.separation(GASAD, 1.25, euclidian).output(&quot;4.5&quot;, &quot;4.5: POLY1 spacing to GASAD &lt; 1.25um&quot;)
+POLY0.enclosing(POLY1, 3.0, euclidian).output(&quot;4.6&quot;, &quot;4.6: POLY0 enclosure of POLY1 &lt; 3um&quot;)
+
+########################
+# 5.x N-plus
+########################
+NPLUS.enclosing(GASAD, 2.5, euclidian).output(&quot;5.1&quot;, &quot;5.1: NPLUS enclosure of GASAD &lt; 2.5um&quot;)
+NPLUS.separation(pdiff, 2.5, euclidian).output(&quot;5.2&quot;, &quot;5.2: NPLUS spacing to P+ active &lt; 2.5um&quot;)
+NPLUS.separation(pgate, 2.0, euclidian).output(&quot;5.3&quot;, &quot;5.3: NPLUS spacing to POLY1 inside P+ active &lt; 2um&quot;)
+((ngate.edges &amp; ngate.edges).not_inside(NPLUS.sized(-1.5))).output(&quot;5.4&quot;, &quot;5.4: NPLUS extension of POLY1 inside N+ active &lt; 1.5um&quot;)
+NPLUS.width(2.5, euclidian).output(&quot;5.5&quot;, &quot;5.5: NPLUS width &lt; 2.5um&quot;)
+NPLUS.isolated(2.5, euclidian).output(&quot;5.6&quot;, &quot;5.6: NPLUS spacing &lt; 2.5um&quot;)
+NPLUS.notch(2.5, euclidian).output(&quot;5.6&quot;, &quot;5.6: NPLUS notch &lt; 2.5um&quot;)
+
+########################
+# 6.x Contact
+########################
+badcon.output(&quot;6.0&quot;, &quot;6.0: Contact without Metal1&quot;)
+WINDOW.width(2.5, euclidian).output(&quot;6.1&quot;, &quot;6.1: Contact size not 2.5um x 2.5um (small)&quot;)
+WINDOW.not(WINDOW.with_area(6.2, 6.3)).output(&quot;6.1&quot;, &quot;6.1: Contact size not 2.5um x 2.5um (oversize)&quot;)
+WINDOW.isolated(3.0, euclidian).output(&quot;6.2&quot;, &quot;6.2: Contact spacing &lt; 3um&quot;)
+WINDOW.notch(3.0, euclidian).output(&quot;6.2&quot;, &quot;6.2: Contact notch &lt; 3um&quot;)
+GASAD.enclosing(WINDOW, 1.0, euclidian).output(&quot;6.3&quot;, &quot;6.3: GASAD enclosure of Contact &lt; 1um&quot;)
+POLY1.enclosing(WINDOW, 1.25, euclidian).output(&quot;6.4&quot;, &quot;6.4: POLY1 enclosure of Contact &lt; 1.25um&quot;)
+polygatecont.separation(GASAD, 2.5, euclidian).output(&quot;6.5&quot;, &quot;6.5: POLY1 Contact spacing to GASAD &lt; 2.5um&quot;)
+WINDOW.separation(gate, 2.0, euclidian).output(&quot;6.6&quot;, &quot;6.6: Contact spacing to POLY1 inside GASAD &lt; 2um&quot;)
+POLY0.enclosing(WINDOW, 4.0, euclidian).output(&quot;6.9&quot;, &quot;6.9: POLY0 enclosure of Contact &lt; 4um&quot;)
+WINDOW.separation(cpoly, 4.0, euclidian).output(&quot;6.10&quot;, &quot;6.10: Contact spacing to POLY1 &amp; POLY0 &lt; 4um&quot;)
+
+########################
+# 7.x Metal1
+########################
+METAL.width(2.5, euclidian).output(&quot;7.1&quot;, &quot;7.1: METAL width &lt; 2.5um&quot;)
+METAL.isolated(3.0, euclidian).output(&quot;7.2&quot;, &quot;7.2: METAL spacing &lt; 3um&quot;)
+METAL.notch(3.0, euclidian).output(&quot;7.2&quot;, &quot;7.2: METAL notch &lt; 3um&quot;)
+METAL.enclosing(WINDOW, 1.25, euclidian).output(&quot;7.3&quot;, &quot;7.3: METAL enclosure of Contact &lt; 1.25um&quot;)
+
+########################
+# 8.x Via
+########################
+badvia.output(&quot;8.0&quot;, &quot;8.0: Via without Metal2&quot;)
+VIA.width(3.0, euclidian).output(&quot;8.1&quot;, &quot;8.1: Via size not 3um x 3um&quot;)
+VIA.not(VIA.with_area(8.9, 9.1)).output(&quot;8.1&quot;, &quot;8.1: Via size not 3um x 3um (oversize)&quot;)
+VIA.isolated(3.5, euclidian).output(&quot;8.2&quot;, &quot;8.2: Via spacing &lt; 3.5um&quot;)
+VIA.notch(3.5, euclidian).output(&quot;8.2&quot;, &quot;8.2: Via notch &lt; 3.5um&quot;)
+METAL.enclosing(VIA, 1.25, euclidian).output(&quot;8.3&quot;, &quot;8.3: METAL enclosure of Via &lt; 1.25um&quot;)
+VIA.separation(WINDOW, 2.5, euclidian).output(&quot;8.4&quot;, &quot;8.4: Via spacing to Contact &lt; 2.5um&quot;)
+VIA.separation(POLY1, 2.5, euclidian).output(&quot;8.5&quot;, &quot;8.5: Via spacing to POLY1 &lt; 2.5um&quot;)
+
+########################
+# 9.x Metal2
+########################
+METAL2.width(3.5, euclidian).output(&quot;9.1&quot;, &quot;9.1: METAL2 width &lt; 3.5um&quot;)
+METAL2.isolated(3.5, euclidian).output(&quot;9.2&quot;, &quot;9.2: METAL2 spacing &lt; 3.5um&quot;)
+METAL2.notch(3.5, euclidian).output(&quot;9.2&quot;, &quot;9.2: METAL2 notch &lt; 3.5um&quot;)
+METAL2.enclosing(VIA, 1.25, euclidian).output(&quot;9.3&quot;, &quot;9.3: METAL2 enclosure of Via &lt; 1.25um&quot;)
+
+########################
+# 10.x Pad
+########################
+CAPS.width(100.0, euclidian).output(&quot;10.1&quot;, &quot;10.1: Pad size not 100um x 100um (small)&quot;)
+CAPS.not(CAPS.with_area(9900.0, 10100.0)).output(&quot;10.1&quot;, &quot;10.1: Pad size not 100um x 100um (exact)&quot;)
+
+</text>
+</klayout-macro>

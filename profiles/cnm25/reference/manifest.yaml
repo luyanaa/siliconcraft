@@ -1,0 +1,41 @@
+# profiles/cnm25/reference/manifest.yaml
+# CNM25 reference collateral adapted from the APDK (IMB-CNM(CSIC)).
+# CNM25 carries TWO DRC abstractions on purpose:
+#   - reference deck here = the NATIVE CNM25 rules (1:1 from APDK
+#     verification/cnm25drc.py, um values, 0.25um grid) — the oracle;
+#   - authoritative deck = classic-SCMOS conservative abstraction
+#     (lambda_cover 1.5um) generated from rules.yaml by scripts/gen_drc.py.
+# The SCMOS abstraction is NOT a signoff substitute: it intentionally covers
+# most native rules conservatively, overrides the contact exact size to the
+# native 2.5um cut, and cannot express POLY1-extension-of-GASAD (4.4) and a
+# few other native terms — the native deck is authoritative for signoff-style
+# checking.
+drc:
+  available: true
+  authoritative: false
+  calibrated: false
+  format: klayout-drc
+  file: klayout/cnm25_native.lydrc
+  source: "apdk_cnm25_v2024_04_09/glade/verification/cnm25drc.py (1:1)"
+  args:
+    - "-rd"
+    - "input=$LAYOUT"
+    - "-rd"
+    - "output=$REPORT"
+  scope: "native CNM25 design rules 0.0 .. 10.1"
+  note: "Oracle deck for the SCMOS-conservative abstraction; grid 0.25um."
+
+lvs:
+  available: true
+  authoritative: true
+  calibrated: false
+  format: klayout-pya
+  file: ../generated/lvs/run.py
+  source: "APDK cnm25lvs.py extraction semantics (MOS + PiP cap from WINDOW/GASAD/POLY1/POLY0/NPLUS/NTUB)"
+  parity_fixture: common/tests/gds/cnm25_pcell_test.gds
+  note: "Shared SCMOS extractor driven by devices.yaml. Verified against APDK PCell geometry (scripts/gen_cnm25_pcell_test_gds.py reproduces cnm25modn_m/cnm25modp_m/cnm25cpoly_m 1:1): NMOS/PMOS extract at the drawn w/l (W = S/D butting edges/2, L = area/W, matching extractMOS), PiP cap = POLY0/POLY1 overlap area. The fixture is also native-DRC clean."
+
+decision:
+  layout_drc_lvs_engine: klayout
+  source: "APDK CNM25 (Glade cnm25drc.py/cnm25lvs.py) + siliconcraft SCMOS engines"
+  rationale: "Two DRC abstractions: native (reference) + SCMOS conservative (authoritative). LVS and PEX stay source-driven through the shared SCMOS machinery; the APDK field-solver (FastCap) C extraction and the FastHenry EM flow are covered by scripts/run_cnm25_em.py and docs/cnm25_em_flow.md."

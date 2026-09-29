@@ -38,9 +38,15 @@ def main() -> int:
     assert (ROOT / contract["readiness_contract"]).exists()
 
     policy = contract["policy"]
-    assert policy["implementation"] == "partial_frontend_geometry_backend"
-    assert policy["first_backend_scope"] == "1um_class_scmos"
-    assert policy["process_optimizer_decoupled"] is True
+    assert policy["implementation"] == "geometry_candidate_planner"
+    assert policy["first_backend_scope"] == "scmos_fixed_height"
+    assert policy["supported_profiles"] == [
+        "ami06",
+        "ami16",
+        "hp06",
+        "cnm25",
+        "ams_c35",
+    ]
     assert policy["solver_escalation"] == "exhaustive_first_then_constraint_solver"
     assert "buried_or_local_interconnect" in policy["unsupported_assumptions"]
 
@@ -55,8 +61,8 @@ def main() -> int:
     assert api["candidate"]["lifecycle"] == EXPECTED_LIFECYCLE
 
     search = contract["search"]
-    assert search["initial_method"] == "exhaustive_enumeration_with_early_pruning"
-    assert search["device_variables"]["nf"]["values"] == [1, 2, 3]
+    assert search["initial_method"] == "exhaustive_enumeration_then_pareto_beam"
+    assert search["device_variables"]["nf"]["values"] == "row_active_capacity_derived"
     assert search["device_variables"]["l"]["optimize_initially"] is False
     assert search["folding"]["every_folding_is_a_candidate"] is True
     assert search["compaction"]["method"] == "difference_constraints_longest_path"

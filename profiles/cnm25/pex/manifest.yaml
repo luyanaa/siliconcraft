@@ -1,0 +1,51 @@
+# CNM25 PEX manifest.
+#
+# The APDK field-solver flow (Glade + FastCap 3D capacitance) is the primary
+# CNM25 parasitic path: its C extraction is solid, while the APDK decks carry
+# no R extraction (the 2D deck is parallel-plate C only, and FastCap is a
+# pure capacitance field solver).  This manifest records the source-driven
+# contract and the 2D parallel-plate densities; the FastCap/FastHenry GDS->EM
+# preparation lives in scripts/run_cnm25_em.py and docs/cnm25_em_flow.md.
+# There is no Magic extraction backend for CNM25 yet, so pex_runtime stays
+# false and pex_rc stays false: capabilities are not claimed.
+schema_version: 2
+profile: cnm25
+default: none
+flow:
+  backend: none
+  source_driven: true
+  original_process: CNM25
+  capacitance_source: "APDK glade/verification/cnm25pex_2d.py (parallel-plate densities) + cnm25.tch FastCap conductor data"
+  contact_policy: "no Magic backend for CNM25 yet; contact/via resistance not extracted (APDK decks are capacitance-only)"
+  parasitic_ownership:
+    transistor_intrinsic_capacitance: model
+    gate_overlap_capacitance: model
+    junction_area_capacitance: model
+    junction_sidewall_capacitance: model
+    diffusion_sheet_resistance: pex
+    gate_sheet_resistance: pex
+    metal_interconnect_rc: pex
+physical:
+  lambda_um: 1.5
+  grid_um: 0.25
+technology:
+  description: "CNM25 source-reference PEX contract (APDK field-solver flow)"
+topology:
+  scope: "CNM25 MOS + PiP capacitor; parasitic C via APDK 2D densities or FastCap 3D; R/EM via FastHenry flow (docs/cnm25_em_flow.md)"
+  note: "no Magic device class: this profile does not claim a Magic extraction backend"
+profiles:
+  none:
+    generated: true
+    status: topology_only
+    description: "CNM25 layer/derived-layer topology contract without PEX coefficients (APDK field-solver flow only)."
+    magic_directives: []
+  apdk_2d_c:
+    generated: false
+    status: source_reference_partial
+    description: "APDK 2D parallel-plate capacitance densities (cnm25pex_2d.py, SiO2 er=3.9, c0=8.854e-12*3.9 F/m): cpoly0sub=cpoly1sub=c0/1.060, cmetal1poly1=cmetal1poly0=cmetal1diff=c0/1.300, cmetal1sub=c0/2.360, cmetal2metal1=c0/1.300, cmetal2poly1=cmetal2poly0=c0/2.600, cmetal2diff=cmetal2sub=c0/3.660 F/m2. Not emitted as a Magic deck."
+    magic_directives: []
+  fastcap_3d:
+    generated: false
+    status: source_reference_partial
+    description: "FastCap 3D capacitance via scripts/run_cnm25_em.py using cnm25.tch conductor data (METAL h=1.0 t=1.0, VIA h=2.0 t=0.8, METAL2 h=2.8 t=1.1 um); bulk/ref node vss."
+    magic_directives: []

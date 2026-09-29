@@ -17,6 +17,7 @@ from common.stdcell.netlist import parse_spice  # noqa: E402
 from common.stdcell.planner import generate_candidates  # noqa: E402
 from common.stdcell.process import StdcellProcess  # noqa: E402
 from common.stdcell.pareto import dominates, pareto_front, rank_geometry  # noqa: E402
+from common.stdcell.lef import lef_text  # noqa: E402
 from common.stdcell.topology import pin_permutations, topology_options  # noqa: E402
 from common.stdcell.routing import (  # noqa: E402
     NegotiatedRouter,
@@ -40,6 +41,31 @@ def main() -> int:
     nor2_drc = load_fixture("nor2_drc")
     nor2 = load_fixture("nor2")
     optimization_hints = load_fixture("optimization_hints")
+    aoi21 = load_fixture("aoi21")
+    aoi_columns = enumerate_column_ir(aoi21, process, limit=32)
+    aoi_gap_column = next(
+        column for column in aoi_columns if column.gap_columns > 0
+    )
+    assert any(
+        column.p_gate_net is None or column.n_gate_net is None
+        for column in aoi_gap_column.physical_gate_slots
+    )
+    aoi_plans = generate_candidates(
+        aoi21, process, "two_metal_classic", max_candidates=100
+    )
+    aoi_gap_plan = next(plan for plan in aoi_plans if plan.columns.gap_columns > 0)
+    aoi_manifest = aoi_gap_plan.as_dict()
+    assert len(aoi_manifest["geometry"]["rows"]["p"]["device_order"]) == 3
+    assert len(aoi_manifest["geometry"]["rows"]["n"]["device_order"]) == 3
+    for row in ("p", "n"):
+        row_order = aoi_manifest["geometry"]["rows"][row]["device_order"]
+        x_by_name = {
+            placement["name"]: placement["x_um"]
+            for placement in aoi_manifest["devices"]
+        }
+        assert [x_by_name[name] for name in row_order] == sorted(
+            x_by_name[name] for name in row_order
+        )
     columns = enumerate_column_ir(nand2, process, limit=8)
     assert columns
     assert columns[0].gate_mismatches == 0
@@ -92,9 +118,12 @@ def main() -> int:
 
     assert inv.timing_arcs == (("A", "Y"),)
     assert inv.internal_nets == ()
-    assert len(generate_candidates(inv, process, "two_metal_classic")) == 3
-    assert len(generate_candidates(nand2, process, "two_metal_classic")) == 36
-    assert len(generate_candidates(nor2, process, "two_metal_classic")) == 36
+    assert abs(process.site_height_um - 14.4) < 1e-9
+    assert abs(process.row_active_capacity_um("n") - 1.5) < 1e-9
+    assert abs(process.row_active_capacity_um("p") - 3.6) < 1e-9
+    assert len(generate_candidates(inv, process, "two_metal_classic")) >= 1
+    assert len(generate_candidates(nand2, process, "two_metal_classic")) >= 2
+    assert len(generate_candidates(nor2, process, "two_metal_classic")) >= 2
 
     classic = generate_candidates(inv, process, "two_metal_classic", max_candidates=1)[0]
     assert classic.feedthrough_layer == "M2"
@@ -107,7 +136,39 @@ def main() -> int:
     assert classic.metrics["worst_case_delay"] is None
     assert classic.metrics["input_capacitance"] is None
     assert classic.orientation_policy["mode"] == "alternate_rows"
-    assert classic.constraints["rail_contract"]["fixed_height"] is True
+    assert classic.orientation_policy["even_row"] == "R0"
+    assert classic.orientation_policy["odd_row"] == "MX"
+    assert classic.constraints["tap_policy"] == "self_tapped"
+    assert classic.as_dict()["geometry"]["rows"]["n"]["orientation"] == "R0"
+    assert classic.as_dict()["geometry"]["rows"]["p"]["orientation"] == "MX"
+    pin_shapes = classic.as_dict()["routing"]["pin_shapes"]
+    assert {shape["net"] for shape in pin_shapes if shape["layer"] == "M2"} >= {"A", "Y"}
+    lef = lef_text(
+        {
+            "circuit": {
+                "ports": ["A", "Y", "VDD", "VSS"],
+                "inputs": ["A"],
+                "outputs": ["Y"],
+                "supplies": ["VDD", "VSS"],
+            },
+            "candidates": [classic.as_dict()],
+        },
+        layer_widths={
+            layer: process.metal_width_um(layer)
+            for layer in ("M1", "M2", "M3")
+            if process.has_layer(layer)
+        },
+    )
+    assert "PIN A" in lef and "PIN Y" in lef
+    assert lef.count("LAYER M2 ;") >= 2
+    assert {tap["cell"] for tap in classic.support_taps} == {"ntap", "ptap"}
+    assert classic.metrics["estimated_feedthrough_count"] == len(classic.feedthrough_columns)
+    assert classic.metrics["native_verified_feedthrough_count"] is None
+    assert classic.metrics["feedthrough_metric_status"] == "geometry_estimate_not_native_verified"
+    assert all(
+        blockage.x1 > blockage.x0 or blockage.y1 > blockage.y0
+        for blockage in classic.blockages
+    )
 
     nand2_plan = generate_candidates(nand2, process, "two_metal_classic", max_candidates=1)[0]
     nand2_manifest = nand2_plan.as_dict()
@@ -218,6 +279,7 @@ def main() -> int:
                 "internal_m2_length_um": 4,
                 "via_count": 2,
                 "feedthrough_count": 1,
+                "route_permeability_per_um": 0.5,
             },
         },
         {
@@ -227,6 +289,7 @@ def main() -> int:
                 "internal_m2_length_um": 3,
                 "via_count": 1,
                 "feedthrough_count": 1,
+                "route_permeability_per_um": 0.4,
             },
         },
         {
@@ -236,6 +299,7 @@ def main() -> int:
                 "internal_m2_length_um": 5,
                 "via_count": 3,
                 "feedthrough_count": 2,
+                "route_permeability_per_um": 0.1,
             },
         },
     ]

@@ -1,0 +1,14 @@
+# profiles/ams_c35/devices.yaml — authoritative LVS device table (ams C35)
+#
+# Derived from ENG-183 element definitions (NMOS/PMOS, CPOLY PiP capacitor).
+# ams CONT is the single contact layer bound to `cc`; ca/cp/ce classify from
+# it.  The LVS emits prefix+suffix model names (model_prefix `c35` ->
+# c35N/c35P); the RF model topology (BSIM3v3.1 intrinsic + RG/RD/RS + RSUB +
+# external junction diodes, ENG-188) is recorded in model_contract.yaml —
+# ams model cards are company confidential and not redistributed.
+devices:
+  mos4:
+    - { name: nmos4, channel: nChannel, diff: nDiff, bulk_net: substrate, model_suffix: nmos }
+    - { name: pmos4, channel: pChannel, diff: pDiff, bulk_net: nBulk, model_suffix: pmos }
+  capacitor:
+    - { name: PiPCap, region: polyElecCap, top: elec, bottom: poly, area_cap: elec_poly }

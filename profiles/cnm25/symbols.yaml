@@ -1,0 +1,27 @@
+# profiles/cnm25/symbols.yaml — xschem symbol UI definitions (CNM25)
+# Same geometry family as the other profiles; netlisting rules live in
+# devices/symbol_netlist.yaml.
+symbols:
+  nmos4:
+    kind: fet
+    type: nmos
+    pins:
+      - {name: d, dir: inout, x1: 17.5, y1: -32.5, x2: 22.5, y2: -27.5}
+      - {name: g, dir: in, x1: -22.5, y1: -2.5, x2: -17.5, y2: 2.5}
+      - {name: s, dir: inout, x1: 17.5, y1: 27.5, x2: 22.5, y2: 32.5}
+      - {name: b, dir: in, x1: 17.5, y1: -2.5, x2: 22.5, y2: 2.5}
+  pmos4:
+    kind: fet
+    type: pmos
+    pins:
+      - {name: d, dir: inout, x1: 17.5, y1: -32.5, x2: 22.5, y2: -27.5}
+      - {name: g, dir: in, x1: -22.5, y1: -2.5, x2: -17.5, y2: 2.5}
+      - {name: s, dir: inout, x1: 17.5, y1: 27.5, x2: 22.5, y2: 32.5}
+      - {name: b, dir: in, x1: 17.5, y1: -2.5, x2: 22.5, y2: 2.5}
+  cap:
+    kind: two_pin
+    type: capacitor
+    shape: cap
+    pins:
+      - {name: PLUS, dir: inout, x1: -12.5, y1: -2.5, x2: -7.5, y2: 2.5}
+      - {name: MINUS, dir: inout, x1: 7.5, y1: -2.5, x2: 12.5, y2: 2.5}

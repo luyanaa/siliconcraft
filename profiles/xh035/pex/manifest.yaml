@@ -1,0 +1,34 @@
+# XH035 PEX boundary.  Public collateral does not provide sheet/cap
+# coefficients or the PNAware/foundry runset, so this manifest is a topology
+# and substrate-extraction hook, not a runnable signoff flow.
+schema_version: 2
+profile: xh035
+default: none
+flow:
+  backend: contract_only
+  source_driven: false
+  parasitic_ownership:
+    transistor_intrinsic_capacitance: model
+    gate_overlap_capacitance: model
+    junction_area_capacitance: withheld
+    junction_sidewall_capacitance: withheld
+    diffusion_sheet_resistance: withheld
+    gate_sheet_resistance: withheld
+    metal_interconnect_rc: withheld
+    substrate_network: external_active_substrate
+  note: "Do not route XH035 HVCMOS through ordinary SCMOS/Magic RC for signoff"
+substrate_extraction:
+  mode: active_distributed
+  required_for_signoff: true
+  ordinary_rc_allowed: false
+  backend: external_pnaaware_or_foundry_runset
+  domains: [substrate, pwell, deep_nwell, hv_nwell]
+  preserve_distributed_network: true
+  source: "X-FAB active substrate parasitic extraction methodology; public flow description only"
+  limitation: "PNAware coefficients, substrate stack, and foundry extraction deck are not public"
+profiles:
+  topology_only:
+    generated: false
+    status: topology_only
+    description: "HVCMOS substrate-domain contract only; no Magic coefficients or runtime extractor"
+    magic_directives: []

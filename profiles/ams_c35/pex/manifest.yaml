@@ -1,0 +1,50 @@
+# ams C35 PEX manifest.
+#
+# Ordinary signoff PEX for C35 is RC + coupling-C (xRC, "No Inductance";
+# see docs/ams_c35_pex_field.md).  The open reproduction target is
+# R + C_ground + C_coupling -> DSPF/SPEF via OpenRCX/Magic, calibrated
+# against the reconstructed field-solver stack (profiles/ams_c35/stackup.yaml).
+# No Magic backend or emitted coefficients yet: pex_runtime/pex_rc stay
+# false.  The ENG-188 RF passives are characterized device contracts
+# (docs/ams_c35_rf.md), not PEX products.
+schema_version: 2
+profile: ams_c35
+default: none
+flow:
+  backend: none
+  source_driven: true
+  original_process: C35B4C3
+  ordinary_pex_level: "R + C_ground + C_coupling (no inductance); DSPF/SPEF output"
+  contact_policy: "no extraction backend claimed; ENG-182 coefficient inventory in docs/ams_c35_pex_field.md (CONT 30/60 ohm, VIA1/2 1.2 ohm reported; metal Rsh M1 0.08/M2 0.06/M3 0.05/M4 0.05 ohm/sq; n+/p+ diffusion 70/129 ohm/sq)"
+  parasitic_ownership:
+    transistor_intrinsic_capacitance: model
+    gate_overlap_capacitance: model
+    junction_area_capacitance: model
+    junction_sidewall_capacitance: model
+    diffusion_sheet_resistance: pex
+    gate_sheet_resistance: pex
+    metal_interconnect_rc: pex
+physical:
+  lambda_um: 0.2
+  grid_um: 0.025
+technology:
+  description: "ams C35 source-reference PEX contract (ENG-182 coefficients + reconstructed field stack v0.1)"
+topology:
+  scope: "C35 NMOS/PMOS/PiP; RF device parasitics owned by the ENG-188 model topology"
+  note: "no Magic device class: no Magic extraction backend for ams C35 yet"
+profiles:
+  none:
+    generated: true
+    status: topology_only
+    description: "C35 layer/derived-layer topology contract without PEX coefficients."
+    magic_directives: []
+  eng182_source_reference:
+    generated: false
+    status: source_reference_partial
+    description: "ENG-182 Rev.6 coefficient table (reference/rc_coefficients.yaml): metal Rsh M1/M2/M3 0.07-0.12, M4 0.04-0.10 ohm/sq; VIA3 1.2-3 ohm; vertical area/fringe C and same-layer coupling C (typical); area C = eps0*eps_r/t; SCAP FEM fringe/coupling; fringe reduction -0.8*Ccoupling; Weff corrections M2/M3 -0.1 um; diffusion Rsh 70/129 and HRES 1204 from the MOS cards. CONT/VIA1/2 30/60/1.2 ohm still Rev.2-reported, re-verify."
+    magic_directives: []
+  field_solver_stack:
+    generated: false
+    status: source_reference_partial
+    description: "ENG-182 Rev.6 nominal stack (c35b4c3_stack.yaml): t + eps_r per layer (Note 24), thin-M4 (no polyimide), substrate rho 14/19/24 ohm-cm + XJNW 3.5 um + n-well slab 286 S/m, FIB/SEM sidewall angles, Weff; sigma_eff = 1/(Rsh*t); ENG-188 spirals SP020S180D/SP026S200D are the calibration targets."
+    magic_directives: []

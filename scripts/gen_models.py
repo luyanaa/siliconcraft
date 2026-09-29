@@ -88,6 +88,414 @@ def model_prefix_for(profile: str) -> str:
     process = load_process(profile, ROOT)
     return str(process.meta.get("model_prefix") or profile)
 
+
+# ---------------------------------------------------------------------------
+# ams C35 (ENG-182 REV_6) BSIM3v3 cards, transcribed from the public appendix
+# of E. I. Ishibe, "Projeto de uma fonte de tensão de referência", M.Sc.
+# thesis, EESC/USP, 2014 (Anexos A/B/C; thesis license: reproduction for
+# study/research with citation).  The cards themselves are ams HIT-Kit
+# material (ENG-182 REV_6, process C35); the same parameter family appears in
+# Appendix C of Leblebici, "Fundamentals of High-Frequency CMOS Analog
+# Integrated Circuits" (Cambridge).  The ELDO dialect is mapped to ngspice:
+# LEVEL 53 -> 49 (standard ngspice lacks LEVEL 53), VERSION 3.3, and the
+# ELDO-only parameters (MODTYPE/THMLEV/FLKLEV/DERIV/NPEAK/DIOLEV/ALEV/RLEV/
+# RDC/RSC/LDIF/HDIF/DEL/ALPHA0/ALPHA1/BETA0/EF/EM/DCAPLEV) are dropped.
+_AMS_ELDO_STRIP = frozenset(
+    "MODTYPE THMLEV FLKLEV DERIV NPEAK DIOLEV ALEV RLEV RDC RSC LDIF HDIF "
+    "DEL ALPHA0 ALPHA1 BETA0 EF EM DCAPLEV".split())
+
+# corner -> (nmos params, pmos params, doc revision)
+AMS_C35_CORNERS = {
+    "ams_c35": {  # typical (Anexo A), ENG-182 REV_6
+        "n": {
+            "K1": "5.0296e-01", "K2": "3.3985e-02", "K3": "-1.136e+00",
+            "K3B": "-4.399e-01", "VTH0": "4.979e-01", "VOFF": "-8.925e-02",
+            "DVT0": "5.000e+01", "DVT1": "1.039e+00", "DVT2": "-8.375e-03",
+            "KETA": "2.032e-02", "PSCBE1": "1.000e+30", "PSCBE2": "1.000e-06",
+            "DVT0W": "1.089e-01", "DVT1W": "6.671e+04", "DVT2W": "-1.352e-02",
+            "UA": "4.705e-12", "UB": "2.137e-18", "UC": "1.000e-20",
+            "U0": "4.758e+02", "DSUB": "5.000e-01", "ETA0": "1.415e-02",
+            "ETAB": "-1.221e-01", "NFACTOR": "4.136e-01",
+            "PCLM": "6.948e-01", "PDIBLC1": "3.571e-01",
+            "PDIBLC2": "2.065e-03", "DROUT": "5.000e-01", "A0": "2.541e+00",
+            "A1": "0.000e+00", "A2": "1.000e+00", "PVAG": "0.000e+00",
+            "VSAT": "1.338e+05", "AGS": "2.408e-01", "B0": "4.301e-09",
+            "B1": "0.000e+00", "DELTA": "1.442e-02",
+            "PDIBLCB": "3.222e-01", "W0": "2.673e-07", "DLC": "3.0000e-08",
+            "DWC": "9.403e-08", "DWB": "0.000e+00", "DWG": "0.000e+00",
+            "LL": "0.000e+00", "LW": "0.000e+00", "LWL": "0.000e+00",
+            "LLN": "1.000e+00", "LWN": "1.000e+00", "WL": "0.000e+00",
+            "WW": "-1.297e-14", "WWL": "-9.411e-21", "WLN": "1.000e+00",
+            "WWN": "1.000e+00", "AT": "3.300e+04", "UTE": "-1.800e+00",
+            "KT1": "-3.302e-01", "KT2": "2.200e-02", "KT1L": "0.000e+00",
+            "UA1": "0.000e+00", "UB1": "0.000e+00", "UC1": "0.000e+00",
+            "PRT": "0.000e+00", "CGSO": "1.200e-10", "CGDO": "1.200e-10",
+            "CGBO": "1.100e-10", "CGDL": "1.310e-10", "CGSL": "1.310e-10",
+            "CKAPPA": "6.000e-01", "CF": "0.000e+00", "ELM": "5.000e+00",
+            "XPART": "1.000e+00", "CLC": "1.000e-15", "CLE": "6.000e-01",
+            "NOFF": "1.000e+00", "VOFFCV": "0.000e+00", "RDSW": "3.449e+02",
+            "CDSC": "0.000e+00", "CDSCB": "1.500e-03", "CDSCD": "1.000e-03",
+            "PRWB": "-2.416e-01", "PRWG": "0.000e+00", "CIT": "4.441e-04",
+            "TOX": "7.575e-09", "NGATE": "0.000e+00", "NLX": "1.888e-07",
+            "XL": "0.000e+00", "XW": "0.000e+00", "AF": "1.507e+00",
+            "KF": "2.170e-26", "NOIA": "1.121e+19", "NOIB": "5.336e+04",
+            "NOIC": "-5.892e-13", "RD": "0.000e+00", "RS": "0.000e+00",
+            "RSH": "7.000e+01", "LD": "-5.005e-08", "WD": "9.403e-08",
+            "XJ": "3.000e-07", "JS": "5.100e-07", "JSW": "0.600e-12",
+            "IS": "0.000e+00", "N": "1.000e+00", "CBD": "0.000e+00",
+            "CBS": "0.000e+00", "CJ": "8.400e-04", "CJSW": "2.500e-10",
+            "FC": "0.000e+00", "MJ": "3.400e-01", "MJSW": "2.300e-01",
+            "TT": "0.000e+00", "XTI": "2.026e+00", "PB": "6.900e-01",
+            "PBSW": "6.900e-01",
+        },
+        "p": {
+            "K1": "5.9959e-01", "K2": "-6.038e-02", "K3": "1.103e+01",
+            "K3B": "-7.580e-01", "VTH0": "-6.915e-01", "VOFF": "-1.170e-01",
+            "DVT0": "1.650e+00", "DVT1": "3.868e-01", "DVT2": "1.659e-02",
+            "KETA": "-1.440e-02", "PSCBE1": "1.000e+30", "PSCBE2": "1.000e-06",
+            "DVT0W": "1.879e-01", "DVT1W": "7.335e+04", "DVT2W": "-6.312e-03",
+            "UA": "5.394e-10", "UB": "1.053e-18", "UC": "1.000e-20",
+            "U0": "1.482e+02", "DSUB": "5.000e-01", "ETA0": "2.480e-01",
+            "ETAB": "-3.917e-03", "NFACTOR": "1.214e+00",
+            "PCLM": "3.184e+00", "PDIBLC1": "1.000e-04",
+            "PDIBLC2": "1.000e-20", "DROUT": "5.000e-01", "A0": "5.850e-01",
+            "A1": "0.000e+00", "A2": "1.000e+00", "PVAG": "0.000e+00",
+            "VSAT": "1.158e+05", "AGS": "2.468e-01", "B0": "8.832e-08",
+            "B1": "0.000e+00", "DELTA": "1.000e-02", "PDIBLCB": "1.000e+00",
+            "W0": "1.000e-10", "DLC": "2.4500e-08", "DWC": "3.449e-08",
+            "DWB": "0.000e+00", "DWG": "0.000e+00", "LL": "0.000e+00",
+            "LW": "0.000e+00", "LWL": "0.000e+00", "LLN": "1.000e+00",
+            "LWN": "1.000e+00", "WL": "0.000e+00", "WW": "1.894e-16",
+            "WWL": "-1.981e-21", "WLN": "1.000e+00", "WWN": "1.040e+00",
+            "AT": "3.300e+04", "UTE": "-1.300e+00", "KT1": "-5.403e-01",
+            "KT2": "2.200e-02", "KT1L": "0.000e+00", "UA1": "0.000e+00",
+            "UB1": "0.000e+00", "UC1": "0.000e+00", "PRT": "0.000e+00",
+            "CGSO": "8.600e-11", "CGDO": "8.600e-11", "CGBO": "1.100e-10",
+            "CGDL": "1.080e-10", "CGSL": "1.080e-10", "CKAPPA": "6.000e-01",
+            "CF": "0.000e+00", "ELM": "5.000e+00", "XPART": "1.000e+00",
+            "CLC": "1.000e-15", "CLE": "6.000e-01", "NOFF": "1.000e+00",
+            "VOFFCV": "0.000e+00", "RDSW": "1.033e+03", "CDSC": "2.589e-03",
+            "CDSCB": "2.943e-04", "CDSCD": "4.370e-04", "PRWB": "-9.731e-02",
+            "PRWG": "1.477e-01", "CIT": "0.000e+00", "TOX": "7.754e-09",
+            "NGATE": "0.000e+00", "NLX": "1.770e-07", "XL": "0.000e+00",
+            "XW": "0.000e+00", "AF": "1.461e+00", "KF": "1.191e-26",
+            "NOIA": "5.245e+17", "NOIB": "4.816e+03", "NOIC": "8.036e-13",
+            "RD": "0.000e+00", "RS": "0.000e+00", "RSH": "1.290e+02",
+            "LD": "-7.130e-08", "WD": "3.449e-08", "XJ": "3.000e-07",
+            "JS": "2.800e-07", "JSW": "3.700e-13", "IS": "0.000e+00",
+            "N": "1.000e+00", "CBD": "0.000e+00", "CBS": "0.000e+00",
+            "CJ": "1.360e-03", "CJSW": "3.500e-10", "FC": "0.000e+00",
+            "MJ": "5.400e-01", "MJSW": "4.600e-01", "TT": "0.000e+00",
+            "XTI": "1.973e+00", "PB": "1.020e+00", "PBSW": "1.020e+00",
+        },
+    },
+    "ams_c35_ws": {  # worst-speed (Anexo C), ENG-182 REV_5
+        "n": {
+            "K1": "6.6008e-01", "K2": "2.1313e-02", "K3": "-1.136e+00",
+            "K3B": "-4.399e-01", "VTH0": "5.579e-01", "VOFF": "-8.925e-02",
+            "DVT0": "5.000e+01", "DVT1": "1.039e+00", "DVT2": "-8.375e-03",
+            "KETA": "2.032e-02", "PSCBE1": "1.000e+30", "PSCBE2": "1.000e-06",
+            "DVT0W": "1.089e-01", "DVT1W": "6.671e+04", "DVT2W": "-1.352e-02",
+            "UA": "4.705e-12", "UB": "2.137e-18", "UC": "1.000e-20",
+            "U0": "4.671e+02", "DSUB": "5.000e-01", "ETA0": "1.415e-02",
+            "ETAB": "-1.221e-01", "NFACTOR": "4.136e-01",
+            "PCLM": "6.948e-01", "PDIBLC1": "3.571e-01",
+            "PDIBLC2": "2.065e-03", "DROUT": "5.000e-01", "A0": "2.541e+00",
+            "A1": "0.000e+00", "A2": "1.000e+00", "PVAG": "0.000e+00",
+            "VSAT": "1.338e+05", "AGS": "2.408e-01", "B0": "4.301e-09",
+            "B1": "0.000e+00", "DELTA": "1.442e-02", "PDIBLCB": "3.222e-01",
+            "W0": "2.673e-07", "DLC": "3.0000e-08", "DWC": "9.403e-08",
+            "DWB": "0.000e+00", "DWG": "0.000e+00", "LL": "0.000e+00",
+            "LW": "0.000e+00", "LWL": "0.000e+00", "LLN": "1.000e+00",
+            "LWN": "1.000e+00", "WL": "0.000e+00", "WW": "-1.297e-14",
+            "WWL": "-9.411e-21", "WLN": "1.000e+00", "WWN": "1.000e+00",
+            "AT": "3.300e+04", "UTE": "-1.800e+00", "KT1": "-3.302e-01",
+            "KT2": "2.200e-02", "KT1L": "0.000e+00", "UA1": "0.000e+00",
+            "UB1": "0.000e+00", "UC1": "0.000e+00", "PRT": "0.000e+00",
+            "CGSO": "1.200e-10", "CGDO": "1.200e-10", "CGBO": "1.200e-10",
+            "CGDL": "1.47e-10", "CGSL": "1.47e-10", "CKAPPA": "6.000e-01",
+            "CF": "0.000e+00", "ELM": "5.000e+00", "XPART": "1.000e+00",
+            "CLC": "1.000e-15", "CLE": "6.000e-01", "NOFF": "1.000e+00",
+            "VOFFCV": "0.000e+00", "RDSW": "3.449e+02", "CDSC": "0.000e+00",
+            "CDSCB": "1.500e-03", "CDSCD": "1.000e-03", "PRWB": "-2.416e-01",
+            "PRWG": "0.000e+00", "CIT": "4.441e-04", "TOX": "8.100e-09",
+            "NGATE": "0.000e+00", "NLX": "1.888e-07", "XL": "5.000e-08",
+            "XW": "-1.000e-07", "AF": "1.376e+00", "KF": "3.396e-26",
+            "NOIA": "1.399e+20", "NOIB": "2.707e+05", "NOIC": "-4.680e-12",
+            "RD": "0.000e+00", "RS": "0.000e+00", "RSH": "8.500e+01",
+            "LD": "-5.005e-08", "WD": "9.403e-08", "XJ": "3.000e-07",
+            "JS": "5.100e-07", "JSW": "0.600e-12", "IS": "0.000e+00",
+            "N": "1.000e+00", "CBD": "0.000e+00", "CBS": "0.000e+00",
+            "CJ": "1.052e-03", "CJSW": "2.800e-10", "FC": "0.000e+00",
+            "MJ": "3.400e-01", "MJSW": "2.300e-01", "TT": "0.000e+00",
+            "XTI": "2.026e+00", "PB": "6.900e-01", "PBSW": "6.900e-01",
+        },
+        "p": {
+            "K1": "6.2895e-01", "K2": "-4.725e-02", "K3": "1.103e+01",
+            "K3B": "-7.580e-01", "VTH0": "-7.715e-01", "VOFF": "-1.170e-01",
+            "DVT0": "1.650e+00", "DVT1": "3.868e-01", "DVT2": "1.659e-02",
+            "KETA": "-1.440e-02", "PSCBE1": "1.000e+30", "PSCBE2": "1.000e-06",
+            "DVT0W": "1.879e-01", "DVT1W": "7.335e+04", "DVT2W": "-6.312e-03",
+            "UA": "5.394e-10", "UB": "1.053e-18", "UC": "1.000e-20",
+            "U0": "1.314e+02", "DSUB": "5.000e-01", "ETA0": "2.480e-01",
+            "ETAB": "-3.917e-03", "NFACTOR": "1.214e+00",
+            "PCLM": "3.184e+00", "PDIBLC1": "1.000e-04",
+            "PDIBLC2": "1.000e-20", "DROUT": "5.000e-01", "A0": "5.850e-01",
+            "A1": "0.000e+00", "A2": "1.000e+00", "PVAG": "0.000e+00",
+            "VSAT": "1.158e+05", "AGS": "2.468e-01", "B0": "8.832e-08",
+            "B1": "0.000e+00", "DELTA": "1.000e-02", "PDIBLCB": "1.000e+00",
+            "W0": "1.000e-10", "DLC": "2.4500e-08", "DWC": "3.449e-08",
+            "DWB": "0.000e+00", "DWG": "0.000e+00", "LL": "0.000e+00",
+            "LW": "0.000e+00", "LWL": "0.000e+00", "LLN": "1.000e+00",
+            "LWN": "1.000e+00", "WL": "0.000e+00", "WW": "1.894e-16",
+            "WWL": "-1.981e-21", "WLN": "1.000e+00", "WWN": "1.040e+00",
+            "AT": "3.300e+04", "UTE": "-1.300e+00", "KT1": "-5.403e-01",
+            "KT2": "2.200e-02", "KT1L": "0.000e+00", "UA1": "0.000e+00",
+            "UB1": "0.000e+00", "UC1": "0.000e+00", "PRT": "0.000e+00",
+            "CGSO": "8.600e-11", "CGDO": "8.600e-11", "CGBO": "1.200e-10",
+            "CGDL": "1.21e-10", "CGSL": "1.21e-10", "CKAPPA": "6.000e-01",
+            "CF": "0.000e+00", "ELM": "5.000e+00", "XPART": "1.000e+00",
+            "CLC": "1.000e-15", "CLE": "6.000e-01", "NOFF": "1.000e+00",
+            "VOFFCV": "0.000e+00", "RDSW": "1.033e+03", "CDSC": "2.589e-03",
+            "CDSCB": "2.943e-04", "CDSCD": "4.370e-04", "PRWB": "-9.731e-02",
+            "PRWG": "1.477e-01", "CIT": "0.000e+00", "TOX": "8.100e-09",
+            "NGATE": "0.000e+00", "NLX": "1.770e-07", "XL": "4.000e-08",
+            "XW": "-0.700e-07", "AF": "1.405e+00", "KF": "1.827e-26",
+            "NOIA": "7.091e+18", "NOIB": "6.074e+04", "NOIC": "3.779e-13",
+            "RD": "0.000e+00", "RS": "0.000e+00", "RSH": "1.600e+02",
+            "LD": "-7.130e-08", "WD": "3.449e-08", "XJ": "3.000e-07",
+            "JS": "2.800e-07", "JSW": "3.700e-13", "IS": "0.000e+00",
+            "N": "1.000e+00", "CBD": "0.000e+00", "CBS": "0.000e+00",
+            "CJ": "1.523e-03", "CJSW": "3.580e-10", "FC": "0.000e+00",
+            "MJ": "5.400e-01", "MJSW": "4.600e-01", "TT": "0.000e+00",
+            "XTI": "1.973e+00", "PB": "1.020e+00", "PBSW": "1.020e+00",
+        },
+    },
+    "ams_c35_wp": {  # worst-power (Anexo B), ENG-182 REV_5
+        "n": {
+            "K1": "3.5516e-01", "K2": "4.6758e-02", "K3": "-1.136e+00",
+            "K3B": "-4.399e-01", "VTH0": "3.579e-01", "VOFF": "-8.925e-02",
+            "DVT0": "5.000e+01", "DVT1": "1.039e+00", "DVT2": "-8.375e-03",
+            "KETA": "2.032e-02", "PSCBE1": "1.000e+30", "PSCBE2": "1.000e-06",
+            "DVT0W": "1.089e-01", "DVT1W": "6.671e+04", "DVT2W": "-1.352e-02",
+            "UA": "4.705e-12", "UB": "2.137e-18", "UC": "1.000e-20",
+            "U0": "5.002e+02", "DSUB": "5.000e-01", "ETA0": "1.415e-02",
+            "ETAB": "-1.221e-01", "NFACTOR": "4.136e-01",
+            "PCLM": "6.948e-01", "PDIBLC1": "3.571e-01",
+            "PDIBLC2": "2.065e-03", "DROUT": "5.000e-01", "A0": "2.541e+00",
+            "A1": "0.000e+00", "A2": "1.000e+00", "PVAG": "0.000e+00",
+            "VSAT": "1.338e+05", "AGS": "2.408e-01", "B0": "4.301e-09",
+            "B1": "0.000e+00", "DELTA": "1.442e-02", "PDIBLCB": "3.222e-01",
+            "W0": "2.673e-07", "DLC": "3.0000e-08", "DWC": "9.403e-08",
+            "DWB": "0.000e+00", "DWG": "0.000e+00", "LL": "0.000e+00",
+            "LW": "0.000e+00", "LWL": "0.000e+00", "LLN": "1.000e+00",
+            "LWN": "1.000e+00", "WL": "0.000e+00", "WW": "-1.297e-14",
+            "WWL": "-9.411e-21", "WLN": "1.000e+00", "WWN": "1.000e+00",
+            "AT": "3.300e+04", "UTE": "-1.800e+00", "KT1": "-3.302e-01",
+            "KT2": "2.200e-02", "KT1L": "0.000e+00", "UA1": "0.000e+00",
+            "UB1": "0.000e+00", "UC1": "0.000e+00", "PRT": "0.000e+00",
+            "CGSO": "1.200e-10", "CGDO": "1.200e-10", "CGBO": "1.000e-10",
+            "CGDL": "1.15e-10", "CGSL": "1.15e-10", "CKAPPA": "6.000e-01",
+            "CF": "0.000e+00", "ELM": "5.000e+00", "XPART": "1.000e+00",
+            "CLC": "1.000e-15", "CLE": "6.000e-01", "NOFF": "1.000e+00",
+            "VOFFCV": "0.000e+00", "RDSW": "3.449e+02", "CDSC": "0.000e+00",
+            "CDSCB": "1.500e-03", "CDSCD": "1.000e-03", "PRWB": "-2.416e-01",
+            "PRWG": "0.000e+00", "CIT": "4.441e-04", "TOX": "7.100e-09",
+            "NGATE": "0.000e+00", "NLX": "1.888e-07", "XL": "-5.000e-08",
+            "XW": "0.500e-07", "AF": "1.376e+00", "KF": "3.396e-26",
+            "NOIA": "1.399e+20", "NOIB": "2.707e+05", "NOIC": "-4.680e-12",
+            "RD": "0.000e+00", "RS": "0.000e+00", "RSH": "5.500e+01",
+            "LD": "-5.005e-08", "WD": "9.403e-08", "XJ": "3.000e-07",
+            "JS": "5.100e-07", "JSW": "0.600e-12", "IS": "0.000e+00",
+            "N": "1.000e+00", "CBD": "0.000e+00", "CBS": "0.000e+00",
+            "CJ": "8.270e-04", "CJSW": "2.200e-10", "FC": "0.000e+00",
+            "MJ": "3.400e-01", "MJSW": "2.300e-01", "TT": "0.000e+00",
+            "XTI": "2.026e+00", "PB": "6.900e-01", "PBSW": "6.900e-01",
+        },
+        "p": {
+            "K1": "4.5027e-01", "K2": "-4.451e-02", "K3": "1.103e+01",
+            "K3B": "-7.580e-01", "VTH0": "-5.715e-01", "VOFF": "-1.170e-01",
+            "DVT0": "1.650e+00", "DVT1": "3.868e-01", "DVT2": "1.659e-02",
+            "KETA": "-1.440e-02", "PSCBE1": "1.000e+30", "PSCBE2": "1.000e-06",
+            "DVT0W": "1.879e-01", "DVT1W": "7.335e+04", "DVT2W": "-6.312e-03",
+            "UA": "5.394e-10", "UB": "1.053e-18", "UC": "1.000e-20",
+            "U0": "1.581e+02", "DSUB": "5.000e-01", "ETA0": "2.480e-01",
+            "ETAB": "-3.917e-03", "NFACTOR": "1.214e+00",
+            "PCLM": "3.184e+00", "PDIBLC1": "1.000e-04",
+            "PDIBLC2": "1.000e-20", "DROUT": "5.000e-01", "A0": "5.850e-01",
+            "A1": "0.000e+00", "A2": "1.000e+00", "PVAG": "0.000e+00",
+            "VSAT": "1.158e+05", "AGS": "2.468e-01", "B0": "8.832e-08",
+            "B1": "0.000e+00", "DELTA": "1.000e-02", "PDIBLCB": "1.000e+00",
+            "W0": "1.000e-10", "DLC": "2.4500e-08", "DWC": "3.449e-08",
+            "DWB": "0.000e+00", "DWG": "0.000e+00", "LL": "0.000e+00",
+            "LW": "0.000e+00", "LWL": "0.000e+00", "LLN": "1.000e+00",
+            "LWN": "1.000e+00", "WL": "0.000e+00", "WW": "1.894e-16",
+            "WWL": "-1.981e-21", "WLN": "1.000e+00", "WWN": "1.040e+00",
+            "AT": "3.300e+04", "UTE": "-1.300e+00", "KT1": "-5.403e-01",
+            "KT2": "2.200e-02", "KT1L": "0.000e+00", "UA1": "0.000e+00",
+            "UB1": "0.000e+00", "UC1": "0.000e+00", "PRT": "0.000e+00",
+            "CGSO": "8.600e-11", "CGDO": "8.600e-11", "CGBO": "1.000e-10",
+            "CGDL": "0.95e-10", "CGSL": "0.95e-10", "CKAPPA": "6.000e-01",
+            "CF": "0.000e+00", "ELM": "5.000e+00", "XPART": "1.000e+00",
+            "CLC": "1.000e-15", "CLE": "6.000e-01", "NOFF": "1.000e+00",
+            "VOFFCV": "0.000e+00", "RDSW": "1.033e+03", "CDSC": "2.589e-03",
+            "CDSCB": "2.943e-04", "CDSCD": "4.370e-04", "PRWB": "-9.731e-02",
+            "PRWG": "1.477e-01", "CIT": "0.000e+00", "TOX": "7.100e-09",
+            "NGATE": "0.000e+00", "NLX": "1.770e-07", "XL": "-6.000e-08",
+            "XW": "0.800e-07", "AF": "1.405e+00", "KF": "1.827e-26",
+            "NOIA": "7.091e+18", "NOIB": "6.074e+04", "NOIC": "3.779e-13",
+            "RD": "0.000e+00", "RS": "0.000e+00", "RSH": "1.000e+02",
+            "LD": "-7.130e-08", "WD": "3.449e-08", "XJ": "3.000e-07",
+            "JS": "2.800e-07", "JSW": "3.700e-13", "IS": "0.000e+00",
+            "N": "1.000e+00", "CBD": "0.000e+00", "CBS": "0.000e+00",
+            "CJ": "1.197e-03", "CJSW": "2.810e-10", "FC": "0.000e+00",
+            "MJ": "5.400e-01", "MJSW": "4.600e-01", "TT": "0.000e+00",
+            "XTI": "1.973e+00", "PB": "1.020e+00", "PBSW": "1.020e+00",
+        },
+    },
+}
+
+
+def generate_ams_c35() -> int:
+    """Emit profiles/ams_c35/models/ams_c35.lib from the ENG-182 REV_6 cards
+    transcribed in AMS_C35_CORNERS (source: USP thesis appendix, see header).
+    ELDO dialect mapped to ngspice: LEVEL 53 -> 49, VERSION 3.3, ELDO-only
+    parameters dropped.  Monte-Carlo cards (thesis Anexo D) use ELDO
+    LOT/UNIFORM statistical syntax and are not ngspice-portable; they stay
+    documented in model_contract.yaml.
+    """
+    lines = [
+        "* profiles/ams_c35/models/ams_c35.lib — generated by scripts/gen_models.py",
+        "* source: ENG-182 REV_6 ams C35 BSIM3v3 cards, transcribed from the public",
+        "*         appendix of E. I. Ishibe, 'Projeto de uma fonte de tensao de",
+        "*         referencia', M.Sc. thesis, EESC/USP, 2014 (Anexos A/B/C);",
+        "*         thesis license permits reproduction for study/research with",
+        "*         citation.  Same parameter family in Appendix C of Leblebici,",
+        "*         'Fundamentals of High-Frequency CMOS Analog Integrated Circuits'.",
+        "* cards: MODN/MODP (ENG-182 REV_6, extracted B10866/C64685, 2002-12).",
+        "* ngspice mapping: LEVEL 53 (BSIM3v3.2.4) -> LEVEL 49 (BSIM3v3.3),",
+        "* VERSION 3.3; ELDO-only parameters dropped (MODTYPE/NPEAK/DIOLEV/...).",
+        "* Monte-Carlo cards (Anexo D) are ELDO LOT/UNIFORM syntax — not portable.",
+        "* RF models (modnrf/modprf/cvar/...): ENG-188 Rev 5.0 topology contract in",
+        "* model_contract.yaml — the RF subcircuit cards are ams HIT-Kit files.",
+        "* sections: ams_c35 (typical), ams_c35_ws (worst-speed), ams_c35_wp (worst-power).",
+        "* usage:  .lib '<path>/ams_c35.lib' ams_c35",
+        "",
+    ]
+    for sec, cards in AMS_C35_CORNERS.items():
+        lines.append(f".lib {sec}")
+        for suffix, polarity, params in (("N", "NMOS", cards["n"]),
+                                         ("P", "PMOS", cards["p"])):
+            lines.append(f".MODEL c35{suffix} {polarity} (")
+            lines.append("+ LEVEL   = 49            VERSION = 3.3")
+            for key in sorted(params):
+                if key.upper() in _AMS_ELDO_STRIP:
+                    continue
+                lines.append(f"+ {key:<10}= {params[key]}")
+            lines.append(")")
+        lines.append(f".endl {sec}")
+        lines.append("")
+    lines.append(".end")
+    model_dir = ROOT / "profiles" / "ams_c35" / "models"
+    model_dir.mkdir(parents=True, exist_ok=True)
+    out = model_dir / "ams_c35.lib"
+    out.write_text("\n".join(lines) + "\n")
+    print(f"wrote {out}: sections {list(AMS_C35_CORNERS)}")
+    return 0
+
+
+def generate_cnm25(apdk: Path) -> int:
+    """Assemble profiles/cnm25/models/cnm25.lib from the CNM25 APDK.
+
+    The APDK ships one self-contained model library (spiceopus/cnm25mod.lib)
+    with a 'common' section holding the BSIM3v3.2.4 subcircuits and ttt/sss/
+    fff/ttt_mc corner sections that set Pelgrom-mismatch parameters.  We emit
+    one primary section `cnm25` (typical defaults + common subcircuits) plus
+    `cnm25_sss`, `cnm25_fff` and `cnm25_mc` parameter-override sections that
+    apply before/alongside `cnm25`.
+    """
+    src = apdk / "spiceopus" / "cnm25mod.lib"
+    if not src.exists():
+        raise SystemExit(f"APDK model library not found: {src}")
+    text = src.read_text()
+
+    def section(name: str) -> str:
+        m = re.search(
+            rf"^\.lib\s+{re.escape(name)}\s*$.*?^\.endl\b",
+            text, re.M | re.S,
+        )
+        if not m:
+            raise SystemExit(f"APDK {src.name}: missing .lib {name} section")
+        return m.group(0)
+
+    common = section("common")
+    corners = {"cnm25_sss": section("sss"), "cnm25_fff": section("fff"),
+               "cnm25_mc": section("ttt_mc")}
+    # Standard ngspice builds do not support BSIM3v3.2.4 LEVEL 53; map to
+    # LEVEL 49 (BSIM3v3.3), which accepts the card subset.  SpiceOpus users
+    # keep the original APDK cnm25mod.lib.
+    common = re.sub(r"LEVEL\s*=\s*53", "LEVEL   = 49", common)
+
+    def param_lines(block: str) -> list[str]:
+        return [ln for ln in block.splitlines()
+                if ln.strip().startswith(".param")]
+
+    ttt = section("ttt")
+    lines = [f"* profiles/cnm25/models/cnm25.lib — generated by scripts/gen_models.py",
+             f"* source: {src} (IMB-CNM(CSIC) APDK CNM25)",
+             "* CNM25 BSIM3v3.2.4 device models with Pelgrom mismatch:",
+             "*   cnm25modn / cnm25modp  (N/P MOSFETs, w/l/ad/as/pd/ps/m)",
+             "*   cnm25cpoly             (PiP capacitor, w/l/m)",
+             "* sections: cnm25 (typical), cnm25_sss, cnm25_fff, cnm25_mc.",
+             "* usage:  .lib '<path>/cnm25.lib' cnm25",
+             "*         .lib '<path>/cnm25.lib' cnm25_sss   (corner, with cnm25)",
+             "*         .lib '<path>/cnm25.lib' cnm25_mc    (Monte Carlo mismatch)",
+             "* APDK cards are BSIM3v3.2.4 (LEVEL 53); standard ngspice does not",
+             "* support LEVEL 53, so this generated lib maps them to LEVEL 49",
+             "* (BSIM3v3.3).  SpiceOpus users keep the APDK cnm25mod.lib.",
+             "* APDK rndgauss() (SpiceOpus) maps to ngspice agauss(0, s), which",
+             "* has identical N(0, s) semantics.",
+             ""]
+    lines.append(".lib cnm25")
+    lines.append("* typical (ttt) process parameters — CNM25 default corner")
+    lines += param_lines(ttt)
+    lines.append("")
+    lines.append("* common device subcircuits (APDK 'common' section)")
+    for ln in common.splitlines():
+        if ln.strip().startswith(".lib ") or ln.strip().startswith(".endl"):
+            continue
+        # ngspice does not accept HSPICE-style "param:" on the .subckt line;
+        # convert to scoped .param statements inside the body.
+        m = re.match(
+            r"^(\.subckt\s+\S+(?:\s+\S+)*?)\s+param:\s*(.+)$", ln.strip())
+        if m:
+            lines.append(m.group(1))
+            for pv in re.split(r"\s+", m.group(2).strip()):
+                if pv:
+                    lines.append(f".param {pv}")
+        else:
+            # rndgauss is a SpiceOpus extension; ngspice uses agauss(0, s)
+            # with identical N(0, s) semantics.
+            ln = re.sub(r"rndgauss\(([^)]*)\)", r"agauss(0, \1)", ln)
+            lines.append(ln)
+    lines.append(".endl cnm25")
+    lines.append("")
+    for sec, block in corners.items():
+        lines.append(f".lib {sec}")
+        lines.append(f"* {sec} — CNM25 {'Monte Carlo mismatching' if sec == 'cnm25_mc' else 'process corner'}; apply with .lib '...cnm25.lib' cnm25")
+        lines += param_lines(block)
+        lines.append(f".endl {sec}")
+        lines.append("")
+    lines.append(".end")
+
+    model_dir = ROOT / "profiles" / "cnm25" / "models"
+    model_dir.mkdir(parents=True, exist_ok=True)
+    out = model_dir / "cnm25.lib"
+    out.write_text("\n".join(lines) + "\n")
+    print(f"wrote {out}: sections cnm25, cnm25_sss, cnm25_fff, cnm25_mc")
+    return 0
+
+
 def normalize_hspice_card(text: str) -> str:
     """Remove HSPICE library wrappers before nesting cards in ngspice .lib."""
     lines = []
@@ -106,6 +514,10 @@ def main():
     args = ap.parse_args()
     if args.profile == "ls1u":
         return generate_ls1u()
+    if args.profile == "cnm25":
+        return generate_cnm25(Path("../apdk_cnm25_v2024_04_09"))
+    if args.profile == "ams_c35":
+        return generate_ams_c35()
 
     cdk = Path(args.cdk)
     pub = cdk / "models/hspice/public/publicModel"

@@ -21,12 +21,14 @@
         "grid_um": { "type": "number", "description": "design grid (gridRes) in microns" },
         "min_channel_um": { "type": "number" },
         "min_width_um": { "type": "number" },
-        "model_prefix": { "type": "string", "description": "SPICE model name prefix, e.g. ami06" },
         "well_type": { "enum": ["n", "p", "e"], "description": "n = n-well, p = p-well, e = epitaxial/twin-well" },
         "rule_family": {
           "enum": ["scmos", "scmos_subm", "native"],
           "description": "rule family independent of the process profile; native is for non-SCMOS profiles"
         },
+        "hvcmos_rule_source": { "type": "string", "description": "explicit provenance/limitation for profile-specific HV rules" },
+        "mask_map_status": { "type": "string", "description": "foundry, provisional, or unavailable logical layer mapping" },
+        "gds_output_policy": { "type": "string" },
         "stacked_vias": { "type": "boolean" },
         "features": {
           "type": "object",
@@ -58,7 +60,7 @@
             }
           },
           "cif": { "type": "array", "items": { "type": "string" } },
-          "role": { "enum": ["well", "active", "select", "gate", "cut", "metal", "resistor", "capacitor", "pad", "misc"] },
+          "role": { "enum": ["well", "active", "select", "gate", "cut", "metal", "resistor", "capacitor", "pad", "implant", "marker", "isolation", "misc"] },
           "available": { "type": "boolean", "description": "present in this process variant" },
           "display": {
             "type": "object",
@@ -130,7 +132,17 @@
         "extension": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
         "area": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
         "notch": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
-        "overlap": { "type": "array", "items": { "$ref": "#/$defs/rule" } }
+        "overlap": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
+        "hvcmos": {
+          "type": "object",
+          "description": "explicit profile-specific marker, hierarchy, drift, and voltage-net rules",
+          "properties": {
+            "markers": { "type": "array", "items": { "$ref": "#/$defs/hv_contract" } },
+            "hierarchy": { "type": "array", "items": { "$ref": "#/$defs/hv_contract" } },
+            "drift": { "type": "array", "items": { "$ref": "#/$defs/hv_contract" } },
+            "voltage_spacing": { "type": "array", "items": { "$ref": "#/$defs/voltage_rule" } }
+          }
+        }
       }
     },
     "devices": {
@@ -215,14 +227,49 @@
         "id": { "type": "string", "description": "rule reference, e.g. SCMOS 1.1" },
         "layer": { "type": "string" },
         "layer2": { "type": "string", "description": "second layer for spacing/enclosure/extension" },
+        "family": { "type": "string" },
+        "override_of": { "type": "string" },
         "value_um": { "type": "number", "description": "limit in microns" },
         "compare": { "enum": ["min", "max", "exact"] },
         "nets": { "enum": ["any", "same", "diff"], "description": "sameNet/diffNet connectivity qualifier" },
         "app": { "type": "boolean", "description": "apposition filter (Diva app > 0); approximated by opposite-edge space_check" },
         "condition": { "type": "string", "description": "process feature condition, e.g. submicron" },
         "source": { "type": "string", "description": "provenance: divaDRC.rul rule id, MOSIS doc, ..." },
-        "note": { "type": "string" }
+        "note": { "type": "string" },
+        "net_property": { "type": "string" }
       }
+    },
+    "hv_contract": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string" },
+        "marker": { "type": "string" },
+        "target": { "type": "string" },
+        "outer": { "type": "string" },
+        "inner": { "type": "string" },
+        "relation": { "type": "string" },
+        "parent": { "type": "string" },
+        "forbid_overlap": { "type": "string" },
+        "note": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "voltage_rule": {
+      "type": "object",
+      "required": ["id", "layer", "class1", "value_um"],
+      "properties": {
+        "id": { "type": "string" },
+        "layer": { "type": "string" },
+        "layer2": { "type": "string" },
+        "class1": { "enum": ["lv", "hv"] },
+        "class2": { "enum": ["lv", "hv"] },
+        "potential": { "enum": ["any", "same", "different"] },
+        "value_um": { "type": "number" },
+        "source": { "type": "string" },
+        "note": { "type": "string" }
+      },
+      "additionalProperties": true
     }
   }
 }

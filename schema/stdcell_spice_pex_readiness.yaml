@@ -5,11 +5,16 @@ kind: stdcell_spice_pex_readiness
 status: preparation_contract
 
 policy:
-  generator_implementation: not_implemented
-  active_stdcell_profiles: []
+  generator_implementation: geometry_candidate_planner
+  active_stdcell_profiles:
+    - ami06
+    - ami16
+    - hp06
+    - cnm25
+    - ams_c35
   signoff_claims: forbidden
   historical_model_import: forbidden
-  purpose: "Describe the SPICE and PEX inputs a future generator must consume and the current blockers for each profile."
+  purpose: "The stdcell planner emits fixed-height SCMOS geometry/routing candidates; native pin, DRC/LVS/PEX, and characterization gates remain required."
   required_inputs:
     - process_geometry_and_grid
     - cell_pin_power_bulk_contract
@@ -161,18 +166,18 @@ profiles:
         - diffusion_sheet_resistance
         - gate_sheet_resistance
         - metal_interconnect_rc
-      withheld_terms:
         - contact_and_via_resistance
+      withheld_terms:
         - direct_junction_and_substrate_capacitance_mapping
     readiness:
       characterization_level: partial_rc
       signoff: blocked
       blockers:
-        - no_stdcell_geometry_contract
-        - no_cell_pin_power_bulk_contract
+        - native_pin_access_not_verified
+        - native_bulk_tap_policy_not_signoff_verified
         - no_process_voltage_temperature_corner_pack
-        - pex_contact_and_junction_terms_withheld
-        - no_lef_or_liberty_generator
+        - pex_junction_terms_withheld
+        - no_signoff_lef_liberty_characterization
 
   ami16:
     role: active_profile_candidate
@@ -219,7 +224,7 @@ profiles:
       source_status: public_nominal_bsim3v3
     pex:
       manifest: profiles/ami16/pex/manifest.yaml
-      profile: n77h_reference
+      profile: n88z_reference
       status: source_reference_partial
       topology: true
       runtime: true
@@ -233,8 +238,8 @@ profiles:
         - diffusion_sheet_resistance
         - gate_sheet_resistance
         - metal_interconnect_rc
-      withheld_terms:
         - contact_and_via_resistance
+      withheld_terms:
         - direct_junction_and_substrate_capacitance_mapping
         - electrode_mos_model_cards
         - npn_model_card
@@ -242,10 +247,9 @@ profiles:
       characterization_level: partial_rc
       signoff: blocked
       blockers:
-        - no_stdcell_geometry_contract
         - no_cell_pin_power_bulk_contract
         - no_process_voltage_temperature_corner_pack
-        - pex_contact_and_junction_terms_withheld
+        - pex_junction_terms_withheld
         - no_electrode_or_npn_model_contract_for_extended_devices
         - no_lef_or_liberty_generator
 
@@ -308,17 +312,162 @@ profiles:
         - diffusion_sheet_resistance
         - gate_sheet_resistance
         - metal_interconnect_rc
-      withheld_terms:
         - contact_and_via_resistance
+      withheld_terms:
         - direct_junction_and_substrate_capacitance_mapping
     readiness:
       characterization_level: partial_rc
       signoff: blocked
       blockers:
-        - no_stdcell_geometry_contract
         - no_cell_pin_power_bulk_contract
         - no_process_voltage_temperature_corner_pack
-        - pex_contact_and_junction_terms_withheld
+        - pex_junction_terms_withheld
+        - no_lef_or_liberty_generator
+
+  cnm25:
+    role: active_profile_candidate
+    process: CNM25
+    spice:
+      library: profiles/cnm25/models/cnm25.lib
+      section: cnm25
+      representation: subckt
+      geometry_units: um
+      corners:
+        available:
+          - nominal
+          - slow
+          - fast
+        missing:
+          - fnsp
+          - snfp
+      devices:
+        - binding: nmos_core
+          model: cnm25modN
+          prefix: x
+          terminals:
+            - d
+            - g
+            - s
+            - b
+        - binding: pmos_core
+          model: cnm25modP
+          prefix: x
+          terminals:
+            - d
+            - g
+            - s
+            - b
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+      source_status: published_apdk_bsim3v3_2_4
+    pex:
+      manifest: profiles/cnm25/pex/manifest.yaml
+      profile: none
+      status: topology_only
+      topology: true
+      runtime: false
+      rc: false
+      model_owned_terms:
+        - transistor_intrinsic_capacitance
+        - gate_overlap_capacitance
+        - junction_area_capacitance
+        - junction_sidewall_capacitance
+      pex_owned_terms:
+        - diffusion_sheet_resistance
+        - gate_sheet_resistance
+        - metal_interconnect_rc
+      withheld_terms:
+        - contact_and_via_resistance
+        - metal_interconnect_rc
+        - direct_junction_and_substrate_capacitance_mapping
+      note: "APDK field-solver path (FastCap 3D C) and the FastHenry R/L flow are prepared (scripts/run_cnm25_em.py); no RC coefficients are emitted yet"
+    readiness:
+      characterization_level: topology_only
+      signoff: blocked
+      blockers:
+        - no_magic_extraction_backend_for_cnm25
+        - no_cell_pin_power_bulk_contract
+        - no_process_voltage_temperature_corner_pack
+        - no_lef_or_liberty_generator
+
+  ams_c35:
+    role: active_profile_candidate
+    process: C35B4C3
+    spice:
+      library: profiles/ams_c35/models/ams_c35.lib
+      section: ams_c35
+      representation: primitive
+      geometry_units: um
+      corners:
+        available:
+          - nominal
+          - slow
+          - fast
+        missing:
+          - fnsp
+          - snfp
+      devices:
+        - binding: nmos_core
+          model: c35N
+          prefix: m
+          terminals:
+            - d
+            - g
+            - s
+            - b
+        - binding: pmos_core
+          model: c35P
+          prefix: m
+          terminals:
+            - d
+            - g
+            - s
+            - b
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+      source_status: eng182_bsim3v3_transcribed_cards
+      limitation: "cards transcribed from the USP thesis appendix (ENG-182 REV_6); ELDO dialect mapped to ngspice LEVEL 49; Monte-Carlo cards are ELDO-only; RF models (ENG-188) remain a contract"
+    pex:
+      manifest: profiles/ams_c35/pex/manifest.yaml
+      profile: none
+      status: topology_only
+      topology: true
+      runtime: false
+      rc: false
+      model_owned_terms:
+        - transistor_intrinsic_capacitance
+        - gate_overlap_capacitance
+        - junction_area_capacitance
+        - junction_sidewall_capacitance
+      pex_owned_terms:
+        - diffusion_sheet_resistance
+        - gate_sheet_resistance
+        - metal_interconnect_rc
+      withheld_terms:
+        - contact_and_via_resistance
+        - metal_interconnect_rc
+        - direct_junction_and_substrate_capacitance_mapping
+    readiness:
+      characterization_level: topology_only
+      signoff: blocked
+      blockers:
+        - no_ams_model_card_redistribution
+        - no_magic_extraction_backend_for_ams_c35
+        - no_cell_pin_power_bulk_contract
         - no_lef_or_liberty_generator
 
   ls1u:

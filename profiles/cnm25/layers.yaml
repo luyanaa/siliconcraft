@@ -1,0 +1,143 @@
+# profiles/cnm25/layers.yaml — normalized from the CNM25 APDK
+# Source: apdk_cnm25_v2024_04_09 (IMB-CNM(CSIC) Academic Process Design Kit)
+#   glade/cnm25.tch, doc/apdk_cnm25_v2024_04_09.pdf
+#
+# CNM25 is a 2.5um, 2-polySi (POLY0/POLY1), 2-metal (METAL/METAL2) CMOS
+# process.  POLY0 is used only for the PiP capacitor; POLY1 is the MOS gate
+# and the other PiP plate.  DRC is expressed directly in um on a 0.25um
+# design grid.  Layer names below follow the siliconcraft SCMOS vocabulary
+# (the layer map is the stable cross-tool contract); the APDK native name is
+# recorded in each `note`.  The single APDK contact layer WINDOW covers
+# active/poly/poly0 cuts and is bound to the generic cut layer `cc`; the
+# Diva-style classification derives ca/cp/ce from it.
+#
+# The profile carries TWO DRC abstractions:
+#   - authoritative (generated): classic-SCMOS conservative with
+#     lambda_cover = 1.5um (meta.lambda_um) and the contact exact size
+#     overridden to the native 2.5um cut;
+#   - reference: the native APDK DRC deck (1:1, um rules, 0.25um grid)
+#     in reference/klayout/cnm25_native.lydrc.
+meta:
+  name: cnm25
+  process: CNM25
+  foundry: "IMB-CNM(CSIC)"
+  description: "CNM25 2.5um 2-poly 2-metal CMOS (Academic Process Design Kit); SCMOS-conservative rule family with lambda_cover 1.5um"
+  node_um: 2.5
+  lambda_um: 1.5
+  grid_um: 0.25
+  min_channel_um: 3.0
+  min_width_um: 2.0
+  model_prefix: cnm25mod
+  well_type: n
+  rule_family: scmos
+  stacked_vias: false
+  features:
+    elecAvailable: true
+    polycapAvailable: true
+    pselectFromActive: true
+    metal3Available: false
+    metal4Available: false
+    highresAvailable: false
+    cwellAvailable: false
+    sblockAvailable: false
+    npnAvailable: false
+    pnpAvailable: false
+    ccdAvailable: false
+    hvAvailable: false
+    memsAvailable: false
+    metalcapAvailable: false
+  license: "APDK CNM25 academic/educational use; IMB-CNM(CSIC) APDK"
+  sources:
+    - "file://../apdk_cnm25_v2024_04_09/doc/apdk_cnm25_v2024_04_09.pdf"
+    - "file://../apdk_cnm25_v2024_04_09/glade/cnm25.tch"
+    - "file://../apdk_cnm25_v2024_04_09/glade/verification/cnm25drc.py"
+    - "file://../apdk_cnm25_v2024_04_09/glade/verification/cnm25lvs.py"
+    - "file://../apdk_cnm25_v2024_04_09/glade/verification/cnm25pex_2d.py"
+    - "file://../apdk_cnm25_v2024_04_09/glade/verification/cnm25pex_3d.py"
+    - "file://../apdk_cnm25_v2024_04_09/spiceopus/cnm25mod.lib"
+layers:
+  -
+    name: nwell
+    purpose: drawing
+    gds:
+      - {layer: 1, datatype: 0}
+    role: well
+    note: "APDK NTUB; N-well, width >= 8um, spacing >= 8um"
+  -
+    name: pwell
+    purpose: drawing
+    gds:
+      - {layer: 26, datatype: 0}
+    role: well
+    available: true
+    note: "APDK PWELL (derived P-substrate in APDK DRC/LVS; GDS 26 declared by the techfile)"
+  -
+    name: active
+    purpose: drawing
+    gds:
+      - {layer: 2, datatype: 0}
+    role: active
+    note: "APDK GASAD; active area, width >= 2um, spacing >= 4um"
+  -
+    name: poly
+    purpose: drawing
+    gds:
+      - {layer: 4, datatype: 0}
+    role: gate
+    note: "APDK POLY1; MOS gate and PiP top plate, width >= 3um inside GASAD / 2.5um outside"
+  -
+    name: elec
+    purpose: drawing
+    gds:
+      - {layer: 3, datatype: 0}
+    role: capacitor
+    note: "APDK POLY0; PiP capacitor bottom plate only, width >= 2.5um, spacing >= 6um"
+  -
+    name: nselect
+    purpose: drawing
+    gds:
+      - {layer: 5, datatype: 0}
+    role: select
+    note: "APDK NPLUS; N+ implant, enclosure of GASAD >= 2.5um"
+  -
+    name: cc
+    purpose: drawing
+    gds:
+      - {layer: 6, datatype: 0}
+    role: cut
+    note: "APDK WINDOW; single contact window layer (active/poly1/poly0 cuts); ca/cp/ce are derived from it"
+  -
+    name: metal1
+    purpose: drawing
+    gds:
+      - {layer: 7, datatype: 0}
+    role: metal
+    note: "APDK METAL; metal1, width >= 2.5um, spacing >= 3um"
+  -
+    name: metal2
+    purpose: drawing
+    gds:
+      - {layer: 9, datatype: 0}
+    role: metal
+    note: "APDK METAL2; metal2, width >= 3.5um, spacing >= 3.5um"
+  -
+    name: via
+    purpose: drawing
+    gds:
+      - {layer: 10, datatype: 0}
+    role: cut
+    note: "APDK VIA; metal1-metal2 via, exact 3um x 3um, spacing >= 3.5um"
+  -
+    name: pad
+    purpose: drawing
+    gds:
+      - {layer: 8, datatype: 0}
+    role: pad
+    note: "APDK CAPS; passivation window, exact 100um x 100um"
+  -
+    name: glass
+    purpose: drawing
+    gds:
+      - {layer: 8, datatype: 0}
+    role: misc
+    note: "APDK CAPS aliased as SCMOS glass (passivation opening); pad enclosure checks operate on it"

@@ -90,6 +90,76 @@ The old PEX blocks are unusually rich for the HP CMOS26B/26G and HP MOS14TB fami
 
 Comments such as `MODEL HANDLES THIS` are ownership boundaries. Intrinsic MOS gate and junction terms must not be duplicated in PEX when the compact model owns them. This matches siliconcraft's existing source-driven PEX separation: a Magic deck can supply geometry/connectivity grammar while coefficients remain explicitly sourced and validated.
 
+## SCMOS PEX priority ladder
+
+The active PEX profiles follow a lot-consistent sourcing policy: device model,
+sheet resistance, capacitance, and contact/via resistance must come from the
+same MOSIS run before a profile is promoted beyond partial RC. AMI16 (N88Z)
+meets that bar end-to-end; AMI06 (N8BN) and HP06 (N8AG) source contact/via
+resistance from their reports, while sheet/capacitance coefficients still come
+from the NCSU CDK branches (an aggregate that can mix runs) and are withheld
+from junction/substrate terms. The full four-point audit (SPICE / PEX-RC /
+field stack / benchmark) per flow is in
+[`process_flow_audit.md`](process_flow_audit.md).
+
+Planned expansion order (priority, process, MOSIS run, status):
+
+| Priority | Process / run | Role | Status |
+| --- | --- | --- | --- |
+| A+ | AMI C5N / N8BN | first PEX/stdcell timing baseline | active, first-hand contact/via in manifest |
+| A+ | HP AMOS14TB / N8AG | silicided-process cross-check | active, first-hand contact/via in manifest |
+| A+ | HP GMOS10QA / N88W 0.35 µm | SUBM scaling, 4M routing | local first-hand verified (RO 176.09 MHz); profile not yet assembled |
+| A+ | TSMC035 3M / N88Y 0.35 µm | SUBM + TSMC cross-check | local first-hand verified (non-silicided, RO 196.17 MHz); T27K is a separate silicided run — never merged |
+| A+ | TSMC025 / N94S 0.25 µm | SUBM vs DEEP abstraction experiment | local first-hand verified; no RO in report → derived inverter-chain benchmark |
+| A | AMI CWL / N87R ~1 µm | early SCMOS benchmark | local first-hand verified (RO 110.33 MHz); profile not yet assembled |
+| A | AMI ABN / N88Z ~1.2–1.6 µm | old-node PEX benchmark | active (ami16 profile) |
+| A-/A | Orbit / N91W 2 µm | early SCMOS / 2M benchmark | local first-hand verified (RO 36.62/40.24 MHz); profile not yet assembled |
+| A-/A | TSMC018 / T28M | DEEP lower bound, 6M | first-hand archived in-repo (docs/mosis_evidence/); MOS+RC pairing complete (report carries its own BSIM3 cards) |
+| B/C | HP CMOS26G / CMOS34 | historical compatibility | no clean lot-level complete source yet |
+| — | ams C35 / SCN4ME_SUBM (λ=0.2) | 0.35 µm mixed-signal, manufacturable | ACTIVE profile: ENG-183 exceptions recorded (VIA 0.5, select/active 0.45, N+/P+ enc 0.25); ENG-188 RF model contract; cards NDA |
+| — | CNM25 (IMB-CNM APDK) | 2.5 µm academic, SCMOS-covering | ACTIVE profile: SCMOS-conservative + native DRC abstractions; FastCap C / FastHenry R-L flow prepared |
+
+Rules that apply before any of these become active profiles:
+
+- the first-hand MOSIS parametric report (or a verified mirror) must be read,
+  not a downstream summary; NCSU `layerDefinitions.tf` aggregates can mix runs
+  (AMI_C5N via/via2 match T01X, HP_AMOS14TB sheet values cite N98R/N74K);
+- the run must match the shipped model cards (AMI06 N8BN, HP06 N8AG, AMI16
+  N88Z, HP10 N88W, TSMC035 N88Y, TSMC025 N94S);
+- N94S is the highest-value near-term target: with SUBM (λ=0.15) and DEEP
+  (λ=0.12) overlays on the same electrical process, the generator can measure
+  the design-rule-abstraction penalty directly.
+
+## SCMOS 7.2 device extensions (defined / DRC+LVS / λ)
+
+The three-way feasibility analysis for the SCMOS 7.2 option device families
+(HVCMOS, electrode capacitor/transistor, vertical NPN, linear capacitor,
+buried CCD, silicide-block resistor, MEMS, SCNPC) lives in
+[`scmos72_device_extensions.md`](scmos72_device_extensions.md); the
+machine-readable `option_rule_families` registry is part of the matrix
+schema. Status summary:
+
+| Family | Defined | λ rules | DRC | LVS |
+| --- | :-: | :-: | :-: | :-: |
+| Electrode capacitor (11) | ✅ | ✅ | implemented | implemented |
+| Electrode transistor (12) | ✅ | ✅ | implemented | implemented |
+| Electrode contact (13) | ✅ | ✅ | implemented | implemented |
+| Vertical NPN (16) | ✅ | ✅ | implemented (Magic); siliconcraft gap | implemented |
+| Linear capacitor (17/18) | ✅ | ✅ | implemented (Magic); siliconcraft gap | implemented |
+| Buried CCD (19) | ✅ | ✅ | implemented (Magic); siliconcraft gap | not applicable |
+| Silicide block (20) | ✅ | ✅ | lambda_only | recipe |
+| SCNPC POLY_CAP1 (23) | ✅ | ✅ | lambda_only | none |
+| HVCMOS (CVP/CVN) | ✅ (layers) | ❌ | none (override-gated) | partial (CDK tactive) |
+| MEMS (COP/CPS) | ✅ (layers) | ❌ | none | none |
+
+HVCMOS and MEMS are the only two families without official SCMOS 7.2 λ
+rules: HV is an undeclared option with marker layers only and **no λ rules
+are implemented by default** — applying the process-specific Magic
+`scmos.tech.in` AMI 1.5 µm 20.x set requires an explicit `hvcmosLambdaOverride`
+feature opt-in, enforced by `common/process_ir.py`; MEMS is explicitly
+unregulated by Magic with only micrometer-level process guidelines
+(NIST IR 5402, MOSIS newsletter 206).
+
 ## Sources
 
 - [MOSIS SCMOS 7.2 PDF](https://www.clear.rice.edu/elec422/1999/manual/mosis_scmos7_2.pdf)
@@ -97,5 +167,17 @@ Comments such as `MODEL HANDLES THIS` are ownership boundaries. Intrinsic MOS ga
 - [Magic SCMOS technology catalog](https://opencircuitdesign.com/magic/tech.html)
 - [Magic 2001a archive](https://opencircuitdesign.com/magic/archive/2001a.tar.gz)
 - [Magic 2002a archive](https://opencircuitdesign.com/magic/archive/2002a.tar.gz)
+
+Field-stack evidence (first-hand foundry thickness for two ladder families,
+archived in this repo): TSMC018 stack from `T-018-MM-SP-001` Table 10.1
+([`docs/mosis_evidence/t018mms001_table10-1.md`](mosis_evidence/t018mms001_table10-1.md));
+TSMC035 cross-section from the TSMC035 design-rules deck
+([`docs/mosis_evidence/tsmc035_cross_section.md`](mosis_evidence/tsmc035_cross_section.md)).
+The AMI (C5N/CWL/ABN) and HP (AMOS14TB/GMOS10QA) families have no first-hand
+thickness in any public source; the full search log is in
+[`docs/mosis_evidence/ami_hp_field_search.md`](mosis_evidence/ami_hp_field_search.md)
+(only numeric anchor found: AMI C5N polysilicon 0.4 µm from a NIST journal
+paper). All such stacks must be `derived` (see
+[`process_flow_audit.md`](process_flow_audit.md)).
 
 The repository's bundled historical source is [`profiles/ls1u/reference/magic/scmos.tech.in`](../profiles/ls1u/reference/magic/scmos.tech.in). Its values are retained as historical reference snapshots and are not asserted to be current foundry calibration.

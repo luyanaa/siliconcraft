@@ -1,0 +1,20 @@
+# profiles/cnm25/devices.yaml — authoritative LVS device table (CNM25)
+#
+# Curated from the APDK extraction decks (glade/verification/cnm25lvs.py and
+# cnm25pex_2d.py).  Device recognition reuses the SCMOS derived-layer
+# vocabulary: with a single WINDOW contact layer bound to `cc`, the
+# classification yields ce (POLY0 cut), cp (POLY1 cut) and ca (GASAD cut);
+# nChannel/pChannel come from POLY1 over N+/P+ active, and the PiP capacitor
+# is the POLY0-inside-POLY1 overlap (CapacitorElec).  P+ regions are derived
+# (active minus NPLUS) via the pselectFromActive feature flag.
+#
+# The LVS emits flat SPICE with model names prefix+suffix; model_prefix is
+# `cnm25mod`, so NMOS/PMOS emit cnm25modN/cnm25modP, which ngspice resolves
+# case-insensitively against the cnm25modn/cnm25modp subcircuits in
+# models/cnm25.lib.
+devices:
+  mos4:
+    - { name: nmos4, channel: nChannel, diff: nDiff, bulk_net: substrate, model_suffix: nmos }
+    - { name: pmos4, channel: pChannel, diff: pDiff, bulk_net: nBulk, model_suffix: pmos }
+  capacitor:
+    - { name: PiPCap, region: polyElecCap, top: elec, bottom: poly, area_cap: elec_poly }

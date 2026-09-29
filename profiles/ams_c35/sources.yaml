@@ -1,0 +1,114 @@
+# profiles/ams_c35/sources.yaml — provenance for the ams C35 port.
+ams_documents:
+  eng_183:
+    title: "0.35 um CMOS C35 Design Rules"
+    revision: "5.0"
+    date: "2005-12-08"
+    url: "https://opencourses.emu.edu.tr/pluginfile.php/31894/mod_resource/content/1/Process%20Design%20Rules.pdf"
+    note: "public copy of the ams design-rule document; source of all native rule values"
+  eng_188:
+    title: "0.35 um CMOS C35 RF SPICE Models"
+    revision: "5.0"
+    date: "2005-11"
+    url: "https://picture.iczhiku.com/resource/eetop/shktYdAqlJSDTNmn.pdf"
+    note: "RF MOSFET model topology: BSIM3v3.1 + RG/RD/RS + RSUB + external junction diodes; cards company confidential"
+  eng_182:
+    title: "0.35 um CMOS C35 Process Parameters"
+    url: "https://studyres.com/doc/6790365/0.35%C2%B5m-cmos-c35-process-parameters-document"
+    note: "BSIM3v3 transistor models and process parameters; company confidential"
+  eng_228:
+    title: "0.35 um CMOS C35 Matching Parameters"
+    note: "matching parameters reference (not redistributed)"
+references:
+  ishibe_thesis:
+    title: "Projeto de uma fonte de tensao de referencia"
+    author: "Eder Issao Ishibe"
+    institution: "EESC/USP"
+    year: 2014
+    url: "https://www.teses.usp.br/teses/disponiveis/18/18155/tde-24072014-165540/publico/Eder.pdf"
+    role: "source of the ENG-182 REV_6 BSIM3v3 cards (Anexos A-D); thesis license permits reproduction for study/research with citation"
+  leblebici_appendix_c:
+    title: "Fundamentals of High-Frequency CMOS Analog Integrated Circuits, Appendix C (BSIM3v3 parameters of ams 0.35um NMOS/PMOS)"
+    author: "Leblebici, A."
+    publisher: "Cambridge University Press"
+    url: "https://www.globalspec.com/reference/62320/203279/appendix-c-bsim3-v3-parameters-of-ams-0-35-micron-nmos-and-pmos-transistors"
+    role: "cross-reference of the same card family (not reproduced)"
+  lambda_conformance:
+    doc: "docs/ams_c35_lambda_conformance.md"
+    note: "full ENG-183 conformance assessment: covered layer rules + exceptions E1-E7; non-λ families (density/antenna/scribe/stress/latch-up/elements/guidelines)"
+  eng182_rev6_mirror:
+    title: "ENG-182 Rev.6, 0.35um CMOS C35 Process Parameters (direct mirror)"
+    date: "2008-12-12"
+    url: "https://picture.iczhiku.com/resource/eetop/WyIGHDqQeYYRDVvM.pdf"
+    provenance: "original document layout/pagination/revision history/date; third-party mirror, NOT an ams/Europractice official download"
+    role: |
+      primary source for: eps_r per dielectric (Note 24), metal sheet R spec,
+      VIA3 1.2-3 ohm, vertical area/fringe C and same-layer coupling C tables,
+      area-C formula eps0*eps_r/t, SCAP FEM methodology, Weff corrections,
+      substrate rho 14/19/24 ohm-cm non-epi, XJNW 3.5 um (Rev.3 corrected),
+      n-well Rsh 0.9/1.0/1.1 kohm/sq, SIMS/SRS junction extraction note,
+      MOS NSUB is not a wafer profile (Note 12)
+  eng182_rev2_note:
+    title: "ENG-182 Rev.2 summary values (superseded)"
+    url: "https://studyres.com/doc/6790365/0.35%C2%B5m-cmos-c35-process-parameters-document"
+    note: "Rev.2 XJNW=2.0 um is superseded by Rev.3+ 3.5 um; CONT 30/60 ohm and VIA 1.2 ohm values from this revision are marked 're-verify in Rev.6'"
+  fib_sem_sidewall:
+    title: "FIB/SEM cross-section measurements of AMS 0.35um 4-metal CMOS"
+    role: "per-layer sidewall angle min/avg/max (M1-M4, VIA1-3, CONT, POLY1); via/contact are trapezoids, not straight-wall cuboids"
+  passivation_xps:
+    title: "ToF-SIMS/XPS study of foundry IC passivation"
+    role: "top SiNx non-stoichiometric (Si:N ~1:1, ~20% H); underlying SiOx close to SiO2 — corroborates PROT2 eps_r 7.9 / PROT1 eps_r 3.9"
+  sidewall_taper_fem:
+    title: "CMOS BEOL coupled-line study at 40-80 GHz (FEM)"
+    role: "104-deg sidewall matches measured coupling best; 0.8 dB coupling span across 75-121 deg; at 1-6 GHz calibrate sidewall after eps_r/thickness/substrate"
+  chalmers_c35b4:
+    title: "Ultra Low Power Low Voltage ASIC Design and Implementation (Appendix A: AMS C35B4 CMOS process parameters)"
+    author: "Bayan Nasri"
+    institution: "Chalmers University of Technology"
+    year: 2011
+    url: "https://odr.chalmers.se/bitstreams/b52ab768-67e0-4437-b266-bc97aef7b599/download"
+    role: "C35B4 structural/process parameters (thickness, Rsh, C); body text quotes Cox/Cjn/Cjp/Cgd family values"
+  ordinary_pex_flow:
+    notes:
+      - "NUS Analog IC Design Manual: xRC, Transistor Level, R + C + CC, No Inductance"
+      - "Cambridge C35 lab manual: C + CC, DSPF output (nor2x.pex.c+cc.dspf)"
+      - "Rostock AMS HIT-Kit tutorial: QRC c35b4c3 Typical; coupled vs decoupled C"
+      - "Europractice: QRC listed as C35 parasitic extraction tool"
+    role: "reference hierarchy for the open PEX level (R+Cg+Cc -> DSPF/SPEF)"
+    doc: "docs/ams_c35_pex_field.md"
+  ordinary_pex_flow:
+    notes:
+      - "NUS Analog IC Design Manual: xRC, Transistor Level, R + C + CC, No Inductance"
+      - "Cambridge C35 lab manual: C + CC, DSPF output (nor2x.pex.c+cc.dspf)"
+      - "Rostock AMS HIT-Kit tutorial: QRC c35b4c3 Typical; coupled vs decoupled C"
+      - "Europractice: QRC listed as C35 parasitic extraction tool"
+    role: "reference hierarchy for the open PEX level (R+Cg+Cc -> DSPF/SPEF)"
+    doc: "docs/ams_c35_pex_field.md"
+  rf_models:
+    doc: "docs/ams_c35_rf.md"
+    note: "ENG-188 Rev 5.0 RF architecture: modnrf/modprf wrapper, validity envelope, fT/fmax, cvar, passives, model revisions"
+gds_stream_map:
+  file: "gds_layer_map.yaml"
+  authority: public_reference
+  source: "AMS HIT-Kit C35B4 public mirror, cac35b4rules_all.run LAYER 891-959 and text/definition 1093-1219"
+  url: "https://raw.githubusercontent.com/jjwikner/daisy/c6d8341f36d734a55b9ac0902547744c93cd4cd6/daisy/pdk/ams035/pv/calibre/cac35b4rules_all.run"
+  official_process_url: "https://www.cmc.ca/ams-350-nm-cmos-basic/"
+  current_kit_requirement: "CMC/AMS licensed current kit and foundry DRC/LVS are required for tapeout."
+process_summary:
+  feature_size_um: 0.35
+  process_family: "C35 (C35B4C3: 4-metal core + PIP + HRES)"
+  base_license: "TSMC 0.35um mixed-signal base process (ams license)"
+  mosis_mapping: "SCN4ME_SUBM, lambda 0.2um"
+  grid_um: 0.025
+  devices:
+    - "3.3V NMOS/PMOS (BSIM3v3.1)"
+    - "PiP capacitor (POLY1/POLY2)"
+    - "5V gate option (MIDOX), HRES resistor, MIM capacitor (METCAP), low-VT option"
+  exceptions_vs_scmos_subm:
+    - "VIA1/VIA2/VIA3 fixed 0.5um (SCMOS 2lambda 0.4 too small)"
+    - "NPLUS/PPLUS overlap of DIFF 0.45um (SCMOS 4.2 0.4)"
+    - "NPLUS/PPLUS enclosure of diffusion contact 0.25um (SCMOS 4.3 0.2)"
+    - "stacked vias allowed (VIA1.C.1/VIA2.C.1)"
+    - "POLY2 (CPOLY) rules native (0.8/0.65/1.2)"
+    - "bonding pad 85um (CB.W.1)"
+    - "HRES to POLY1/DIFF 0.35, HRES to POLY2 3.0 (E7, added in rules.yaml)" 

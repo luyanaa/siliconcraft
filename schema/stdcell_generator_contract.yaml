@@ -1,7 +1,7 @@
 # Architecture and implementation contract for a process-parameterized stdcell
 # generator.
-# This file describes search/evaluation policy and the currently implemented
-# front-end/geometry slice; it does not claim a complete optimizer or signoff.
+# The implemented geometry slice is process-parameterized SCMOS; it does not
+# claim a foundry standard-cell library or signoff characterization.
 schema_version: 1
 kind: stdcell_generator_contract
 status: architecture_contract
@@ -9,8 +9,14 @@ readiness_contract: schema/stdcell_spice_pex_readiness.yaml
 routing_grammar_contract: schema/routing_grammar_contract.yaml
 
 policy:
-  implementation: partial_frontend_geometry_backend
-  first_backend_scope: 1um_class_scmos
+  implementation: geometry_candidate_planner
+  first_backend_scope: scmos_fixed_height
+  supported_profiles:
+    - ami06
+    - ami16
+    - hp06
+    - cnm25
+    - ams_c35
   input_formats:
     - spice
     - cdl
@@ -119,7 +125,7 @@ api:
       - pareto_filter
 
 search:
-  initial_method: exhaustive_enumeration_with_early_pruning
+  initial_method: exhaustive_enumeration_then_pareto_beam
   placement:
     primary_method: euler_graph_enumeration_plus_folding_enumeration
     pmos_nmos_ordering_is_joint: true
@@ -138,7 +144,7 @@ search:
     gate_alignment: common_p_gate_and_n_gate_columns_share_x_coordinate
     row_policy:
       legal_orientations: process_declared
-      default_alternation: R0_then_MY
+      default_alternation: R0_then_MX
       fixed_height_rail_abutment: required
   device_variables:
     wn:
@@ -149,10 +155,7 @@ search:
       values: process_declared_grid
     nf:
       role: physical_fingers
-      values:
-        - 1
-        - 2
-        - 3
+      values: row_active_capacity_derived
     l:
       role: channel_length
       policy: preserve_explicit_or_default_to_lmin

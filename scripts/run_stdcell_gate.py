@@ -106,28 +106,29 @@ def run_gate(args: argparse.Namespace) -> int:
     summary = json.loads(drc_summary.read_text())
     if summary.get("markers") != 0:
         raise SystemExit(f"{args.cell} DRC produced markers: {summary}")
-    run(
-        [
-            sys.executable,
-            "scripts/run_lvs.py",
-            "--profile",
-            args.profile,
-            "--layout",
-            str(layout),
-            "--schematic",
-            str(schematic),
-            "--deck",
-            "authoritative",
-            "--top-cell",
-            top_cell,
-            "--workdir",
-            str(lvs_workdir),
-            "--klayout",
-            klayout,
-            "--netgen",
-            netgen,
-        ]
-    )
+    lvs_command = [
+        sys.executable,
+        "scripts/run_lvs.py",
+        "--profile",
+        args.profile,
+        "--layout",
+        str(layout),
+        "--schematic",
+        str(schematic),
+        "--deck",
+        "authoritative",
+        "--top-cell",
+        top_cell,
+        "--workdir",
+        str(lvs_workdir),
+        "--klayout",
+        klayout,
+        "--netgen",
+        netgen,
+    ]
+    if args.circuit:
+        lvs_command.extend(["--circuit", args.circuit])
+    run(lvs_command)
     if args.pex:
         magic = tool(args.magic, "MAGIC", "magic")
         ngspice = tool(args.ngspice, "NGSPICE", "ngspice")
@@ -177,6 +178,8 @@ def main(defaults: dict[str, object] | None = None) -> int:
     parser.add_argument("--candidate", type=int, default=defaults.get("candidate", 0))
     parser.add_argument("--beam-width", type=int)
     parser.add_argument("--top-cell", default=defaults.get("top_cell"))
+    parser.add_argument("--circuit", default=defaults.get("circuit"),
+                        help="optional Netgen circuit/subckt name for LVS")
     parser.add_argument("--klayout")
     parser.add_argument("--netgen")
     parser.add_argument("--pex", action="store_true")

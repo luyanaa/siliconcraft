@@ -1,0 +1,452 @@
+# profiles/ams_c35/gds_layer_map.yaml
+#
+# C35B4C3 GDSII stream map reconstructed from the public C35B4 HIT-Kit
+# Calibre runset snapshot.  This is a reference map for geometry generation;
+# it is NOT a substitute for the current licensed AMS/CMC fab kit.
+#
+# Source layer declarations:
+#   cac35b4rules_all.run, LAYER section 891-959
+#   cac35b4rules_all.run, text/definition section 1093-1219
+schema_version: 1
+profile: ams_c35
+process: C35B4C3
+format: GDSII
+database:
+  user_unit_um: 1.0
+  grid_um: 0.025
+source:
+  authority: public_reference
+  foundry: austriamicrosystems
+  kit_family: "AMS HIT-Kit C35B4"
+  repository: "https://github.com/jjwikner/daisy"
+  commit: "c6d8341f36d734a55b9ac0902547744c93cd4cd6"
+  file: "daisy/pdk/ams035/pv/calibre/cac35b4rules_all.run"
+  lines: "891-959, 1093-1219"
+  url: "https://raw.githubusercontent.com/jjwikner/daisy/c6d8341f36d734a55b9ac0902547744c93cd4cd6/daisy/pdk/ams035/pv/calibre/cac35b4rules_all.run"
+  process_identity_url: "https://www.cmc.ca/ams-350-nm-cmos-basic/"
+  kit_access_url: "https://www.cmc.ca/ams-0-35-%C2%B5m-design-kits/"
+  fab_signoff: false
+  signoff_requirement: "Use the current licensed AMS/CMC C35B4C3 stream map and foundry DRC/LVS before tapeout."
+
+# Direct mask and optional process-module streams from the source runset.
+# logical is the siliconcraft profile alias where one exists.
+mask_layers:
+  -
+    name: TRENCH
+    logical: trench
+    stream: {layer: 3, datatype: 0}
+    status: optional
+  -
+    name: NTUB
+    logical: nwell
+    stream: {layer: 5, datatype: 0}
+    status: core
+  -
+    name: PTUB
+    logical: pwell
+    stream: {layer: 7, datatype: 0}
+    status: optional
+  -
+    name: FIMP
+    logical: fimp
+    stream: {layer: 8, datatype: 0}
+    status: generated_or_optional
+  -
+    name: DIFF
+    logical: active
+    stream: {layer: 10, datatype: 0}
+    status: core
+  -
+    name: MIDOX
+    logical: midox
+    stream: {layer: 14, datatype: 0}
+    status: optional
+  -
+    name: POLY1
+    logical: poly
+    stream: {layer: 20, datatype: 0}
+    status: core
+  -
+    name: NLDD
+    logical: nldd
+    stream: {layer: 21, datatype: 0}
+    status: generated_or_optional
+  -
+    name: NPLUS
+    logical: nselect
+    stream: {layer: 23, datatype: 0}
+    status: core
+  -
+    name: PPLUS
+    logical: pselect
+    stream: {layer: 24, datatype: 0}
+    status: core
+  -
+    name: HRES
+    logical: highres
+    stream: {layer: 29, datatype: 0}
+    status: optional
+  -
+    name: POLY2
+    logical: elec
+    stream: {layer: 30, datatype: 0}
+    status: optional
+  -
+    name: ESD
+    stream: {layer: 31, datatype: 0}
+    status: optional
+  -
+    name: SALEX
+    stream: {layer: 32, datatype: 0}
+    status: optional
+  -
+    name: CONT
+    logical: cc
+    stream: {layer: 34, datatype: 0}
+    status: core
+  -
+    name: MET1
+    logical: metal1
+    stream: {layer: 35, datatype: 0}
+    status: core
+  -
+    name: VIA1
+    logical: via
+    stream: {layer: 36, datatype: 0}
+    status: core
+  -
+    name: MET2
+    logical: metal2
+    stream: {layer: 37, datatype: 0}
+    status: core
+  -
+    name: VIA2
+    logical: via2
+    stream: {layer: 38, datatype: 0}
+    status: core
+  -
+    name: MET3
+    logical: metal3
+    stream: {layer: 39, datatype: 0}
+    status: core
+  -
+    name: PAD
+    logical: pad
+    stream: {layer: 40, datatype: 0}
+    status: optional
+  -
+    name: VIA3
+    logical: via3
+    stream: {layer: 41, datatype: 0}
+    status: core
+  -
+    name: MET4
+    logical: metal4
+    stream: {layer: 42, datatype: 0}
+    status: core
+  -
+    name: LPPLUS
+    stream: {layer: 45, datatype: 0}
+    status: optional
+  -
+    name: LVTA
+    stream: {layer: 46, datatype: 0}
+    status: optional
+  -
+    name: LVPTUB
+    stream: {layer: 47, datatype: 0}
+    status: optional
+  -
+    name: NLDD50
+    stream: {layer: 53, datatype: 0}
+    status: optional
+  -
+    name: METCAP
+    stream: {layer: 55, datatype: 0}
+    status: optional
+  -
+    name: NBUR
+    stream: {layer: 1, datatype: 0}
+    status: optional
+  -
+    name: PBUDEF
+    stream: {layer: 2, datatype: 0}
+    status: optional
+  -
+    name: BNTUB
+    stream: {layer: 15, datatype: 0}
+    status: optional
+  -
+    name: BNTUB2
+    stream: {layer: 16, datatype: 0}
+    status: optional
+  -
+    name: COLL
+    stream: {layer: 11, datatype: 0}
+    status: optional
+  -
+    name: EMITT
+    stream: {layer: 26, datatype: 0}
+    status: optional
+  -
+    name: HBT
+    stream: {layer: 25, datatype: 0}
+    status: optional
+  -
+    name: BPOLY
+    stream: {layer: 28, datatype: 0}
+    status: optional
+  -
+    name: CAPLAY
+    stream: {layer: 27, datatype: 0}
+    status: optional
+  -
+    name: EPOLY
+    stream: {layer: 33, datatype: 0}
+    status: optional
+  -
+    name: HVDEF
+    stream: {layer: 13, datatype: 0}
+    status: optional
+
+# Non-mask streams used by the AMS extraction/recognition flow.
+recognition_layers:
+  -
+    name: M1HOLE
+    stream: {layer: 35, datatype: 1}
+    status: optional
+  -
+    name: M2HOLE
+    stream: {layer: 37, datatype: 1}
+    status: optional
+  -
+    name: M3HOLE
+    stream: {layer: 39, datatype: 1}
+    status: optional
+  -
+    name: M4HOLE
+    stream: {layer: 42, datatype: 1}
+    status: optional
+  -
+    name: LVTDEF
+    stream: {layer: 62, datatype: 28}
+    status: optional
+  -
+    name: CELBOX
+    stream: {layer: 62, datatype: 1}
+    status: optional
+  -
+    name: SFCDEF
+    stream: {layer: 62, datatype: 2}
+    status: optional
+  -
+    name: SUBDEF
+    stream: {layer: 62, datatype: 3}
+    status: optional
+  -
+    name: HOTTUB
+    stream: {layer: 62, datatype: 4}
+    status: optional
+  -
+    name: NOFILL
+    stream: {layer: 62, datatype: 5}
+    status: optional
+  -
+    name: IPDEF
+    stream: {layer: 62, datatype: 6}
+    status: optional
+  -
+    name: KEPOUT
+    stream: {layer: 62, datatype: 7}
+    status: optional
+  -
+    name: ZENER
+    stream: {layer: 62, datatype: 10}
+    status: optional
+  -
+    name: DIODE
+    stream: {layer: 62, datatype: 11}
+    status: optional
+  -
+    name: TUBDEF
+    stream: {layer: 62, datatype: 12}
+    status: optional
+  -
+    name: RESDEF
+    stream: {layer: 62, datatype: 13}
+    status: optional
+  -
+    name: RESTRM
+    stream: {layer: 62, datatype: 14}
+    status: optional
+  -
+    name: METRES
+    stream: {layer: 62, datatype: 15}
+    status: optional
+  -
+    name: CAPDEF
+    stream: {layer: 62, datatype: 20}
+    status: optional
+  -
+    name: VARDUM
+    stream: {layer: 62, datatype: 21}
+    status: optional
+  -
+    name: INDDEF
+    stream: {layer: 62, datatype: 22}
+    status: optional
+  -
+    name: HALLDEF
+    stream: {layer: 62, datatype: 24}
+    status: optional
+  -
+    name: RFDEF
+    stream: {layer: 62, datatype: 26}
+    status: optional
+  -
+    name: PROBE
+    stream: {layer: 62, datatype: 27}
+    status: optional
+  -
+    name: FIDEF
+    stream: {layer: 62, datatype: 29}
+    status: optional
+  -
+    name: DIFCUT
+    stream: {layer: 62, datatype: 30}
+    status: optional
+  -
+    name: PO1CUT
+    stream: {layer: 62, datatype: 31}
+    status: optional
+  -
+    name: PO2CUT
+    stream: {layer: 62, datatype: 32}
+    status: optional
+  -
+    name: BPCUT
+    stream: {layer: 62, datatype: 33}
+    status: optional
+  -
+    name: TUBCUT
+    stream: {layer: 62, datatype: 34}
+    status: optional
+  -
+    name: OPTDEF
+    stream: {layer: 62, datatype: 40}
+    status: optional
+
+# Text labels are stream layer 61/63 text types in the Calibre source; they
+# are not the silicon mask drawing layers.  NET is used by generated routing
+# geometry, PIN is reserved for explicit port labels.
+text_layers:
+  -
+    name: P1PIN
+    logical: poly
+    purpose: pin
+    stream: {layer: 61, datatype: 1}
+  -
+    name: M1PIN
+    logical: metal1
+    purpose: pin
+    stream: {layer: 61, datatype: 2}
+  -
+    name: M2PIN
+    logical: metal2
+    purpose: pin
+    stream: {layer: 61, datatype: 3}
+  -
+    name: M3PIN
+    logical: metal3
+    purpose: pin
+    stream: {layer: 61, datatype: 4}
+  -
+    name: M4PIN
+    logical: metal4
+    purpose: pin
+    stream: {layer: 61, datatype: 5}
+  -
+    name: PADPIN
+    logical: pad
+    purpose: pin
+    stream: {layer: 61, datatype: 10}
+  -
+    name: P1NET
+    logical: poly
+    purpose: net
+    stream: {layer: 61, datatype: 21}
+  -
+    name: M1NET
+    logical: metal1
+    purpose: net
+    stream: {layer: 61, datatype: 22}
+  -
+    name: M2NET
+    logical: metal2
+    purpose: net
+    stream: {layer: 61, datatype: 23}
+  -
+    name: M3NET
+    logical: metal3
+    purpose: net
+    stream: {layer: 61, datatype: 24}
+  -
+    name: M4NET
+    logical: metal4
+    purpose: net
+    stream: {layer: 61, datatype: 25}
+  -
+    name: PADNET
+    logical: pad
+    purpose: net
+    stream: {layer: 61, datatype: 30}
+  -
+    name: COMMEN
+    logical: text
+    purpose: comment
+    stream: {layer: 61, datatype: 31}
+  -
+    name: CESIG1
+    logical: text
+    purpose: ce_signal
+    stream: {layer: 63, datatype: 1}
+  -
+    name: CESIG2
+    logical: text
+    purpose: ce_signal
+    stream: {layer: 63, datatype: 2}
+  -
+    name: CESIG3
+    logical: text
+    purpose: ce_signal
+    stream: {layer: 63, datatype: 3}
+  -
+    name: CESIG4
+    logical: text
+    purpose: ce_signal
+    stream: {layer: 63, datatype: 4}
+  -
+    name: CEPWR1
+    logical: text
+    purpose: ce_power
+    stream: {layer: 63, datatype: 21}
+  -
+    name: CEPWR2
+    logical: text
+    purpose: ce_power
+    stream: {layer: 63, datatype: 22}
+  -
+    name: CEPWR3
+    logical: text
+    purpose: ce_power
+    stream: {layer: 63, datatype: 23}
+  -
+    name: CEPWR4
+    logical: text
+    purpose: ce_power
+    stream: {layer: 63, datatype: 24}
+
+# The AMS runset's substrate-all layer is a DRC/LVS derived concept, not a
+# C35B4C3 mask stream.  Do not emit the legacy SCMOS 90/0 helper layer here.
+auxiliary:
+  substrate_universe: null

@@ -14,6 +14,7 @@ jobs:
         run: |
           python3 scripts/test_process_ir.py
           python3 scripts/test_scmos_rule_families.py
+          python3 scripts/test_ams_c35_gds_map.py
           python3 scripts/test_historical_scmos.py
           python3 scripts/test_stdcell_spice_pex.py
           python3 scripts/test_stdcell_generator_contract.py
@@ -24,7 +25,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@v9
       - name: Run siliconcraft conformance and stdcell geometry gates
         run: >
-          nix-shell -p klayout netgen magic ngspice python3 --run
+          nix-shell -p klayout netgen magic-vlsi ngspice python3 --run
           "python3 scripts/run_ci.py --profile ami06 &&
           python3 scripts/run_stdcell_inv_gate.py --profile ami06 &&
           python3 scripts/run_stdcell_gate.py --profile ami06
@@ -47,11 +48,11 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@v9
       - name: Run source-reference PEX gates
         run: >
-          nix-shell -p magic ngspice python3 --run
+          nix-shell -p magic-vlsi ngspice python3 --run
           "python3 scripts/run_pex_ci.py"
       - name: Run L0 RF workbench
         run: >
-          nix-shell -p magic python3 --run
+          nix-shell -p magic-vlsi python3 --run
           "python3 scripts/test_rf_workbench.py &&
           python3 scripts/run_rf_workbench.py
           --profile ami06 --pex-profile n8bn_reference --require-rc

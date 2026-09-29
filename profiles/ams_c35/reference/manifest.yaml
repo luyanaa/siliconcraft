@@ -1,0 +1,34 @@
+# profiles/ams_c35/reference/manifest.yaml
+# ams C35 reference collateral adapted from ENG-183 Rev 5.0 (public copy).
+# Two DRC abstractions, same pattern as CNM25:
+#   - reference deck here = the NATIVE ams C35 core rules (ENG-183, 0.025um
+#     grid) — the oracle;
+#   - authoritative deck = SCMOS_SUBM abstraction at lambda 0.2um
+#     (SCN4ME_SUBM, matching the TSMC-licensed 0.35um 2P4M base) generated
+#     from rules.yaml, with the explicit ENG-183 exceptions (VIA size,
+#     select/active overlap 0.45, N+/P+ enclosure of diffusion contacts
+#     0.25, stacked vias allowed).
+drc:
+  available: true
+  authoritative: false
+  calibrated: false
+  format: klayout-drc
+  file: klayout/ams_c35_native.lydrc
+  source: "ENG-183 Rev 5.0 (0.35um CMOS C35 Design Rules), public copy"
+  args:
+    - "-rd"
+    - "input=$LAYOUT"
+    - "-rd"
+    - "output=$REPORT"
+  scope: "native C35 core module + PIP + HRES (incl. BAD1-3HR) + Metal 4 rules"
+  conformance: docs/ams_c35_lambda_conformance.md
+  note: "Oracle deck for the SCMOS_SUBM abstraction; grid 0.025um."
+
+lvs:
+  available: false
+  note: "ams C35 LVS uses the shared SCMOS extractor driven by devices.yaml (generated/lvs/run.py); CONT is the single contact layer bound to `cc`."
+
+decision:
+  layout_drc_lvs_engine: klayout
+  source: "ENG-183 (rules) + siliconcraft SCMOS engines"
+  rationale: "SCMOS_SUBM lambda=0.2 matches the TSMC 0.35um 2P4M base licensing; exceptions recorded in rules.yaml keep the abstraction honest against ENG-183."

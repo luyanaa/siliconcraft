@@ -1,0 +1,43 @@
+# profiles/ams_c35/model_maturity.yaml — C35 standard model evidence.
+models:
+  c35N:
+    simulator: ngspice
+    representation: primitive
+    source: "ENG-182 REV_6 MODN card (extracted B10866, 2002-12), transcribed from Ishibe 2014 USP thesis Anexo A"
+    corners:
+      - ams_c35
+      - ams_c35_ws
+      - ams_c35_wp
+    mismatch: false
+    evidence: "ams BSIM3v3 card family; ELDO dialect mapped to ngspice LEVEL 49 (VERSION 3.3, ELDO-only parameters dropped); verified with ngspice inverter OP (0 V -> 3.30 V, 3.3 V -> ~0 V)"
+    fit_status: published_reference
+    limitation: "ngspice numeric equivalence with the original ELDO runs is not revalidated"
+  c35P:
+    simulator: ngspice
+    representation: primitive
+    source: "ENG-182 REV_6 MODP card (extracted C64685, 2002-12), transcribed from Ishibe 2014 USP thesis Anexo A"
+    corners:
+      - ams_c35
+      - ams_c35_ws
+      - ams_c35_wp
+    mismatch: false
+    evidence: "same treatment as c35N; VTH0(typ) = -0.6915 V matches the ams 0.35um PMOS family"
+    fit_status: published_reference
+  cvar:
+    simulator: null
+    representation: contract_only
+    source: "ENG-188 Rev 5.0 (accumulation-mode MOS varactor, BSIM3v3.2 Cgb core + RG/Ro/Rw/Dw network)"
+    evidence: "topology and validity envelope recorded in model_contract.yaml; HIT-Kit model file user-supplied"
+    fit_status: contract_only
+  modnrf:
+    simulator: null
+    representation: contract_only
+    source: "ENG-188 Rev 5.0 (BSIM3v3.1 + RG/RD/RS + RSUB1/RSUB2 + Djdb/Djsb; <= 6 GHz; wf 5/10 um; W <= 200 um NMOS)"
+    evidence: "topology, envelope and fT/fmax table recorded in model_contract.yaml; HIT-Kit model file user-supplied"
+    fit_status: contract_only
+  modprf:
+    simulator: null
+    representation: contract_only
+    source: "ENG-188 Rev 5.0 (PMOS counterpart; W <= 150 um)"
+    evidence: "same as modnrf"
+    fit_status: contract_only

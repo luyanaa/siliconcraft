@@ -1,0 +1,28 @@
+# AMS C35 fixed-height stdcell geometry candidate.
+# Derived from the C35B4C3/ENG-183 rule table with the existing 1.5 um
+# analog-device width as the initial row capacity; not signoff geometry.
+schema_version: 1
+profile: ams_c35
+stdcell:
+  geometry_status: derived_candidate_not_signoff
+  geometry_basis:
+    - profiles/ams_c35/layers.yaml
+    - profiles/ams_c35/rules.yaml
+    - public AMS C35 educational/library references
+  site_height_um: 9.3
+  row_heights_um:
+    n: 2.7
+    p: 4.8
+  row_gap_um: 0.6
+  rail_margin_um: 0.6
+  tap_policy: self_tapped
+  tapcell:
+    required: false
+    cell: TAPCELL
+    max_spacing_um: null
+  orientations:
+    even_row: R0
+    odd_row: MX
+    legal:
+      - R0
+      - MX

@@ -137,7 +137,7 @@ def _shared_diffusion(left: MosInstance, right: MosInstance) -> bool:
 def enumerate_orderings(
     circuit: CellCircuit,
     polarity: str,
-    limit: int = 8,
+    limit: int | None = 8,
     model_names: dict[str, str] | None = None,
 ) -> tuple[NetworkOrdering, ...]:
     """Return deterministic high-scoring generalized Euler orderings.
@@ -166,6 +166,8 @@ def enumerate_orderings(
         breaks = max(0, len(ordered) - 1 - shared)
         candidates.append(NetworkOrdering(polarity, tuple(device.name for device in ordered), shared, breaks))
     candidates.sort(key=lambda item: item.score, reverse=True)
+    if limit is not None and limit < 1:
+        raise ValueError("ordering limit must be positive or None")
     unique: list[NetworkOrdering] = []
     seen: set[tuple[str, ...]] = set()
     for candidate in candidates:
@@ -173,7 +175,7 @@ def enumerate_orderings(
             continue
         seen.add(candidate.devices)
         unique.append(candidate)
-        if len(unique) >= limit:
+        if limit is not None and len(unique) >= limit:
             break
     return tuple(unique)
 

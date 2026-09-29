@@ -1,0 +1,11 @@
+* siliconcraft inputs: A B C
+* siliconcraft outputs: Y
+* siliconcraft supplies: VDD VSS
+.subckt aoi21 A B C Y VDD VSS
+MP0 VDD A PINT VDD ami06P W=3.0u L=0.6u
+MP1 PINT B Y VDD ami06P W=3.0u L=0.6u
+MP2 VDD C Y VDD ami06P W=3.0u L=0.6u
+MN0 Y A NINT VSS ami06N W=1.5u L=0.6u
+MN1 NINT B VSS VSS ami06N W=1.5u L=0.6u
+MN2 Y C VSS VSS ami06N W=1.5u L=0.6u
+.ends aoi21

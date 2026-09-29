@@ -65,6 +65,44 @@ profiles:
     model_prefix: tsmc20
     rule_family: scmos_subm
     deep_n_well_layer: DEEP_N_WELL
+  - name: cnm25
+    source_process: CNM25
+    mosis_code: null
+    lambda_um: 1.5
+    grid_um: 0.25
+    min_channel_um: 3.0
+    min_width_um: 2.0
+    model_prefix: cnm25mod
+    rule_family: scmos
+    note: "IMB-CNM(CSIC) 2.5um 2-poly 2-metal academic process; classic-SCMOS conservative abstraction (lambda_cover 1.5um) with native contact 2.5um cut; native deck is the reference oracle"
+  - name: ams_c35
+    source_process: C35B4C3
+    mosis_code: SCN4ME_SUBM
+    lambda_um: 0.2
+    grid_um: 0.025
+    min_channel_um: 0.35
+    min_width_um: 0.3
+    model_prefix: c35
+    rule_family: scmos_subm
+    note: "ams 0.35um mixed-signal C35 (TSMC-licensed base); SCMOS_SUBM abstraction with ENG-183 exceptions (VIA 0.5, select/active 0.45, N+/P+ enclosure 0.25, stacked vias)"
+  - name: xh035
+    source_process: XH035
+    lambda_um: 0.175
+    grid_um: 0.05
+    min_channel_um: 0.35
+    min_width_um: 0.5
+    model_prefix: xh035
+    rule_family: scmos_subm
+    note: "X-FAB public basic-rule/HVCMOS contract; provisional logical map, not signoff"
+  - name: xh018
+    source_process: XH018
+    lambda_um: 0.09
+    grid_um: 0.01
+    min_channel_um: 0.18
+    min_width_um: 0.22
+    model_prefix: xh018
+    rule_family: scmos_subm
+    note: "X-FAB public basic-rule/HVCMOS contract; provisional logical map, not signoff"
 forbidden:
   process_names:
     - TSMC_CMOS025_DEEP

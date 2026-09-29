@@ -21,6 +21,14 @@ if str(ROOT) not in sys.path:
 from common.process_ir import load_process  # noqa: E402
 KIND_KEYS = {
     "mos4": ("name", "channel", "diff", "bulk_net", "model_suffix"),
+    "ldmos": (
+        "name",
+        "channel",
+        "source_diff",
+        "drain_diff",
+        "bulk_net",
+        "model_suffix",
+    ),
     "resistor": ("name", "body", "conn", "sheet"),
     "capacitor": ("name", "region", "top", "bottom", "area_cap"),
     "diode": ("name", "region", "plus", "minus", "model_suffix"),
