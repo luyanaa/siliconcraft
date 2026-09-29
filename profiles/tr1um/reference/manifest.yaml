@@ -1,0 +1,83 @@
+# Native OpenSUSI TR-1um reference engines and technology collateral.
+# These sources are current public references, not foundry signoff decks.
+technology:
+  file: klayout/TR-1um.lyt
+  format: klayout-technology
+  layer_properties: klayout/TR-1um.lyp
+  source: "OpenSUSI/TR-1um flow/pdk_root/TR-1um/libs.tech/klayout/tech"
+  source_commit: d83eb77fcbe8c587809dd9f4532f9464c5501ab2
+  license: Apache-2.0
+  lambda_um: 0.5
+  grid_um: 0.05
+  native_klayout_dbu_um: 0.001
+  pcell_source: klayout/python/cells
+  note: "TR-1um.lyt original-base-path was made profile-relative for reproducibility."
+decision:
+  layout_drc_lvs_engine: klayout
+  source: "OpenSUSI/TR-1um native run.drc/run.lvs"
+  rationale: "The native KLayout runsets carry AP/AN/GC/WN device semantics, HVCMOS markers, and current LVS extraction classes."
+  compatibility_family: scmos
+  subm_selected: false
+drc:
+  available: true
+  authoritative: false
+  calibrated: false
+  format: klayout-drc
+  file: klayout/drc/run.drc
+  source: "OpenSUSI/TR-1um openIP62/IP62"
+  source_commit: d83eb77fcbe8c587809dd9f4532f9464c5501ab2
+  license: Apache-2.0
+  args:
+    - "-rd"
+    - "input=$LAYOUT"
+    - "-rd"
+    - "report=$REPORT"
+  scope: "Current native drawing DRC including device, electrical-marker, and IP62 derived-layer checks"
+  note: "Public reference deck; no foundry signoff claim."
+lvs:
+  available: true
+  authoritative: false
+  calibrated: false
+  format: klayout-lvs
+  file: klayout/lvs/run.lvs
+  source: "OpenSUSI/TR-1um openIP62/IP62"
+  source_commit: d83eb77fcbe8c587809dd9f4532f9464c5501ab2
+  license: Apache-2.0
+  args:
+    - "-rd"
+    - "input=$LAYOUT"
+    - "-rd"
+    - "report=$LVS_REPORT"
+    - "-rd"
+    - "extracted=$EXTRACTED"
+    - "-rd"
+    - "circuit=$SCHEMATIC"
+    - "-rd"
+    - "run_mode=deep"
+    - "-rd"
+    - "netlist_only=false"
+    - "-rd"
+    - "ignore_top_ports_mismatch=false"
+  netgen_setup: klayout/tr1um.setup.tcl
+  netgen_circuit: auto
+  scope: "Native MOS/HV-MOS/diode/passive extraction and Netgen comparison"
+  note: "The active deck has no standalone BJT extraction; WB is a DRC recognition region only."
+klayout:
+  technology_file: klayout/TR-1um.lyt
+  layer_properties: klayout/TR-1um.lyp
+  layer_map: klayout/def_layer_map.map
+  pcell_library: TR-1um
+  pcell_source: klayout/python/cells
+  native_dbu_um: 0.001
+  source_commit: d83eb77fcbe8c587809dd9f4532f9464c5501ab2
+  note: "PCell source is copied Apache-2.0 source collateral; it is not replaced by the generic SCMOS PCell adapter."
+pex:
+  available: true
+  runnable: true
+  authoritative: false
+  calibrated: false
+  format: magic-tech-profiles
+  default_profile: none
+  profile_manifest: ../pex/manifest.yaml
+  scope: "Native TR-1um Magic topology plus engineering RC coefficients"
+  note: "RC is source-reference engineering data; no foundry-qualified extraction deck is claimed."

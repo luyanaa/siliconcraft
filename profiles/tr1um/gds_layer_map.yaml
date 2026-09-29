@@ -1,0 +1,226 @@
+schema_version: 1
+profile: tr1um
+process: TR_1UM
+format: GDSII
+database:
+  user_unit_um: 1.0
+  grid_um: 0.05
+  native_klayout_dbu_um: 0.001
+  note: "Profile contract uses the 0.05um manufacturing/rule grid; native TR-1um.lyt stores geometry at 0.001um dbu."
+source:
+  authority: public_reference
+  repository: OpenSUSI/TR-1um
+  commit: d83eb77fcbe8c587809dd9f4532f9464c5501ab2
+  license: Apache-2.0
+mask_layers:
+  -
+    name: NWELL
+    logical: nwell
+    stream:
+      layer: 140
+      datatype: 0
+    status: core
+  -
+    name: NW
+    logical: nw_mask
+    stream:
+      layer: 36
+      datatype: 0
+    status: core
+  -
+    name: AN
+    logical: nactive
+    stream:
+      layer: 3
+      datatype: 2
+    status: core
+  -
+    name: AP
+    logical: pactive
+    stream:
+      layer: 3
+      datatype: 1
+    status: core
+  -
+    name: ACTIVE
+    logical: active
+    stream:
+      layer: 3
+      datatype: 2
+    status: compatibility_alias
+  -
+    name: AN_SELECT
+    logical: nselect
+    stream:
+      layer: 3
+      datatype: 2
+    status: compatibility_alias
+  -
+    name: AP_SELECT
+    logical: pselect
+    stream:
+      layer: 3
+      datatype: 1
+    status: compatibility_alias
+  -
+    name: AR
+    logical: ractive
+    stream:
+      layer: 3
+      datatype: 3
+    status: optional
+  -
+    name: AC
+    logical: cactive
+    stream:
+      layer: 3
+      datatype: 4
+    status: optional
+  -
+    name: GC
+    logical: poly
+    stream:
+      layer: 8
+      datatype: 1
+    status: core
+  -
+    name: GR
+    logical: poly_res
+    stream:
+      layer: 8
+      datatype: 2
+    status: optional
+  -
+    name: CO
+    logical: cc
+    stream:
+      layer: 11
+      datatype: 0
+    status: core
+  -
+    name: M1
+    logical: metal1
+    stream:
+      layer: 13
+      datatype: 0
+    status: core
+  -
+    name: M1_LABEL
+    stream:
+      layer: 48
+      datatype: 0
+    status: text
+  -
+    name: V1
+    logical: via
+    stream:
+      layer: 19
+      datatype: 0
+    status: core
+  -
+    name: M2
+    logical: metal2
+    stream:
+      layer: 20
+      datatype: 0
+    status: core
+  -
+    name: M2_LABEL
+    stream:
+      layer: 49
+      datatype: 0
+    status: text
+  -
+    name: TEXT_M1
+    logical: text_m1
+    stream:
+      layer: 48
+      datatype: 0
+    status: text
+  -
+    name: TEXT_M2
+    logical: text_m2
+    stream:
+      layer: 49
+      datatype: 0
+    status: text
+  -
+    name: PO
+    logical: pad
+    stream:
+      layer: 14
+      datatype: 0
+    status: optional
+  -
+    name: GLASS
+    logical: glass
+    stream:
+      layer: 14
+      datatype: 0
+    status: optional
+  -
+    name: MASK
+    logical: mask
+    stream:
+      layer: 63
+      datatype: 0
+    status: optional
+  -
+    name: PTECT
+    logical: protect
+    stream:
+      layer: 63
+      datatype: 1
+    status: optional
+  -
+    name: ESD
+    logical: esd
+    stream:
+      layer: 63
+      datatype: 2
+    status: optional
+  -
+    name: TEMP
+    logical: temp
+    stream:
+      layer: 80
+      datatype: 0
+    status: optional
+  -
+    name: V15_MARKER
+    logical: hv_n_marker
+    stream:
+      layer: 150
+      datatype: 0
+    status: marker
+  -
+    name: V27_MARKER
+    logical: hv_p_marker
+    stream:
+      layer: 151
+      datatype: 0
+    status: marker
+recognition_layers:
+  -
+    name: WB_RECOGNITION
+    stream:
+      layer: 140
+      datatype: 0
+    status: derived_reference
+text_layers:
+  -
+    name: M1_LABEL
+    logical: metal1
+    purpose: net
+    stream:
+      layer: 48
+      datatype: 0
+  -
+    name: M2_LABEL
+    logical: metal2
+    purpose: net
+    stream:
+      layer: 49
+      datatype: 0
+auxiliary:
+  substrate_universe: null

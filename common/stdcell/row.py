@@ -144,13 +144,16 @@ def build_transistor_row(
     labels: list[tuple[str, float, float]] = []
     shared_active: list[RowShape] = []
     y = ordered[0].y_um
+    active_layer = process.stdcell_layer("active", polarity)
+    select_layer = process.stdcell_layer("select", polarity)
+    well_layer = process.stdcell_layer("well", polarity)
     select_enc = tech.select_channel_enc
     for placement in ordered:
         half_w = placement.footprint.active_width_um / 2.0
         half_h = placement.footprint.active_height_um / 2.0
         active.append(
             RowShape(
-                "ACTIVE",
+                active_layer,
                 placement.x_um - half_w,
                 y - half_h,
                 placement.x_um + half_w,
@@ -161,7 +164,7 @@ def build_transistor_row(
         )
         select.append(
             RowShape(
-                "PSELECT" if polarity == "p" else "NSELECT",
+                select_layer,
                 placement.x_um - half_w - select_enc,
                 y - half_h - select_enc,
                 placement.x_um + half_w + select_enc,
@@ -254,11 +257,11 @@ def build_transistor_row(
             continue
         half_h = min(left.footprint.active_height_um, right.footprint.active_height_um) / 2.0
         shared_active.append(
-            RowShape("ACTIVE", x0, y - half_h, x1, y + half_h, left_right, "shared_diffusion")
+            RowShape(active_layer, x0, y - half_h, x1, y + half_h, left_right, "shared_diffusion")
         )
         shared_active.append(
             RowShape(
-                "PSELECT" if polarity == "p" else "NSELECT",
+                select_layer,
                 x0 - select_enc,
                 y - half_h - select_enc,
                 x1 + select_enc,
@@ -268,15 +271,15 @@ def build_transistor_row(
             )
         )
 
-    active.extend(shape for shape in shared_active if shape.layer == "ACTIVE")
-    select.extend(shape for shape in shared_active if shape.layer != "ACTIVE")
+    active.extend(shape for shape in shared_active if shape.layer == active_layer)
+    select.extend(shape for shape in shared_active if shape.layer == select_layer)
     if polarity == "p":
         min_x = min(shape.x0 for shape in active)
         max_x = max(shape.x1 for shape in active)
         well_height = max(process.row_height_um("p"), tech.nwell_min_width + 2 * tech.nwell_active_enc)
         wells.append(
             RowShape(
-                "NWELL",
+                well_layer,
                 min_x - tech.nwell_active_enc,
                 y - well_height / 2.0,
                 max_x + tech.nwell_active_enc,

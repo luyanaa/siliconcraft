@@ -48,6 +48,19 @@ def main() -> int:
     ami06_contracts = validate_netlist_contracts(processes["ami06"])
     assert {contract.name for contract in ami06_contracts} == {"ami06N", "ami06P"}
     assert all(contract.representation == "primitive" for contract in ami06_contracts)
+    tr1um = processes["tr1um"]
+    assert tr1um.rule_family == "scmos"
+    assert tr1um.meta["lambda_um"] == 0.5
+    assert not tr1um.meta["features"].get(HVCMOS_LAMBDA_OVERRIDE)
+    assert tr1um.meta["features"]["hvcmosAvailable"] is True
+    assert tr1um.meta["features"]["hvcmosRuleOverride"] is True
+    tr1um_contracts = validate_netlist_contracts(tr1um)
+    assert {contract.name for contract in tr1um_contracts} == {
+        "NMOS_mst", "PMOS_mst", "MNE_mst", "MPE_mst",
+    }
+    assert all(contract.representation == "primitive" for contract in tr1um_contracts)
+    assert tr1um.devices["parasitic_bjt"]["status"] == "reference_only"
+    assert tr1um.devices["parasitic_bjt"]["standalone_extraction"] is False
     for name, expected_process in (("xh035", "XH035"), ("xh018", "XH018")):
         xh_contracts = {
             contract.device: contract

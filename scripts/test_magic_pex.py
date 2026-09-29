@@ -36,6 +36,8 @@ def main() -> int:
     ls1u, _ = load_manifest("ls1u")
     hp06, hp06_path = load_manifest("hp06")
     ami16, ami16_path = load_manifest("ami16")
+    tr1um, tr1um_path = load_manifest("tr1um")
+    tr1um_ir = load_process("tr1um", ROOT)
     ami06_ir = load_process("ami06", ROOT)
     hp06_ir = load_process("hp06", ROOT)
     ami16_ir = load_process("ami16", ROOT)
@@ -246,11 +248,33 @@ def main() -> int:
     assert "device msubcircuit LV1UNMOS" in ls1u_extract
     assert "device msubcircuit LV1UPMOS" in ls1u_extract
 
+    assert tr1um["physical"]["lambda_um"] == 0.5
+    assert "legacy_backend" not in tr1um["source_technology"]
+    assert tr1um_ir.device("nmos_core").simulation_name == "NMOS_mst"
+    assert tr1um_ir.device("pmos_core").simulation_name == "PMOS_mst"
+    tr1um_none = render_profile_extract(
+        tr1um, "none", tr1um_ir.device_bindings
+    )
+    tr1um_reference = render_profile_extract(
+        tr1um, "tr1um_engineering", tr1um_ir.device_bindings
+    )
+    assert "device mosfet NMOS_mst" in tr1um_none
+    assert "device mosfet PMOS_mst" in tr1um_none
+    assert "resist metal1 50" not in tr1um_none
+    assert "resist metal1 50" in tr1um_reference
+    assert "areacap (ndiff,ndc)/a 30" in tr1um_reference
+    assert "lambda 50" in tr1um_reference
+    assert (tr1um_path.parent.parent / "models/tr1um.lib").read_text().count(".lib tr1um") == 1
+    tr1um_tech = (tr1um_path.parent.parent / "pex/tr1um_engineering.tech").read_text()
+    assert "calma CMF 48 0" in tr1um_tech
+    assert "calma CMS 49 0" in tr1um_tech
+
     print("Generic Magic PEX flow checks: PASS")
     print("  source-unit conversions: PASS")
     print("  AMI06 source map and profile rendering: PASS")
     print("  HP06 source map, model library, and profile rendering: PASS")
     print("  AMI16 source map, model library, electrode/NPN semantics, and rendering: PASS")
+    print("  TR-1um primitive topology, native input streams, and rendering: PASS")
     print("  LS1u compatibility rendering: PASS")
     return 0
 

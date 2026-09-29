@@ -1,0 +1,49 @@
+schema_version: 1
+symbols:
+  nmos4:
+    device_binding: nmos_core
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
+    template: {name: M1, w: "3.4u", l: "1u", m: "1", ad: "0", as: "0", pd: "0", ps: "0"}
+  pmos4:
+    device_binding: pmos_core
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
+    template: {name: M1, w: "10.2u", l: "1u", m: "1", ad: "0", as: "0", pd: "0", ps: "0"}
+  nmos_hv:
+    device_binding: nmos_hv
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
+    template: {name: M1, w: "3.4u", l: "1u", m: "1", ad: "0", as: "0", pd: "0", ps: "0"}
+  pmos_hv:
+    device_binding: pmos_hv
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
+    template: {name: M1, w: "10.2u", l: "1u", m: "1", ad: "0", as: "0", pd: "0", ps: "0"}
+  diode_n:
+    spiceprefix: d
+    format: "@spiceprefix@name @pinlist @model area=@area pj=@pj"
+    template: {name: D1, area: "1", pj: "0", model: DN}
+  diode_p:
+    spiceprefix: d
+    format: "@spiceprefix@name @pinlist @model area=@area pj=@pj"
+    template: {name: D1, area: "1", pj: "0", model: DP}
+  res_rr:
+    spiceprefix: x
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    template: {name: R1, w: "1.4u", l: "10u", model: F_RR}
+  res_rs:
+    spiceprefix: x
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    template: {name: R1, w: "1.4u", l: "10u", model: F_RS}
+  cap_csio:
+    spiceprefix: x
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l"
+    template: {name: C1, w: "10u", l: "10u", model: F_CSIO}
+  vdc:
+    spiceprefix: v
+    format: "@spiceprefix@name @pinlist @value"
+    template: {name: V1, value: "5"}
+  gnd:
+    spiceprefix: ""
+    format: "*.alias @lab"
+    template: {name: l1, lab: "0"}
+  lab_pin:
+    format: "*.alias @lab"
+    template: {name: p1, lab: xxx}

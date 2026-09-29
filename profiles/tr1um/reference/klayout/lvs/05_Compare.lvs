@@ -1,0 +1,127 @@
+# TR-1um LVS v0.001
+# Original version was made by jun1okamura from TokaiRika's document
+# LICENSE: Apache License Version 2.0, January 2004,
+#          http://www.apache.org/licenses/
+# ----- ------ ----- ----- ------ ----- ----- ------ -----
+# LVS preparation
+#
+# cell_name + ".extracted" is extracted circuit file
+# cell_name + ".cir"       is circuit file to compare
+# cell_name + ".spice"     is circuit file to compare (alternative)
+#
+if $extracted
+    Lay_file = $extracted
+else
+    Lay_file = source.cell_name + ".extracted"
+end
+#
+if $circuit
+    Sch_file = $circuit
+else
+    Sch_file = "simulation/" + source.cell_name + ".spice"
+end
+#
+writer = RBA::NetlistSpiceWriter::new(MyWriter::new)
+writer.use_net_names = true
+#
+# ----- ------ ----- ----- ------ ----- ----- ------ -----
+# Netlist extraction
+#
+# PCELL have to be flatten
+#
+netlist.flatten_circuit("fet_p*")
+netlist.flatten_circuit("fet_n*")
+netlist.flatten_circuit("diode_p*")
+netlist.flatten_circuit("diode_n*")
+netlist.flatten_circuit("res_poly*")
+netlist.flatten_circuit("res_diff*")
+netlist.flatten_circuit("moscap*")
+#
+# ----- ------ ----- ----- ------ ----- ----- ------ -----
+# Refrence https://www.klayout.de/doc-qt5/manual/lvs_tweaks.html
+#
+# netlist.make_top_level_pins()           # top cell .subckt has pins
+#
+#netlist.simplify
+#
+netlist.make_top_level_pins             # Generate top pin
+#
+netlist.purge                           # delete empty cell
+netlist.purge_nets                      # delete floating net
+# netlist.combine_devices
+#
+# use_net_names = true
+# target_netlist(Lay_file, write_spice(true), "Created by KLayout")
+target_netlist(Lay_file, writer, "Created by KLayout")
+#
+# ----- ------ ----- ----- ------ ----- ----- ------ -----
+#
+if NET_ONLY
+    puts("Starting TR-1um LVS in Net Only Mode")
+    netlist.combine_devices
+    puts("Done")
+else
+    # Comparison mode follows below.
+    #
+#
+    reader      = RBA::NetlistSpiceReader::new(MyReader::new)
+    #
+    # Comparison exection (in case LPE, all comment out)
+    schematic(Sch_file, reader)
+    # Flatten the finite standard-cell boundary before comparison. This keeps
+    # strict top-level power and signal connectivity while avoiding mismatches
+    # caused only by inconsistent per-cell CDL pin naming.
+    ["AND4_X1", "DFFR", "NAND2", "NAND3", "XNOR2", "XOR2"].each do |cell|
+        schematic.flatten_circuit(cell)
+        netlist.flatten_circuit(cell)
+    end
+    # schematic.make_top_level_pins   # https://www.klayout.de/doc/manual/lvs_compare.html#h2-299
+    #
+    align
+    # TR1um source devices use model names NMOS5V/PMOS5V while the drawing
+    # extractor emits NMOS/PMOS. Their terminal and parameter contracts match.
+    same_device_classes("NMOS", "NMOS5V")
+    same_device_classes("PMOS", "PMOS5V")
+    #
+    schematic.combine_devices
+    netlist.combine_devices
+    #
+    equivalent_pins("AND2_X1", "A", "B")
+    equivalent_pins("AND3_X1", "A", "B", "C")
+    equivalent_pins("AND4_X1", "A", "B", "C", "D")
+    equivalent_pins("NAND2",   "A", "B")
+    equivalent_pins("NAND3",   "A", "B", "C")
+    equivalent_pins("NAND4",   "A", "B", "C", "D")
+    equivalent_pins("NOR2",    "A", "B")
+    equivalent_pins("NOR3",    "A", "B", "C")
+    equivalent_pins("NOR4",    "A", "B", "C", "D")
+    equivalent_pins("OR2",     "A", "B")
+    equivalent_pins("OR3",     "A", "B", "C")
+    equivalent_pins("OR4",     "A", "B", "C", "D")
+    equivalent_pins("XOR2",    "A", "B")
+    equivalent_pins("XNOR2",   "A", "B")
+    #
+    if IGNORE_TOP_PORTS_MISMATCH
+        puts("Starting TR-1um LVS Comparison")
+        success = compare
+    else
+        puts("Starting TR-1um LVS Comparison in strict port mode")
+        puts("flag_missing_ports enabled: missing/mislabeled top-level ports are treated as errors")
+        # success = compare && flag_missing_ports
+        compare_result = compare
+        port_check_result = flag_missing_ports
+        success = compare_result && port_check_result
+    end
+    #================================================
+    #------------- COMPARISON RESULTS ---------------
+    #================================================
+    if ! success
+        puts('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+        puts("ERROR : Netlists don't match")
+        puts('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+    else
+        puts('==========================================')
+        puts('INFO : Congratulations! Netlists match.')
+        puts('==========================================')
+    end
+end

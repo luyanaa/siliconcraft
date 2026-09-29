@@ -1,0 +1,194 @@
+# TR-1um LVS v0.001
+# Original version was made by jun1okamura from TokaiRika's document
+# LICENSE: Apache License Version 2.0, January 2004,
+#          http://www.apache.org/licenses/
+# ----- ------ ----- ----- ------ ----- ----- ------ -----
+# Translate Xres/cap to Rres or Ccap
+#
+class MyReader < RBA::NetlistSpiceReaderDelegate
+    def wants_subcircuit(name)
+        name == "F_RR" || name == "F_RS" || name == "F_CSIO"
+        # name != "DP" && name != "DN"
+    end
+
+    #
+    # translate the element from Xsubckt
+    #
+    def element(circuit, el, name, model, value, nets, params)
+
+        if el != "X"
+            # all other elements are left to the standard implementation
+            return super
+        end
+        # ----- ------ -----
+        # provide a device class
+        cls = circuit.netlist.device_class_by_name(model)
+        # ----- ------ -----
+        if ! cls
+            if model == "F_RS"
+                # cls = RBA::DeviceClassResistor::new
+                cls = LWResistor::new
+            elsif model == "F_RR"
+                # cls = RBA::DeviceClassResistorWithBulk::new
+                cls = LWResistorWithBulk::new
+            elsif model == "F_CSIO"
+                # cls = RBA::DeviceClassCapacitorWithBulk::new
+                cls = LWCapacitorWithBulk::new
+            end
+            cls.name = model
+            circuit.netlist.add(cls)
+        end
+        # ----- ------ -----
+        # create a device
+        #
+        device = circuit.create_device(cls, name)
+        if nets.size == 2
+            [ "A", "B" ].each_with_index do |t,index|
+                device.connect_terminal(t, nets[index])
+            end
+        elsif nets.size == 3
+            [ "A", "B", "W" ].each_with_index do |t,index|
+            device.connect_terminal(t, nets[index])
+            end
+        else
+            error("Subcircuit #{model} not enough nodes")
+        end
+        params.each do |p,value|
+            if p == "L" || p == "W"             # compare L/W * 1e6
+                device.set_parameter(p, value * 1e6)
+            elsif p == "A"                      # compare A * 1e12
+                device.set_parameter(p, value * 1e12)
+            elsif p == "P"                      # compare P * 1e6
+                device.set_parameter(p, value * 1e6)
+            elsif p == "C"                      # compare C asis
+                device.set_parameter(p, value)
+            elsif p == "M"                      # compare m as M
+                device.set_parameter('m', value)
+            end
+        end
+    end
+end
+# ----- ------ ----- ----- ------ ----- ----- ------ -----
+# Sample
+# https://www.klayout.de/doc-qt5/code/class_NetlistSpiceWriter.html
+#
+# class MyWriter < RBA::NetlistSpiceWriterDelegate
+#
+#     def write_header
+#         emit_line("*** My special header ***")
+#     end
+#
+# end
+
+# Prefix for each device
+PREFIX_MAP = {
+    # SPICE parses the first letter as the element type: XM$1 is a subcircuit
+    # instance, not a MOSFET. Emit M$1 so a re-read extracted netlist retains
+    # PMOS/NMOS devices for LVS comparison.
+    'NMOS' => 'M',
+    'NMOSE' => 'M',
+    'PMOS' => 'M',
+    'DP' => 'D',
+    'DN' => 'D',
+    'F_CSIO' => 'XC',
+    'F_RR' => 'XR',
+    'F_RS' => 'XR'
+}.freeze
+
+class MyWriter < RBA::NetlistSpiceWriterDelegate
+
+    def write_header
+        emit_line("*** My special header ***")
+    end
+
+    def write_device(device)
+        device_class = device.device_class
+        model_name = device_class.name
+        str = generate_device_prefix(device, device_class)
+        str += generate_device_terminals(device, device_class)
+        str += "#{model_name} "
+        str += generate_default_parameters(device, device_class)
+        str = str.strip
+        emit_line(str)
+    end
+
+    private
+
+    # Generate device prefix using the global prefix map
+    def generate_device_prefix(device, device_class)
+        prefix = PREFIX_MAP[device_class.name] || device.id.to_s
+        "#{prefix}#{device.expanded_name} "
+    end
+
+    # Generate device terminals
+    def generate_device_terminals(device, device_class)
+        default_terminals = device_class.terminal_definitions.map do |td|
+          net_to_string(device.net_for_terminal(td.id))
+        end
+
+        return "#{default_terminals.join(' ')} "
+    end
+
+    # Determine the unit for each parameter
+    def get_unit(key)
+        case key
+        when 'W', 'L', 'w', 'l'
+            'u'  # micrometers
+        when 'AS', 'AD', 'A', 'a'
+            'p'  # picometers (these are areas um^2)
+        when 'PS', 'PD', 'P', 'p'
+            'u'  # micrometers (perimeters)
+        else
+            ''  # no unit
+        end
+    end
+
+    # Generate default parameters for the device
+    def generate_default_parameters(device, device_class)
+        parameters = device_class.parameter_definitions.map do |pd|
+
+            value = device.parameter(pd.id)
+            next if value.nil?
+
+            device_name = device_class.name
+            param = pd.name
+            if device_name == "F_CSIO"
+                if param == "W" || param == "L"
+                    # puts("pd_id=#{pd.id}")
+                    area = device.parameter("A")
+                    perimeter = device.parameter("P")
+                    length, width = rectangle_sides(area, perimeter)
+                    # puts("device_name=#{device_class.name} param=#{param} value=#{value} area=#{area} perimeer=#{perimeter} width=#{width} length=#{length}")
+                    if param == "W"
+                        pd.name = "X"
+                        value = width
+                    else
+                        pd.name = "Y"
+                        value = length
+                    end
+                end
+            end
+
+            unit = get_unit(pd.name)
+            if unit.empty?
+                format('%<name>s=%<value>.12g', name: pd.name, value: value)
+            else
+                format('%<name>s=%<value>.12g%<unit>s', name: pd.name, value: value, unit: unit)
+            end
+        end
+        # Use compact to remove any nil values
+        parameters.compact.join(' ')
+    end
+
+    def rectangle_sides(area, perimeter)
+        disc = perimeter**2 - 16 * area
+        raise "No real rectangle possible" if disc < 0
+
+        sqrt_disc = Math.sqrt(disc)
+
+        length = (perimeter + sqrt_disc) / 4.0
+        width  = (perimeter - sqrt_disc) / 4.0
+
+        [length, width]
+    end
+end

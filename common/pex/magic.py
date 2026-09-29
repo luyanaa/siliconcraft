@@ -480,6 +480,9 @@ def assemble_technology(
         assembled, manifest.get("technology", {}).get("description")
     )
     cif = map_path.read_text().rstrip("\n")
+    cif_lines = cif.splitlines()
+    if cif_lines and cif_lines[0].strip() == "cifinput":
+        cif = "\n".join(cif_lines[1:])
     extract = render_profile_extract(manifest, profile_name, device_bindings).rstrip("\n")
     assembled = _replace_section(assembled, "cifinput", "cifinput\n" + cif)
     return _replace_section(assembled, "extract", extract)

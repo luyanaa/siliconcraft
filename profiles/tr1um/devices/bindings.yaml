@@ -1,0 +1,72 @@
+# Canonical MOS bindings for the Tokai-Rika 1um source contract.
+schema_version: 1
+canonical_source: "../../../common/devices/canonical/mos.yaml"
+bindings:
+  nmos_core:
+    canonical_variant: nmos_core
+    layout:
+      gate_types: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      substrate_node: VSS
+    simulation:
+      representation: primitive
+      name: NMOS_mst
+      prefix: m
+      model_library: "../models/tr1um.lib"
+      parameter_map: {w: w, l: l, nf: nf, m: m, ad: ad, as: as, pd: pd, ps: ps}
+    lvs:
+      extracted_class: NMOS
+      netgen_class: NMOS
+      permutable: [[d, s]]
+  pmos_core:
+    canonical_variant: pmos_core
+    layout:
+      gate_types: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      substrate_node: VDD
+    simulation:
+      representation: primitive
+      name: PMOS_mst
+      prefix: m
+      model_library: "../models/tr1um.lib"
+      parameter_map: {w: w, l: l, nf: nf, m: m, ad: ad, as: as, pd: pd, ps: ps}
+    lvs:
+      extracted_class: PMOS
+      netgen_class: PMOS
+      permutable: [[d, s]]
+  nmos_hv:
+    canonical_variant: nmos_hv_sym
+    layout:
+      gate_types: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      substrate_node: VSS
+    simulation:
+      representation: primitive
+      name: MNE_mst
+      prefix: m
+      model_library: "../models/tr1um.lib"
+      parameter_map: {w: w, l: l, nf: nf, m: m, ad: ad, as: as, pd: pd, ps: ps}
+    lvs:
+      extracted_class: NMOSE
+      netgen_class: NMOSE
+      permutable: [[d, s]]
+  pmos_hv:
+    canonical_variant: pmos_hv_sym
+    layout:
+      gate_types: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      substrate_node: VDD
+    simulation:
+      representation: primitive
+      name: MPE_mst
+      prefix: m
+      model_library: "../models/tr1um.lib"
+      parameter_map: {w: w, l: l, nf: nf, m: m, ad: ad, as: as, pd: pd, ps: ps}
+    lvs:
+      extracted_class: PMOS
+      netgen_class: PMOS
+      permutable: [[d, s]]

@@ -1,0 +1,109 @@
+schema_version: 1
+profile: tr1um
+source:
+  repository: OpenSUSI/TR-1um
+  commit: d83eb77fcbe8c587809dd9f4532f9464c5501ab2
+  license: Apache-2.0
+  scope: "IP62 public nominal model files; engineering use only"
+models:
+  NMOS_mst:
+    simulator: ngspice
+    representation: primitive
+    status: engineering_only
+    confidence: medium
+    source_file: models/source/models_IP62_mos_os00_calibrated.lib
+    nominal_conditions: {temperature_c: 27, supply_v: 5.0, process_corner: nominal}
+    limitations: [no_foundry_qualification, no_complete_corner_set, no_systematic_mos_calibration]
+  PMOS_mst:
+    simulator: ngspice
+    representation: primitive
+    status: engineering_only
+    confidence: medium
+    source_file: models/source/models_IP62_mos_os00_calibrated.lib
+    nominal_conditions: {temperature_c: 27, supply_v: 5.0, process_corner: nominal}
+    limitations: [no_foundry_qualification, no_complete_corner_set, no_systematic_mos_calibration]
+  MNE_mst:
+    simulator: ngspice
+    representation: primitive
+    status: engineering_only
+    confidence: low
+    source_file: models/source/models_IP62_mos_os00_calibrated.lib
+    nominal_conditions: {temperature_c: 27, supply_v: 5.0, process_corner: nominal}
+    limitations: [no_foundry_qualification, no_complete_corner_set, hv_esd_scope_not_independently_characterized]
+  MPE_mst:
+    simulator: ngspice
+    representation: primitive
+    status: engineering_only
+    confidence: low
+    source_file: models/source/models_IP62_mos_os00_calibrated.lib
+    nominal_conditions: {temperature_c: 27, supply_v: 5.0, process_corner: nominal}
+    limitations: [no_foundry_qualification, no_complete_corner_set, hv_esd_scope_not_independently_characterized]
+  NMOS:
+    simulator: ngspice
+    representation: subckt
+    status: engineering_only
+    confidence: medium
+    source_file: models/source/models_IP62_mos_os00_calibrated.lib
+    limitations: [wrapper_for_native_cdl_compatibility]
+  PMOS:
+    simulator: ngspice
+    representation: subckt
+    status: engineering_only
+    confidence: medium
+    source_file: models/source/models_IP62_mos_os00_calibrated.lib
+    limitations: [wrapper_for_native_cdl_compatibility]
+  MNE:
+    simulator: ngspice
+    representation: subckt
+    status: engineering_only
+    confidence: low
+    source_file: models/source/models_IP62_mos_os00_calibrated.lib
+    limitations: [wrapper_for_native_cdl_compatibility]
+  MPE:
+    simulator: ngspice
+    representation: subckt
+    status: engineering_only
+    confidence: low
+    source_file: models/source/models_IP62_mos_os00_calibrated.lib
+    limitations: [wrapper_for_native_cdl_compatibility]
+  DN:
+    simulator: ngspice
+    representation: primitive
+    status: engineering_only
+    confidence: low
+    source_file: models/source/models_IP62_diode_os00_calibrated.lib
+    limitations: [no_foundry_qualification, nominal_only]
+  DP:
+    simulator: ngspice
+    representation: primitive
+    status: engineering_only
+    confidence: low
+    source_file: models/source/models_IP62_diode_os00_calibrated.lib
+    limitations: [no_foundry_qualification, nominal_only]
+  F_RR:
+    simulator: ngspice
+    representation: subckt
+    status: engineering_only
+    confidence: low
+    source_file: models/source/models_IP62_res_os00_calibrated.lib
+    limitations: [no_foundry_qualification, nominal_only]
+  F_RS:
+    simulator: ngspice
+    representation: subckt
+    status: engineering_only
+    confidence: low
+    source_file: models/source/models_IP62_res_os00_calibrated.lib
+    limitations: [no_foundry_qualification, nominal_only]
+  F_CSIO:
+    simulator: ngspice
+    representation: subckt
+    status: engineering_only
+    confidence: low
+    source_file: models/source/models_IP62_cap_os00_calibrated.lib
+    limitations: [no_foundry_qualification, nominal_only]
+  parasitic_npn:
+    simulator: false
+    representation: reference_only
+    status: unavailable
+    confidence: none
+    limitations: [no_native_extractor, no_public_model_card, no_standalone_symbol]

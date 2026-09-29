@@ -1,0 +1,120 @@
+# TR-1um compatibility rules.
+# The selected family is standard SCMOS (lambda=0.5um), not SUBM.  Values in
+# this table are native-aligned compatibility values; the copied KLayout deck
+# under reference/klayout/drc remains the physical DRC authority.
+rules:
+  grid: {x: 0.05, y: 0.05}
+  width:
+    - {id: TR.WN, layer: nwell, value_um: 8.0, source: "native 00/01 DRC; 8lambda"}
+    - {id: TR.AA, layer: nactive, value_um: 1.4, source: "native AP/AN drawing rule"}
+    - {id: TR.AA, layer: pactive, value_um: 1.4, source: "native AP/AN drawing rule"}
+    - {id: TR.GC, layer: poly, value_um: 1.0, source: "native GC.W1"}
+    - {id: TR.AN, layer: nselect, value_um: 1.4, source: "native AN drawing rule"}
+    - {id: TR.AP, layer: pselect, value_um: 1.4, source: "native AP drawing rule"}
+    - {id: TR.CO, layer: cc, value_um: 1.0, source: "native CO.W1"}
+    - {id: TR.M1, layer: metal1, value_um: 1.8, source: "native M1.W1"}
+    - {id: TR.V1, layer: via, value_um: 1.4, source: "native V1.W1"}
+    - {id: TR.M2, layer: metal2, value_um: 3.0, source: "native M2.W1"}
+  spacing:
+    - {id: TR.WN.S, layer: nwell, value_um: 4.0, source: "native WN.S1"}
+    - {id: TR.AA.S, layer: nactive, value_um: 1.4, source: "native AP/AN.S1"}
+    - {id: TR.AA.S, layer: pactive, value_um: 1.4, source: "native AP/AN.S1"}
+    - {id: TR.GC.S, layer: poly, value_um: 1.2, source: "native GC.S1"}
+    - {id: TR.AN.S, layer: nselect, value_um: 1.4, source: "native AN.S1"}
+    - {id: TR.AP.S, layer: pselect, value_um: 1.4, source: "native AP.S1"}
+    - {id: TR.CO.S, layer: cc, value_um: 1.0, source: "native CO.S1"}
+    - {id: TR.M1.S, layer: metal1, value_um: 1.4, source: "native M1.S1"}
+    - {id: TR.V1.S, layer: via, value_um: 1.5, source: "native V1.S1"}
+    - {id: TR.M2.S, layer: metal2, value_um: 2.0, source: "native M2.S1"}
+    - {id: TR.GC.AA, layer: poly, layer2: active, value_um: 0.4, source: "native gate-to-active spacing"}
+  enclosure:
+    - {id: TR.GC.CO, layer: poly, layer2: cc, value_um: 0.8, source: "native contact enclosure"}
+    - {id: TR.AA.CO, layer: active, layer2: cc, value_um: 0.8, source: "native contact enclosure"}
+    - {id: TR.M1.CO, layer: metal1, layer2: cc, value_um: 0.8, source: "native contact enclosure"}
+    - {id: TR.M1.V1, layer: metal1, layer2: via, value_um: 1.0, source: "native via enclosure"}
+    - {id: TR.M2.V1, layer: metal2, layer2: via, value_um: 1.0, source: "native via enclosure"}
+    - {id: TR.WN.AA, layer: nwell, layer2: active, value_um: 7.0, source: "native nwell active enclosure"}
+    - {id: TR.AN.AA, layer: nselect, layer2: active, value_um: 0.4, source: "native select enclosure"}
+    - {id: TR.AP.AA, layer: pselect, layer2: active, value_um: 0.4, source: "native select enclosure"}
+    - {id: TR.V1.PO, layer: via, layer2: poly, value_um: 1.2, source: "native via-to-poly enclosure"}
+    - {id: TR.V1.AA, layer: via, layer2: active, value_um: 1.2, source: "native via-to-active enclosure"}
+  area: []
+  overlap: []
+  extension: []
+  notch: []
+  stdcell:
+    rule_map:
+      contact.cut_size: {value_um: 1.0, source: "native CO.W1"}
+      contact.cut_spacing: {value_um: 1.0, source: "native CO.S1"}
+      active.min_width: {value_um: 3.4, source: "native MOS W minimum"}
+      poly.min_width: {value_um: 1.0, source: "native GC.W1"}
+      poly.min_spacing: {value_um: 1.2, source: "native GC.S1"}
+      poly.contact_enclosure: {value_um: 0.8, source: "native GC.CO"}
+      active.contact_enclosure: {value_um: 0.8, source: "native AA.CO"}
+      active.contact_gate_spacing: {value_um: 1.0, source: "native MOS contact/gate spacing"}
+      select.active_enclosure.n: {value_um: 0.4, source: "native AN.AA"}
+      select.active_enclosure.p: {value_um: 0.4, source: "native AP.AA"}
+      select.channel_enclosure.n: {value_um: 0.4, source: "native channel select"}
+      select.channel_enclosure.p: {value_um: 0.4, source: "native channel select"}
+      select.contact_enclosure.n: {value_um: 0.8, source: "native contact select"}
+      select.contact_enclosure.p: {value_um: 0.8, source: "native contact select"}
+      gate.extension: {value_um: 1.2, source: "native GC extension"}
+      metal1.contact_enclosure: {value_um: 0.8, source: "native M1.CO"}
+      nwell.active_enclosure: {value_um: 7.0, source: "native WN.AA"}
+      nwell.min_width: {value_um: 8.0, source: "native WN.W1"}
+      via12.cut_size: {value_um: 1.4, source: "native V1.W1"}
+      via12.cut_spacing: {value_um: 1.5, source: "native V1.S1"}
+      via12.lower_enclosure: {value_um: 1.0, source: "native M1.V1"}
+      via12.upper_enclosure: {value_um: 1.0, source: "native M2.V1"}
+      via12.poly_spacing: {value_um: 1.2, source: "native V1.PO"}
+      via12.active_spacing: {value_um: 1.2, source: "native V1.AA"}
+      metal1.width: {value_um: 1.8, source: "native M1.W1"}
+      metal1.spacing: {value_um: 1.4, source: "native M1.S1"}
+      metal2.width: {value_um: 3.0, source: "native M2.W1"}
+      metal2.spacing: {value_um: 2.0, source: "native M2.S1"}
+      metal.M1.min_width: {value_um: 1.8, source: "native M1.W1"}
+      metal.M1.min_spacing: {value_um: 1.4, source: "native M1.S1"}
+      metal.M2.min_width: {value_um: 3.0, source: "native M2.W1"}
+      metal.M2.min_spacing: {value_um: 2.0, source: "native M2.S1"}
+native_overrides:
+  authority: "OpenSUSI/TR-1um native KLayout drawing DRC"
+  lambda_um: 0.5
+  rule_family: scmos
+  subm_selected: false
+  dimensions_um:
+    poly_width: 1.0
+    poly_spacing: 1.2
+    nwell_width: 8.0
+    nwell_spacing: 4.0
+    nactive_width: 1.4
+    pactive_width: 1.4
+    nactive_spacing: 1.4
+    pactive_spacing: 1.4
+    contact_width: 1.0
+    contact_spacing: 1.0
+    metal1_width: 1.8
+    metal1_spacing: 1.4
+    via1_width: 1.4
+    via1_spacing: 1.5
+    metal2_width: 3.0
+    metal2_spacing: 2.0
+  native_only_rules:
+    - "AP/AN/AR/AC type recognition"
+    - "WN/NW voltage-domain mask behavior"
+    - "V15/V27 marker semantics"
+    - "MPE/MNE ESD classes"
+    - "WB bipolar-well recognition without active BJT extraction"
+hvcmos:
+  voltage_classification:
+    mode: exploratory
+    marker_inference: false
+    require_annotation: false
+    unknown_rule_id: TR.HV.UNKNOWN
+  markers: []
+  hierarchy: []
+  drift: []
+  voltage_spacing: []
+  source: "Native 03_Electrical.drc V15/V27 markers; no generic voltage-spacing inference"
+  limitations:
+    - "Only the native KLayout deck applies source-specific HVCMOS/ESD semantics."
+    - "SCMOS compatibility DRC does not infer voltage class from marker geometry."

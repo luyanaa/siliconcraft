@@ -1,0 +1,24 @@
+# Native TR-1um extraction inventory.  Active canonical bindings are in
+# devices/bindings.yaml; this file records the native class boundary.
+devices:
+  mos4:
+    - {name: nmos4, channel: native_nfet, diff: native_ndiff, bulk_net: substrate, model: NMOS_mst, lvs_class: NMOS}
+    - {name: pmos4, channel: native_pfet, diff: native_pdiff, bulk_net: nwell, model: PMOS_mst, lvs_class: PMOS}
+  hvcmos:
+    - {name: nmos_hv, channel: native_nfet_esd, diff: native_ndiff, bulk_net: substrate, model: MNE_mst, lvs_class: NMOSE}
+    - {name: pmos_hv, channel: native_pfet_esd, diff: native_pdiff, bulk_net: nwell, model: MPE_mst, lvs_class: PMOS}
+  diode:
+    - {name: diode_n, region: native_DN, model: DN, lvs_class: DN}
+    - {name: diode_p, region: native_DP, model: DP, lvs_class: DP}
+  resistor:
+    - {name: res_rr, body: native_RR, model: F_RR, lvs_class: F_RR}
+    - {name: res_rs, body: native_RS, model: F_RS, lvs_class: F_RS}
+  capacitor:
+    - {name: cap_csio, region: native_CSIO, model: F_CSIO, lvs_class: F_CSIO}
+  parasitic_bjt:
+    status: reference_only
+    recognition_region: WB
+    native_source: "02_Device.drc derives WB = WN - (WR + WC + WM) as bipolar-well material"
+    standalone_extraction: false
+    simulator_model: false
+    note: "The current OpenSUSI runset has no NPN/PNP primitive, symbol, or model card; no fabricated BJT binding is provided."

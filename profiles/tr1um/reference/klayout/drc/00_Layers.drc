@@ -1,0 +1,44 @@
+# Layer generation
+# ----- ------ ----- ----- ------ ----- ----- ------ ----- 
+# Original version was made by jun1okamura from TokaiRika's document 
+# LICENSE: Apache License Version 2.0, January 2004,
+#          http://www.apache.org/licenses/
+# ----- ------ ----- ----- ------ ----- ----- ------ ----- 
+# Input layers
+#
+MASK  = input(63, 0)               # DRC check waiver area
+PTECT = input(63, 1)               # PTECT area recognition
+ESD   = input(63, 2)               # IO/ESD area recognition
+TEMP  = input(80, 0)               # SCRB
+BULK  = extent
+SCRB = TEMP.drc(switch(TEMP.holes, (BULK - TEMP.holes + TEMP), (BULK - BULK) ))
+# (SCRB).output("SCRB")
+#
+WN    = input(140, 0).not(MASK + SCRB)    # Nwell/Pwell
+NW    = input(36,  0).not(MASK + SCRB)    # N-well mask for voltage-domain checks
+# Project-owned voltage annotations; these are overlay layers, not foundry masks.
+V15_MARKER = input(150, 0).not(MASK + SCRB)  # 15 V domain annotation
+V27_MARKER = input(151, 0).not(MASK + SCRB)  # 27 V domain annotation
+AP    = input(3,   1).not(MASK + SCRB)    # Acitive = inverse LOCOS 
+AN    = input(3,   2).not(MASK + SCRB)    # Acitive = inverse LOCOS 
+AR    = input(3,   3).not(MASK + SCRB)    # Acitive = inverse LOCOS 
+AC    = input(3,   4).not(MASK + SCRB)    # Acitive = inverse LOCOS 
+GC    = input(8,   1).not(MASK + SCRB)    # Salisaide for Gate
+GR    = input(8,   2).not(MASK + SCRB)    # Salisaide for Resistor
+CO    = input(11,  0).not(MASK + SCRB)    # Contact
+M1    = input(13,  0).not(MASK + SCRB)    # Metal-1
+M1S   = input(13,  0).not(MASK).and(SCRB) # Metal-1 scribe
+V1    = input(19,  0).not(MASK + SCRB)    # Via1
+M2    = input(20,  0).not(MASK + SCRB)    # Metal-2
+M2S   = input(20,  0).not(MASK).and(SCRB) # Metal-2 scribe
+PO    = input(14,  0).not(MASK + SCRB)    # PAD
+#
+# ----- ------ ----- ----- ------ ----- ----- ------ ----- 
+#  Label Layer
+#
+M1_LBL = labels(48,  0).not(MASK + SCRB)  # M1 Label
+M2_LBL = labels(49,  0).not(MASK + SCRB)  # M2 Label
+# ----- ------ ----- ----- ------ ----- ----- ------ ----- 
+#  Bounding box means BULK
+#
+WP    = (BULK - WN)            # PWEL  for NMOS

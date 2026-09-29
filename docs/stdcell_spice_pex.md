@@ -1,6 +1,6 @@
 # SPICE and PEX readiness for the stdcell generator
 
-The machine-readable preparation contract is [`schema/stdcell_spice_pex_readiness.yaml`](../schema/stdcell_spice_pex_readiness.yaml). The planner now has explicit rule-derived fixed-height geometry candidates for `ami06`, `ami16`, `hp06`, `cnm25`, and `ams_c35`; this is deliberately not a foundry standard-cell library and does not claim timing, power, Liberty, or signoff. The generator can emit a geometry-plan LEF-compatible abstract, but that view is not a signoff library view.
+The machine-readable preparation contract is [`schema/stdcell_spice_pex_readiness.yaml`](../schema/stdcell_spice_pex_readiness.yaml). The planner now has explicit rule-derived fixed-height geometry candidates for `ami06`, `ami16`, `hp06`, `cnm25`, `ams_c35`, and `tr1um`; this is deliberately not a foundry standard-cell library and does not claim timing, power, Liberty, or signoff. The generator can emit a geometry-plan LEF-compatible abstract, but that view is not a signoff library view.
 
 ## Current SPICE status
 
@@ -11,6 +11,7 @@ The machine-readable preparation contract is [`schema/stdcell_spice_pex_readines
 | `hp06` | Primitive MOS4 | `hp14tbN`, `hp14tbP` | Nominal only in `hp06` section | Native PEX output simulates; stdcell INV authoritative DRC/LVS/PEX/LEF smoke passes; no xschem smoke contract |
 | `cnm25` | Primitive MOS4 | `cnm25modN`, `cnm25modP` | Nominal only in `cnm25` section | Stdcell INV authoritative DRC/LVS/LEF smoke passes; no Magic runtime PEX backend |
 | `ams_c35` | Primitive MOS4 | `c35N`, `c35P` | Nominal only in `ams_c35` section | Stdcell INV authoritative DRC/LVS/LEF smoke passes; no Magic runtime PEX backend |
+| `tr1um` | Primitive MOS4 | `NMOS_mst`, `PMOS_mst` (`MNE_mst`, `MPE_mst` for HV) | Nominal engineering cards only in `tr1um` section | ngspice primitive smoke passes; native DRC/LVS/KLayout and Magic PEX are source-reference gates; stdcell candidate generation passes; signoff blocked |
 | `ls1u` | `LV1UNMOS` / `LV1UPMOS` subcircuits | `LV1UNMOS`, `LV1UPMOS` | No process-corner contract; partial characterization | xschem/ngspice and native Magic MOS smoke pass |
 | `openrule1um` | Model-contract-only | `or1_nmos`, `or1_pmos` plus passive variants | No corner contract | Measured primitive model contract; no active canonical bindings |
 
@@ -53,6 +54,39 @@ Both ports are DRC/LVS-first: they carry no Magic extraction backend, so
   model cards are company confidential and user-supplied.
 
 The native extraction smoke verifies model names, primitive MOS count, parasitic capacitors, and an ngspice operating point. It does not prove a standard-cell pin contract, corner coverage, contact-chain calibration, or timing accuracy.
+
+### TR-1um
+
+TR-1um uses standard SCMOS lambda (`lambda=0.5um`) as its compatibility
+family. `scmos_subm` is intentionally not selected: the native process is a
+1um node and its drawing rules are bounded by 0.5um lambda dimensions, with
+explicit AP/AN/WN/GC/CO/M1/V1/M2 exceptions. The copied native KLayout deck
+under `profiles/tr1um/reference/klayout/` remains the physical DRC/LVS
+authority.
+
+The ngspice library is a source-preserving assembly of the public IP62
+calibrated MOS/diode/resistor/capacitor files. Zero-valued `vthMP`, `vthMN`,
+`vthMPE`, and `vthMNE` defaults make the upstream BSIM expressions runnable;
+the source remains nominal engineering collateral, not a foundry corner set.
+Core/HV canonical bindings use primitive cards so both xschem and Magic
+extracted `M` devices resolve. Native LVS class names remain separate.
+
+The source DRC derives `WB` as bipolar-well material, but the active public
+LVS extraction graph has no standalone NPN/PNP class and the model directory
+has no BJT card. The profile therefore exposes `parasitic_npn` as a
+simulator-disabled reference contract rather than inventing a BJT model.
+HVCMOS V15/V27 marker layers are preserved; generic SCMOS voltage inference is
+exploratory-only and disabled.
+
+The standard-cell contract is derived from the 38-cell access manifest:
+75.6um site height, 31.3um N/P rows, 13um row gap, native polarity-specific
+AN/AP active streams, two-metal routing, and candidate-only LEF output. It
+does not claim a qualified library or Liberty characterization.
+
+The TR-1um INV candidate now renders with native AN/AP layers and has a
+native-class LVS fixture. Native DRC remains a qualification gate for that
+generated geometry; the planner records candidate geometry and does not
+promote it to a signoff-clean standard-cell layout.
 
 ### LS1u
 
@@ -164,7 +198,7 @@ transistor netlist
   -> Pareto filtering
 ```
 
-For the first six cells, exhaustive ordering/folding enumeration is followed
+For each supported cell, exhaustive ordering/folding enumeration is followed
 by local/global geometry-Pareto and optional beam selection; `max_candidates`
 is not used to truncate nested loops. Difference-constraint/longest-path
 compaction remains preferred over MILP. Z3, CP-SAT, or MILP becomes an
@@ -177,11 +211,13 @@ The repository now contains a process-independent IR path:
 - `CircuitIR` plus explicit PMOS/NMOS `DiffusionGraph`;
 - `ColumnIR` exhaustive P/N ordering alignment with deterministic LCS gaps;
 - fixed-height, rule-derived SCMOS site contracts for AMI06, AMI16, HP06,
-  CNM25, and AMS C35, with explicit overflow rejection;
+  CNM25, AMS C35, and TR-1um, with explicit overflow rejection;
 - difference-constraint compaction into `GeometryIR`;
 - row-level active/select/poly/contact geometry with shared-active bays and
   containment checks; self-tap geometry is rendered directly by the stdcell
   renderer so profiles without the analog PCell contract do not inherit it;
+- profile-native row layer aliases are supported, so TR-1um emits AN/AP
+  active and select streams instead of collapsing N/P active into one layer;
 - a layer-aware rectangular `RoutingGraph` with A*/Dijkstra search,
   negotiated congestion fallback, grammar-compiled architecture policy, and
   via-access landing geometry;

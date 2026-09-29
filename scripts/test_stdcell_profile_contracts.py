@@ -23,6 +23,7 @@ PROFILES = {
     "hp06": "three_metal_classic",
     "cnm25": "two_metal_classic",
     "ams_c35": "three_metal_classic",
+    "tr1um": "two_metal_classic",
 }
 
 
@@ -113,6 +114,11 @@ def main() -> int:
         assert candidates[0].profile == name
         assert candidates[0].height_um == process.site_height_um
         assert candidates[0].constraints["rail_contract"]["fixed_height"] is True
+        if name == "tr1um":
+            assert candidates[0].row_geometry["n"]["active"][0]["layer"] == "nactive"
+            assert candidates[0].row_geometry["p"]["active"][0]["layer"] == "pactive"
+            assert candidates[0].row_geometry["n"]["select"][0]["layer"] == "nselect"
+            assert candidates[0].row_geometry["p"]["select"][0]["layer"] == "pselect"
         if architecture.startswith("three_metal"):
             assert process.has_layer("M3")
             assert candidates[0].feedthrough_layer == "M3"

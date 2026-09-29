@@ -1,0 +1,59 @@
+cifinput
+style TR1um
+    scalefactor 100
+
+    layer nwell CWN
+ labels CWN
+    layer ndiff ANd
+ labels ANd
+    layer pdiff APd
+ labels APd
+    layer ndiff CAA
+ labels CAA
+    layer pdiff CAA
+ labels CAA
+    layer poly GCp
+ labels GCp
+    layer nsc COc
+        and CMF
+        and ANd
+    layer psc COc
+        and CMF
+        and APd
+    layer pc COc
+        and CMF
+        and GCp
+    layer ndc COc
+        and CMF
+        and ANd
+    layer pdc COc
+        and CMF
+        and APd
+    layer nfet GCp
+        and ANd
+    layer pfet GCp
+        and APd
+    layer m1 CMF
+ labels CMF
+    layer m2c CV1
+        and CMF
+        and CMS
+    layer m2 CMS
+ labels CMS
+
+    calma CWN 140 *
+    calma APd 3 1
+    calma ANd 3 2
+    calma CAA 3 3
+    calma GCp 8 1
+    calma COc 11 *
+    calma CMF 13 *
+    calma CV1 19 *
+    calma CMS 20 *
+    calma GCp 8 *
+    # OpenSUSI stdcell GDS uses duplicate M1/M2 annotation streams.
+    calma CMF 48 0
+    calma CMF 48 1
+    calma CMS 49 0
+    calma CMS 49 1
+end

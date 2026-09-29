@@ -18,6 +18,7 @@ Usage:
 The schematic must mirror the layout topology (same nets, incl. floating
 ones) and device parameters; netgen applies its value tolerances.
 """
+from __future__ import annotations
 
 import argparse
 import json
@@ -133,6 +134,7 @@ def extract(profile_dir, layout, deck, workdir, klayout, extra_env=None, top_cel
     env.update({
         "LAYOUT": str(Path(layout).resolve()),
         "REPORT": str(spice),
+        "LVS_REPORT": str(workdir / f"lvs_{deck}.lvsdb"),
         "MARKERS": str(spice),
         "EXTRACTED": str(spice),
         "PREFIX": meta.get("model_prefix", ""),

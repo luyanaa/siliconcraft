@@ -17,6 +17,7 @@ policy:
     - hp06
     - cnm25
     - ams_c35
+    - tr1um
   input_formats:
     - spice
     - cdl

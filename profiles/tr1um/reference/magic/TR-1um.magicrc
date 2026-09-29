@@ -1,0 +1,21 @@
+# TR-1um Magic technology file (drawing-layer 1um CMOS, 2-metal).
+# Layers follow the TR-1um drawing-layer GDS table:
+#   AP 3/1  P+ active      AN 3/2  N+ active      AR 3/3 active (raw)
+#   GC 8/1  gate poly     SG 8/0  short gate     GR 8/2  poly resistor
+#   CO 11/0 contact        M1 13/0 metal1        V1 19/0 via1
+#   M2 20/0 metal2        WN 140/0 N-well       NW 36/0 deep N-well marker
+#   PM 35/0 P-well marker  NM 7/0 N-well marker  NF 25/0 N+ field
+#   PF 26/0 P+ field       prBoundary 235/0
+#
+# Purpose: GDS streamout (cifoutput) and basic Magic view of TR-1um drawing
+# layouts. Full DRC/LVS remain in KLayout runsets (run.drc / run.lvs).
+
+puts stdout "Sourcing TR-1um Magic extraction technology..."
+if {[tech name] != "TR1um"} {
+    tech load [file join [file dirname [file normalize [info script]]] TR-1um.tech]
+}
+if {[tech name] != "TR1um"} {quit -noprompt}
+drc on
+catch {random seed}
+ext2spice scale off
+snap lambda

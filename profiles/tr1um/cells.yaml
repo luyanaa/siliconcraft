@@ -1,0 +1,48 @@
+schema_version: 1
+profile: tr1um
+stdcell:
+  architecture: two_metal_classic
+  status: derived_candidate_not_signoff
+  site_name: TR1um_access_site
+  site_width_um: 1.0
+  site_height_um: 75.6
+  source_height_um: 62.6
+  row_heights_um: {n: 31.3, p: 31.3}
+  row_gap_um: 13.0
+  rail_margin_um: 0.0
+  tap_policy: self_tapped
+  tapcell:
+    required: false
+    cell: TR1UM_TAP
+    max_spacing_um: null
+  orientations:
+    even_row: R0
+    odd_row: MX
+    legal:
+      - R0
+      - MX
+  source_reference:
+    repository: OpenSUSI/TR-1um
+    commit: d83eb77fcbe8c587809dd9f4532f9464c5501ab2
+    manifest: reference/stdcell/access_manifest.json
+  grid_um: 0.05
+  well:
+    type: nwell
+    p_row_net: VDD
+    n_row_substrate: VSS
+  contacts:
+    native_cut: cc
+  routing:
+    metal_layers: [metal1, metal2]
+    via_layers: [via]
+  pin_contract:
+    signal_pin_access: candidate_only
+    power_pins: [VDD, VSS]
+    bulk_policy: explicit_row_supply
+  qualification:
+    drc: native_reference_required
+    lvs: native_reference_required
+    pex: engineering_magic_reference
+    lef: candidate_only
+    liberty: unavailable
+    signoff: blocked

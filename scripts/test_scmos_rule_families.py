@@ -33,7 +33,7 @@ def main() -> int:
     assert matrix["rule_families"] == ["scmos", "scmos_subm"]
 
     entries = {entry["name"]: entry for entry in matrix["profiles"]}
-    assert set(entries) == {"ami16", "ami06", "hp06", "cnm25", "ams_c35", "xh035", "xh018", *EXPECTED_TSMC}
+    assert set(entries) == {"ami16", "ami06", "hp06", "cnm25", "tr1um", "ams_c35", "xh035", "xh018", *EXPECTED_TSMC}
     assert entries["ami16"]["rule_family"] == "scmos"
     assert entries["ami06"]["rule_family"] == "scmos_subm"
     assert entries["hp06"]["rule_family"] == "scmos_subm"
@@ -44,6 +44,9 @@ def main() -> int:
     assert entries["ams_c35"]["lambda_um"] == 0.2
     assert entries["ams_c35"]["mosis_code"] == "SCN4ME_SUBM"
     assert entries["ams_c35"]["source_process"] == "C35B4C3"
+    assert entries["tr1um"]["rule_family"] == "scmos"
+    assert entries["tr1um"]["lambda_um"] == 0.5
+    assert entries["tr1um"]["source_process"] == "TR_1UM"
 
     for name, (source, mosis, lam, techfile) in EXPECTED_TSMC.items():
         entry = entries[name]

@@ -1,0 +1,39 @@
+schema_version: 1
+profile: tr1um
+family:
+  id: tr1um_ip62_nominal
+  backend: ngspice
+  library: models/tr1um.lib
+  section: tr1um
+  nominal_conditions: {temperature_c: 27, supply_v: 5.0, process_corner: nominal}
+  corners: [nominal]
+  source:
+    repository: OpenSUSI/TR-1um
+    commit: d83eb77fcbe8c587809dd9f4532f9464c5501ab2
+    license: Apache-2.0
+  qualification: engineering_only
+  limitations:
+    - "The upstream calibrated overlays are nominal engineering cards, not foundry-qualified corners."
+    - "No independent TR-1um BJT card is present in the public source."
+canonical_devices:
+  terminal_order: [d, g, s, b]
+  mos_parameter_map: {w: w, l: l, nf: nf, m: m, ad: ad, as: as, pd: pd, ps: ps}
+  primitive_cards: {nmos: NMOS_mst, pmos: PMOS_mst, nmos_hv: MNE_mst, pmos_hv: MPE_mst}
+parasitic_ownership:
+  transistor_intrinsic_capacitance: model
+  gate_overlap_capacitance: model
+  junction_area_capacitance: model
+  junction_sidewall_capacitance: model
+  diffusion_sheet_resistance: pex
+  metal_interconnect_rc: pex
+  contact_and_via_resistance: pex
+reference_only_models:
+  parasitic_npn:
+    kind: parasitic_bjt
+    simulator: false
+    representation: contract_only
+    recognition_region: WB
+    source: "Native 02_Device.drc WB derivation; no active 01_Extract.lvs class"
+    limitations:
+      - "Not emitted by the current native LVS deck."
+      - "No NPN/PNP model card or xschem symbol is supplied."

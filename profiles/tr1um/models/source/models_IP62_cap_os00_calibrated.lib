@@ -1,0 +1,28 @@
+* TR-1um IP62 CSIO calibration overlay for OS00 Manual 00 rev1.1.
+* Original models_IP62_cap_v5p1.lib is not modified.
+* Fitted to the digitized L=W=37.1um C(V) and C(T) figures.
+* The public F_CSIO name is retained so the calibrated deck can be selected
+* without changing schematic symbols or LVS device names.
+* simulator lang=spectre
+* ;change 20131017
+
+* ///  2024.09.30 D.Aoki  fixed tnom
+
+* //macro F_CSIO/////////////////////////////////
+.model m_CSIO C tnom=27 tc1=2.2e-5
+
+.subckt F_CSIO_mst plus minus sub
+.param c=0 y=0 x=0 m=1 magCSIO=1
+
+C1 plus minus c='c*magCSIO*1.0300*(1+0.00129*v(plus,minus))*(1+0.000022*(temper-27))*m'
+
+C2 minus sub
++ c = '0.56*(((x+18.8+sqrt(2.03e-8*(0.61+v(minus,sub)))*1e4)*(y+18.8+sqrt(2.03e-8*(0.61+v(minus,sub)))*1e4)*1.053e-20/sqrt(2.03e-8*(0.61+v(minus,sub))))+(2.0*(x+18.8+sqrt(1.03e-8*(0.71+v(minus,sub)))*1e4)*(10+0.5*sqrt(1.03e-8*(0.71+v(minus,sub)))*1e4)+2.0*(y+18.8+sqrt(1.03e-8*(0.71+v(minus,sub)))*1e4)*(10+0.5*sqrt(1.03e-8*(0.71+v(minus,sub)))*1e4))*1.053e-20/sqrt(1.03e-8*(0.71+v(minus,sub))))*m'
+
+.ends F_CSIO_mst
+
+.subckt F_CSIO plus minus sub
+.param c=0 y=0 x=0 m=1
+                           
+X1 plus minus sub F_CSIO_mst c=c m=m  x=x*1e+6  y=y*1e+6  
+.ends F_CSIO

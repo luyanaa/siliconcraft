@@ -1,0 +1,101 @@
+# TR-1um Magic PEX source-reference profile.
+# Native OpenSUSI coefficients are preserved as Magic-native values; this is
+# an engineering extraction contract, not a foundry-qualified RC deck.
+schema_version: 2
+profile: tr1um
+default: none
+flow:
+  backend: magic
+  source_driven: true
+  original_process: TR_1UM
+  original_run: IP62
+  topology_source: "OpenSUSI/TR-1um TR-1um.tech extract section"
+  capacitance_source: "TR-1um.tech Magic-native areacap/perimc/overlap directives"
+  contact_policy: "native TR-1um.tech coefficients are retained; no new contact calibration is inferred"
+  legacy_directives_are_magic_native: true
+  parasitic_ownership:
+    transistor_intrinsic_capacitance: model
+    gate_overlap_capacitance: model
+    junction_area_capacitance: model
+    junction_sidewall_capacitance: model
+    diffusion_sheet_resistance: pex
+    gate_sheet_resistance: pex
+    metal_interconnect_rc: pex
+    contact_and_via_resistance: pex
+physical:
+  lambda_um: 0.5
+  magic_lambda_centimicron: 50
+  magic_resistance_unit: milliohm_per_square
+  magic_area_cap_unit: attofarad_per_lambda2
+  magic_edge_cap_unit: attofarad_per_lambda
+source_technology:
+  file: ../reference/magic/TR-1um.tech
+  gds_input_map: ../reference/magic/cifin-tr1um.gen
+  note: "Copied native TR-1um Magic technology and CIF input map; generated extract section replaces the source extract section."
+technology:
+  description: "Tokai-Rika TR-1um IP62 engineering PEX"
+topology:
+  style: TR1um
+  cscale: 1
+  step: 100
+  sidehalo: 0
+  magic_device_class: mosfet
+  magic_terminal_order: drain,gate,source,bulk
+  plane_order:
+    -
+      - implant
+      - 0
+    -
+      - well
+      - 1
+    -
+      - active
+      - 2
+    -
+      - metal1
+      - 3
+    -
+      - metal2
+      - 4
+  scope: "Four-terminal core MOS topology; native HV/diode/passive PEX remains outside the generic Magic topology renderer."
+profiles:
+  none:
+    generated: true
+    status: topology_only
+    description: "TR-1um layer map and core MOS topology without RC coefficients."
+    magic_directives: []
+  tr1um_engineering:
+    generated: true
+    status: source_reference_partial
+    description: "Magic-native TR-1um engineering RC coefficients copied from the public TR-1um.tech extract contract."
+    source:
+      repository: OpenSUSI/TR-1um
+      commit: d83eb77fcbe8c587809dd9f4532f9464c5501ab2
+      files:
+        - reference/magic/TR-1um.tech
+      calibrated: false
+      qualification: engineering_only
+    limitations:
+      - no_foundry_rc_qualification
+      - no_corner_set
+      - no_independent_contact_or_via_measurement
+      - native_Magic_topology_covers_core_MOS_only
+      - intrinsic_and_junction_capacitance_remain_model_owned
+    magic_directives:
+      - {kind: raw, text: "resist metal1 50"}
+      - {kind: raw, text: "resist metal2 30"}
+      - {kind: raw, text: "resist m2c 1000"}
+      - {kind: raw, text: "areacap (ndiff,ndc)/a 30"}
+      - {kind: raw, text: "perimc (ndiff,ndc)/a space,pw 40"}
+      - {kind: raw, text: "areacap (pdiff,pdc)/a 30"}
+      - {kind: raw, text: "perimc (pdiff,pdc)/a space,nw 40"}
+      - {kind: raw, text: "areacap (poly,pc)/a 39"}
+      - {kind: raw, text: "perimc (poly,pc)/a ~(poly,pc)/a 80"}
+      - {kind: raw, text: "areacap metal1/a 35"}
+      - {kind: raw, text: "perimc metal1/a ~(metal1)/a 50"}
+      - {kind: raw, text: "areacap metal2/a 18"}
+      - {kind: raw, text: "perimc metal2/a ~(metal2)/a 50"}
+      - {kind: raw, text: "sideoverlap metal1/a ~(metal1)/a metal2/a 20"}
+      - {kind: raw, text: "sideoverlap metal2/a ~(metal2)/a metal1/a 20"}
+      - {kind: raw, text: "overlap metal1/a metal2,~m2c 20"}
+      - {kind: raw, text: "overlap metal2/a metal1,~m2c 20"}

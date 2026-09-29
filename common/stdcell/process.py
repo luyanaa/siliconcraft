@@ -114,6 +114,33 @@ class StdcellProcess:
         alias = self.layers_by_logical.get(logical.upper())
         return bool(alias and alias.available)
 
+    def stdcell_layer(self, semantic: str, polarity: str | None = None) -> str:
+        """Resolve a stdcell shape token, allowing native polarity layers.
+
+        Legacy profiles use one ``ACTIVE`` token and polarity-specific
+        ``NSELECT``/``PSELECT`` tokens.  Processes such as TR-1um draw N+
+        and P+ active on different streams, so their profile metadata can
+        override ``active_n`` and ``active_p`` without changing the planner's
+        geometry contract.
+        """
+        configured = self.ir.meta.get("stdcell_layers") or {}
+        key = str(semantic).lower()
+        if polarity:
+            configured_value = configured.get(f"{key}_{str(polarity).lower()}")
+            if configured_value:
+                return str(configured_value)
+        defaults = {
+            "active": "ACTIVE",
+            "select": "NSELECT" if polarity == "n" else "PSELECT",
+            "well": "NWELL",
+        }
+        try:
+            return defaults[key]
+        except KeyError as exc:
+            raise ProcessError(
+                f"{self.profile_name}: unknown stdcell semantic layer {semantic!r}"
+            ) from exc
+
     def feature(self, name: str) -> bool:
         return bool((self.ir.meta.get("features") or {}).get(name, False))
 

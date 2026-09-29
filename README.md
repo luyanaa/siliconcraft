@@ -163,9 +163,10 @@ and NAND2 use the two-metal classic path; the legal NOR2 fixture uses the
 three-metal classic path.
 
 The fixed-height geometry planner now has explicit, rule-derived candidate
-contracts for `ami06`, `ami16`, `hp06`, `cnm25`, and `ams_c35`. These contracts
-are not foundry standard-cell row libraries: public process/rule sources did
-not establish universal row heights for the four newly covered profiles.
+contracts for `ami06`, `ami16`, `hp06`, `cnm25`, `ams_c35`, and `tr1um`. These
+contracts are not foundry standard-cell row libraries: public process/rule
+sources did not establish universal row heights for the newly covered
+profiles.
 AMI16/HP06 use a stdcell-only SCMOS rule adapter instead of inheriting the
 shared analog PCell technology assumptions. Pin, power, bulk, PEX, corner,
 LEF, Liberty, and signoff claims remain gated separately.
@@ -241,6 +242,13 @@ not disabled.
   select/active 0.45 µm, N+/P+ enclosure 0.25 µm, stacked vias), generated
   xschem/ngspice MOS symbols, and analog PCells remain process-specific; PEX
   is topology-only and the licensed kit is the tapeout authority.
+- TR-1um is a Tokai-Rika 1um/OpenSUSI IP62 port using standard SCMOS lambda
+  (`lambda=0.5um`, not SUBM) plus explicit native AP/AN/WN/HVCMOS overrides.
+  Its native KLayout DRC/LVS and PCell sources are preserved under
+  `profiles/tr1um/reference/`; Magic PEX and ngspice models are engineering
+  references only. The native deck recognizes bipolar-well material but does
+  not expose a standalone BJT extractor or model, so the BJT contract remains
+  reference-only.
 - LS1u is a subcircuit/topology reference with partial model evidence.
 - OpenRule1um's 45-cell GDS/38-symbol catalog is reference-only; LEF, Liberty,
   and PEX are unavailable/deferred.
@@ -249,12 +257,14 @@ not disabled.
 
 ## Current SCMOS behavior
 
-The active AMI06, HP06, AMI16, CNM25, and AMS C35 PEX/DRC contracts retain
-their source-driven process-specific coefficients. AMI06/HP06/AMI16 carry the
-`pearlriver-scmos.tech` Magic carrier; CNM25 and AMS C35 are DRC/LVS-only
-profiles (no Magic backend yet) whose native decks live under
-`profiles/<name>/reference/klayout/`. Each manifest also declares a matched
-legacy SCMOS backend where applicable for geometry/connectivity cross-checking:
+The active AMI06, HP06, AMI16, CNM25, AMS C35, and TR-1um PEX/DRC contracts
+retain their source-driven process-specific coefficients. AMI06/HP06/AMI16
+carry the `pearlriver-scmos.tech` Magic carrier; CNM25 and AMS C35 are
+DRC/LVS-only profiles (no Magic backend yet), while TR-1um uses its copied
+native `TR-1um.tech` Magic carrier. Native decks live under
+`profiles/<name>/reference/` where provided. Each manifest also declares a
+matched legacy SCMOS backend where applicable for geometry/connectivity
+cross-checking:
 
 - AMI06 and HP06: `scmos-sub`, extraction style `lambda=0.30`;
 - AMI16: `scmos`, extraction style `lambda=0.8(scna16_ami)`.

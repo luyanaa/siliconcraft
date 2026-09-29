@@ -1,0 +1,412 @@
+* profiles/tr1um/models/tr1um.lib
+* Source-preserving assembly of OpenSUSI/TR-1um IP62 public model files.
+* Source commit: d83eb77fcbe8c587809dd9f4532f9464c5501ab2; license: Apache-2.0.
+* Engineering-only nominal cards. No foundry qualification or full corners.
+.lib tr1um
+* Default zero-bias trim parameters required by the upstream BSIM expressions.
+* Callers may override these process knobs after including this section.
+.param vthMP=0 vthMN=0 vthMPE=0 vthMNE=0
+
+* BEGIN SOURCE models_IP62_mos_os00_calibrated.lib
+* TR-1um OS00 engineering MOS overlay.
+* Electrical parameters are unchanged from models_IP62_mos_v2.lib.
+* This copy only closes the PMOS/PMOSg ngspice terminator typo; original source remains immutable.
+* No MOS systematic calibration is claimed: use sign-off margins and manual limits.
+
+* /// IP62 Model File ///
+* /// models_IP62_mos_v2  ///
+* /// 2025.08.19 ARAKAWA Natsuki ///
+
+* simulator lang=spectre
+
+.param sdwidth=2.8u
+
+* // model PMOS ////////////////////////////////////////
+.subckt PMOS d g s b
+.param w=w l=l AS='w*sdwidth' AD='w*sdwidth' PS='2*(sdwidth+w)' PD='2*(sdwidth+w)' nrd=0 nrs=0 m=1
+M1 d g s b PMOS_mst w=w l=l as=as ad=ad ps=ps pd=pd nrd=nrd nrs=nrs m=m
+.ends PMOS
+
+.model PMOS_mst PMOS
+* type	 = p	       							      
++ vth0     = '-0.678475+vthMP'
++ level = 49 version = 3.3 tnom = 27
++ tox      = 1.95e-08       xj       = 3.2e-07        nch      = 1.6e+17
++ k1       = 0.865126       k2       = 0
++ k3       = 19.9415        k3b      = -10            w0       = 3.12082e-06
++ nlx      = 3.11982e-07    dvt0w    = 0              dvt1w    = 0
++ dvt2w    = -0.032         dvt0     = 1.41234        dvt1     = 0.524423
++ dvt2     = -0.031468      vbm      = -3             u0       = 0.0196669
++ ua       = 1.77818e-09    ub       = 2.67881e-18    uc       = -8.71484e-11
++ vsat     = 700000         a0       = 1.24985        ags      = 0.131047
++ b0       = 8.23429e-09    b1       = -1e-07         keta     = 0.0135411
++ a1       = 0              a2       = 1              rdsw     = 1989.6
++ prwg     = -0.001         prwb     = 0.0554082      wr       = 1
++ wint     = 8.28413e-07    lint     = -8.68261e-08   xl       = 0
++ xw       = 0              dwg      = -2.60218e-08   dwb      = -4.2585e-08
++ voff     = -0.15          nfactor  = 2              cit      = 0
++ cdsc     = 0.01           cdscd    = 0              cdscb    = 0
++ eta0     = 0.159519       etab     = -0.07722       dsub     = 0.567003
++ pclm     = 9.90814        pdiblc1  = 1              pdiblc2  = 0.00997756
++ pdiblcb  = -0.000118146   drout    = 0.823024       pscbe1   = 5.67248e+09
++ pscbe2   = 9.89777e-09    pvag     = 4.17315        delta    = 0.03
++ rsh      = 44.9607        mobmod   = 1              prt      = 292.21
++ ute      = -1.00674       kt1      = -0.506653      kt1l     = -1e-07
++ kt2      = -0.0438588     ua1      = 3.51352e-09    ub1      = -9.77898e-18
++ uc1      = -9.8421e-11    at       = 100000         nqsmod   = 0
++ wl       = 0              wln      = 1              ww       = 0
++ wwn      = 1              wwl      = 0              ll       = 0
++ lln      = 1              lw       = 0              lwn      = 1
++ lwl      = 0              capmod   = 2              noff     = 1
++ acde     = 1              moin     = 15             tpbswg   = 0
++ tcjswg   = 0              cgsl     =1.81e-09        cgdl     =1.81e-09
++ cj       =1.02e-03
+
+
+
+*// model NMOS ////////////////////////////////////////
+.subckt NMOS d g s b
+.param w=w l=l AS='w*sdwidth' AD='w*sdwidth' PS='2*(sdwidth+w)' PD='2*(sdwidth+w)' nrd=0 nrs=0 m=1
+M1 d g s b NMOS_mst w=w l=l as=as ad=ad ps=ps pd=pd nrd=nrd nrs=nrs m=m
+.ends NMOS
+
+.model NMOS_mst NMOS
+* type	 = n	       							      
++ vth0     = '0.762948+vthMN'
++ level    = 49             version  = 3.3            tnom     = 27
++ tox      = 1.95e-08       xj       = 3.4e-07        nch      = 3.2e+16
++ k1       = 0.854475       k2       = -0.0311518
++ k3       = 86.2769        k3b      = 10             w0       = 5e-05
++ nlx      = 1.38901e-07    dvt0w    = 0              dvt1w    = 0
++ dvt2w    = -0.032         dvt0     = 1.01297        dvt1     = 0.348472
++ dvt2     = -0.0511863     vbm      = -3             u0       = 0.0668151
++ ua       = 2.05262e-09    ub       = 1e-21          uc       = 1.38707e-10
++ vsat     = 135539         a0       = 0.856098       ags      = 0.11654
++ b0       = -3.75624e-08   b1       = 1e-07          keta     = 0.05
++ a1       = 0              a2       = 0.9            rdsw     = 802.878
++ prwg     = 0.0727305      prwb     = 0.1            wr       = 1
++ wint     = 6.60865e-07    lint     = -1.03955e-07   xl       = 0
++ xw       = 0              dwg      = -7.69191e-09   dwb      = 3.86077e-08
++ voff     = -0.15          nfactor  = 2              cit      = 0
++ cdsc     = 0.01           cdscd    = 0              cdscb    = 0.000770059
++ eta0     = 0.487318       etab     = -0.2           dsub     = 0.821574
++ pclm     = 1.33874        pdiblc1  = 0.0770736      pdiblc2  = 1e-05
++ pdiblcb  = 1e-10          drout    = 0.850868       pscbe1   = 4.96301e+08
++ pscbe2   = 0.001          pvag     = 2.71787        delta    = 0.0147876
++ mobmod   = 1              prt      = -774           ute      = -1.70065
++ kt1      = -0.464518      kt1l     = -1e-07         kt2      = -0.0556928
++ ua1      = 2.9856e-09     ub1      = -9.01491e-18   uc1      = -1e-10
++ at       = 80156.4        nqsmod   = 0              wl       = 0
++ wln      = 1              ww       = 0              wwn      = 1
++ wwl      = 0              ll       = 0              lln      = 1
++ lw       = 0              lwn      = 1              lwl      = 0
++ capmod   = 2              tcj      = 0              tpb      = 0
++ tcjsw    = 0              tpbsw    = 0              noff     = 1
++ acde     = 1              moin     = 15             tpbswg   = 0
++ tcjswg   = 0              cgsl     =2.02e-09        cgdl     =2.02e-09
++ cj       =7.44e-04
+
+
+
+
+// model MPE ////////////////////////////////////////
+.subckt MPE d g s b
+.param w=0 l=0 as=0 ad=0 ps=0 pd=0 nrd=0 nrs=0 m=1
+M1 d g s b MPE_mst w=w l=l as=as ad=ad ps=ps pd=pd nrd=nrd nrs=nrs m=m
+.ends MPE
+  
+.model MPE_mst PMOS   							
+* type    = p              							                                                                                                            
++ level   = 49             							
++ vth0    = '-0.762724+vthMPE'							
++ version = 3.2            tnom    = 27             tox     = 1.95e-8      	
++ xj      = 3.4e-7         nch     = 1.7e17           				
++ k1      = 0.867919       k2      = 2.49771e-4     k3      = 12.7816      	
++ k3b     = -3.78874       w0      = 2.19075e-15    nlx     = 8.01009e-8   	
++ dvt0w   = 0              dvt1w   = 0              dvt2w   = -0.032        	
++ dvt0    = 0.147425       dvt1    = 0.846761       dvt2    = -5.71497e-3  	
++ u0      = 0.0213212      ua      = 3.09087e-9     ub      = 2.18544e-21  	
++ uc      = -1.20194e-10   vsat    = 5.09445e4      a0      = 0.673754     	
++ ags     = 0.0727372      b0      = 1.76573e-8     b1      = 9.76657e-8   	
++ keta    = -7.03809e-3    a1      = 0              a2      = 1                 	
++ rdsw    = 3.58581e3      prwg    = 1.1611e-3      prwb    = -1.11281e-3    	
++ wr      = 1              wint    = 6.88908e-7     lint    = -3.88163e-8   	
++ xl      = 0              xw      = 0              dwg     = -9.05461e-9   	
++ dwb     = 1.43164e-7     voff    = -0.192136      nfactor = 1.00668       	
++ cit     = 0              cdsc    = 0.01           cdscd   = 0                   
++ cdscb   = 0              eta0    = 0              etab    = 0                 	
++ dsub    = 0.504817       pclm    = 1.74948        pdiblc1 = 0                 	
++ pdiblc2 = 4.14925e-4     pdiblcb = 0              drout   = 0.504817         	
++ pscbe1  = 5.67248e9      pscbe2  = 6.03103e-8     pvag    = 0                   
++ delta   = 0.01           mobmod  = 1              prt     = 65                 	
++ ute     = -1.2395586     kt1     = -0.6126297     kt1l    = 0                   
++ kt2     = -0.0733395     ua1     = 1.145521E-9    ub1     = -2.10694E-18   	
++ uc1     = 5.969856E-11   at      = 2.274e4        nqsmod  = 0                   
++ wl      = 0              wln     = 1              ww      = 0                 	
++ wwn     = 1              wwl     = 0              ll      = 0                 	
++ lln     = 1              lw      = 0              lwn     = 1                  	
++ lwl     = 0              capmod  = 2              tcj     = 0                  	
++ tpb     = 0              tcjsw   = 0              tpbsw   = 0                 	
++ noff    = 1              acde    = 1              moin    = 15                  
++ tpbswg  = 0              tcjswg  = 0              cgsl    =1.81e-09          	
++ cgdl    =1.81e-09        cj      =1.02e-03
+
+
+// model MNE ////////////////////////////////////////
+.subckt MNE d g s b
+.param w=0 l=0 as=0 ad=0 ps=0 pd=0 nrd=0 nrs=0 m=1
+M1 d g s b MNE_mst w=w l=l as=as ad=ad ps=ps pd=pd nrd=nrd nrs=nrs m=m
+.ends MNE
+
+.model MNE_mst NMOS   							
+* type    = n              							
++ level   = 49             							
++ vth0    = '0.99248+vthMNE'							
++ version = 3.3            tnom    = 27             tox     = 1.95e-8      	
++ xj      = 3.4e-7         nch     = 1.7e17         				
++ k1      = 0.696051       k2      = 0.267145       k3      = 435.901      	
++ k3b     = 89.2607        w0      = 6.4069e-5      nlx     = -9.30087e-7  	
++ dvt0w   = 0              dvt1w   = 0              dvt2w   = -0.032        	
++ dvt0    = -1.93795       dvt1    = 0.0309573      dvt2    = 1.97695e-3   	
++ u0      = 0.0676316      ua      = 8.8062e-17     ub      = 7.18487e-18  	
++ uc      = 7.28444e-10    vsat    = 3.95988e4      a0      = -0.16        	
++ ags     = 0.1            b0      = 4.71626e-9     b1      = 9.2172e-8    	
++ keta    = -0.0822589     a1      = 0              a2      = 1            	
++ rdsw    = 1.27823        prwg    = -3.69297e-4    prwb    = -6.46678e-3  	
++ wr      = 1              wint    = -4.25837e-7    lint    = -5.16247e-7  	
++ xl      = 0              xw      = 0              dwg     = 2.58527e-8   	
++ dwb     = 3.9095e-7      voff    = -0.268111      nfactor = 1.45224      	
++ cit     = 0              cdscd   = 0              cdscb   = 0            	
++ eta0    = 0              etab    = 0              dsub    = 27.7073      	
++ pclm    = 1              pdiblc1 = 0              pdiblc2 = 2e-6          	
++ pdiblcb = 0              drout   = 27.7073        pscbe1  = 5.67248e9    	
++ pscbe2  = 6.64306e-8     pvag    = 0              delta   = 0.34         	
++ rs      = 0.3            mobmod  = 1              prt     = 65            	
++ ute     = -1.30959       kt1     = -0.602209      kt1l    = 0             	
++ kt2     = 0.142263       ua1     = 5.21795e-9     ub1     = -5.18383e-18  	
++ uc1     = 3.77821e-12    at      = 13.1825674     nqsmod  = 0             	
++ wl      = 0              wln     = 0.125          ww      = 0             	
++ wwn     = 2.2892         wwl     = 7.36e-19       ll      = 0             	
++ lln     = 0.785          lw      = 0              lwn     = 0.74            	
++ lwl     = -6.4e-20       capmod  = 2              tcj     = 0                   
++ tpb     = 0              tcjsw   = 0              tpbsw   = 0               	
++ noff    = 1              acde    = 1              moin    = 15                	
++ tpbswg  = 0              tcjswg  = 0              cgsl    =  2.02e-09      	
++ cgdl    =  2.02e-09        cj      = 7.44e-04
+* END SOURCE models_IP62_mos_os00_calibrated.lib
+
+* BEGIN SOURCE models_IP62_diode_os00_calibrated.lib
+* TR-1um IP62 diode models with OS00 calibration overlay.
+* Original models_IP62_diode_v2.lib is not modified.
+* DN remains the original model because OS00 does not provide a valid DN Vf(T)
+* calibration dataset. DP is fitted only to the digitized OS00 p.16 current-vs-
+* temperature points at |Vf|=0.7 V; this is engineering-only until raw data exist.
+.model DN D tnom=27
++ is=1.0e-17 rs=47.59 cj=2.76e-17
++ cjsw=1.17e-17 imax=10 imelt=10 xti=0.492 n=1.00129 ikf=4.051e-5 bv=14.45 ibv=1.0e-6
+
+* DP calibration: original is=2.3431e-18, xti=1.0611.
+* Calibrated is=2.457156748e-18, xti=4.55.  25C is normalized to the
+* approximate digitized point; xti supplies the systematic high-temperature
+* slope correction.  Use the sign-off guardband in os00_model_calibration.json.
+.model DP D tnom=27
++ is=2.457156748e-18 rs=33.71 cj=4.79e-17
++ cjsw=3.91e-17 imax=10 imelt=10 xti=4.55 n=1.00066 ik=1.619e-4 bv=10.35 ibv=1.0e-6
+* END SOURCE models_IP62_diode_os00_calibrated.lib
+
+* BEGIN SOURCE models_IP62_res_os00_calibrated.lib
+* /// IP62 Model File ///
+* /// models_IP62_res_v5  ///
+* /// 2025.08.19 ARAKAWA Natsuki ///
+
+* simulator lang=spectre
+
+
+*//// RR  ////////////////////////////////////////////////////////////////////////
+
+.subckt F_RR PLUS MINUS SUB
+.param w=1u r=1 l=1u tc1=0 tc2=0 tnom=27
+.if (w == 4u)
+
+r0 PLUS MINUS
++ r = '(1+0.00105*(temper-tnom)+2.4*10**(-6)*(temper-tnom)**2)*v(PLUS,MINUS)/		
++     (v(PLUS,MINUS)/((((834.54*magRR)*((l*10**6)-9.2)/(4-1.09)+(13.3*(9.2/	
++       (4-1.09)+3.38/(4-1.8))+2.79))+(-21*3.95+615.2)))*				
++     (1+(0.000949*log(4)-0.00559)*(v(SUB)-(v(MINUS)+v(PLUS))/2)+			
++     (-3.2478*10**(-6)*log(4)+5.28*10**(-5))*((v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2))+	
++     (-7.97*10**(-7)*log(4)+3.05*10**(-6))*((v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2))+	
++     (-3*10**(-9)*log(4)+1.2394*10**(-8))*((v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)))/	
++     (1+(-0.09)*abs(v(PLUS,MINUS))/(l*10**6)+0.19*(abs(v(PLUS,MINUS))/		
++     (l*10**6))**3))'
+
+c_d0 PLUS SUB  c='(7.06*(10**-4)*l*(10**6)+6.89*(10**-3))*10**(-12)'
+c_d1 MINUS SUB c=0
+
+
+.elseif (w == 6u)
+
+r0 PLUS MINUS
++ r = '(1+0.00105*(temper-tnom)+2.4*10**(-6)*(temper-tnom)**2)*v(PLUS,MINUS)/		
++     (v(PLUS,MINUS)/((((834.54*magRR)*((l*10**6)-9.2)/(6-1.09)+			
++       (13.3*(9.2/(6-1.09)+3.38/(6-1.8))+2.79))+(-21*4.0+366.4)))*			
++     (1+(0.000639*log(6)-0.00559)*(v(SUB)-(v(MINUS)+v(PLUS))/2)+			
++     (-1.03248*10**(-6)*log(6)+5.28*10**(-5))*((v(SUB)-(v(MINUS)+		
++     v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2))+(-9.9798*10**(-7)*log(6)+4.05*10**(-6))*			
++     ((v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2))+(-3*10**(-9)*log(6)+1.9394*10**(-8))*	
++     ((v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)))/(1+(-0.1)*abs(v(PLUS,MINUS))/(l*10**6)+	
++     0.25*(abs(v(PLUS,MINUS))/(l*10**6))**2+(-0.02)*(abs(v(PLUS,MINUS))/		
++     (l*10**6))**3))'
+
+c_d0 PLUS SUB  c='(8.99*(10**-4)*l*(10**6)+7.98*(10**-3))*10**(-12)' 
+c_d1 MINUS SUB c=0
+
+
+.elseif (w == 12u)
+
+r0 PLUS MINUS
++ r = '(1+0.00105*(temper-tnom)+2.4*10**(-6)*(temper-tnom)**2)*v(PLUS,MINUS)/		
++     (v(PLUS,MINUS)/((((834.54*magRR)*((l*10**6)-9.2)/(12-1.09)+			
++       (13.3*(9.2/(12-1.09)+3.38/(12-1.8))+2.79))+(-21*11.9+368.9)))*		
++     (1+(0.003599*log(12)-0.0129)*(v(SUB)-(v(MINUS)+v(PLUS))/2)+			
++     (1.03248*10**(-5)*log(12)+1.5764*10**(-5))*((v(SUB)-(v(MINUS)+		
++     v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2))+(-9.9788*10**(-7)*log(12)-9.4884*10**(-7))*((v(SUB)-	
++     (v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2))+(2.1996*10**(-8)*log(12)+1.2939*10**(-7))*	+ 
++     ((v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)))/(1+(-0.21)*abs(v(PLUS,MINUS))/		
++     (l*10**6)+0.44*(abs(v(PLUS,MINUS))/(l*10**6))**2+(-0.032)*			
++     (abs(v(PLUS,MINUS))/(l*10**6))**3))'
+
+c_d0 PLUS SUB  c='(1.47*(10**-3)*l*(10**6)+1.31*(10**-2))*10**(-12)'
+c_d1 MINUS SUB c=0
+
+
+.elseif (w == 20u)
+
+r0 PLUS MINUS
++ r = '(1+0.00105*(temper-tnom)+2.4*10**(-6)*(temper-tnom)**2)*v(PLUS,MINUS)/		
++     (v(PLUS,MINUS)/((((834.54*magRR)*((l*10**6)-9.2)/(20-1.09)+			
++       (13.3*(9.2/(20-1.09)+3.38/(20-1.8))+2.79))+(-21*20.1+495.8)))*		
++     (1+(0.003499*log(20)-0.01299)*(v(SUB)-(v(MINUS)+v(PLUS))/2)+		
++     (1.73248*10**(-5)*log(20)+4.5764*10**(-5))*((v(SUB)-(v(MINUS)+		
++     v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2))+(-2.09788*10**(-6)*log(20)-8.4884*10**(-7))*((v(SUB)-	
++     (v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2))+(1.996*10**(-8)*log(20)+5.9395*10**(-8))*		
++     ((v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)))/(1+(-0.15)*abs(v(PLUS,MINUS))/		
++     (l*10**6)+0.46*(abs(v(PLUS,MINUS))/(l*10**6))**2+(-0.02)*			
++     (abs(v(PLUS,MINUS))/(l*10**6))**3))'
+
+c_d0 PLUS SUB  c='(2.19*(10**-3)*l*(10**6)+2.19*(10**-2))*10**(-12)'
+c_d1 MINUS SUB c=0 
+
+
+.elseif (w == 2.8u)
+
+r0 PLUS MINUS
++ r = '(1+0.00105*(temper-tnom)+2.7*10**(-6)*(temper-tnom)**2)*v(PLUS,MINUS)/		
++     (v(PLUS,MINUS)/((-0.1716*((l*10**6)**2)+486.5*(l*10**6)-3605.5)*		
++     (1+(0.007099*log(2.8)-0.01299)*(v(SUB)-(v(MINUS)+v(PLUS))/2)+		
++     (3.73248*10**(-5)*log(2.8)+4.0764*10**(-5))*((v(SUB)-(v(MINUS)+		
++     v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2))+(-1.09788*10**(-6)*log(2.8)-8.4884*10**(-7))*((v(SUB)-	
++     (v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2))+(1.90976*10**(-8)*log(2.8)+1.0839*10**(-7))*	
++     ((v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)*(v(SUB)-(v(MINUS)+v(PLUS))/2)))/(1+(-0.17)*abs(v(PLUS,MINUS))/		
++     (l*10**6)+0.19*(abs(v(PLUS,MINUS))/(l*10**6))**2+(-0.011)*			
++     (abs(v(PLUS,MINUS))/(l*10**6))**3)))'
+
+c_d0 PLUS SUB  c='(5.96*(10**-4)*l*(10**6)+8.07*(10**-3))*10**(-12)'
+c_d1 MINUS SUB c=0 
+.endif
+
+.ends F_RR
+
+
+
+* //// RS  ////////////////////////////////////////////////////////////////////////
+
+.subckt F_RS_BASE PLUS MINUS
+.param w=1u r=1 l=1u tnom=27
+.if (w == 4u)
+
+r PLUS MINUS 
++ r = 'v(PLUS,MINUS)/(v(PLUS,MINUS)/((((95.0*magRS)*(l*10**6)/4+(2.79+		
++     (705.9*4**(-1.298))))))/(1+(-0.0112)*abs(v(PLUS,MINUS))/(l*10**6)-0.229*	
++     (abs(v(PLUS,MINUS))/(l*10**6))**2+(1.99)*(abs(v(PLUS,MINUS))/		
++     (l*10**6))**3))'
+.endif
+
+.if (w == 6u)
+
+r PLUS MINUS
++ r = 'v(PLUS,MINUS)/(v(PLUS,MINUS)/((((95.0*magRS)*(l*10**6)/6+(2.79+		
++     (707.5*6**(-1.35))))))/(1+(-0.148)*abs(v(PLUS,MINUS))/(l*10**6)+1.41*	
++     (abs(v(PLUS,MINUS))/(l*10**6))**2+(-0.56)*(abs(v(PLUS,MINUS))/		
++     (l*10**6))**3))'
+.endif
+
+.if (w == 12u)
+
+r PLUS MINUS
++ r = 'v(PLUS,MINUS)/(v(PLUS,MINUS)/((((95.0*magRS)*(l*10**6)/12+(2.79+		
++     (707.5*12**(-2))+(361/(l*10**6)))))/(1+(-0.156)*abs(v(PLUS,MINUS))/		
++     (l*10**6)+1.96*(abs(v(PLUS,MINUS))/(l*10**6))**2+(-0.68)*			
++     (abs(v(PLUS,MINUS))/(l*10**6))**3)))'
+.endif
+
+.if (w == 20u)
+
+r PLUS MINUS
++ r = 'v(PLUS,MINUS)/(v(PLUS,MINUS)/((((95.0*magRS)*(l*10**6)/20+(2.79+		
++     (701.9*20**(-1.224))))))/(1+(-0.26)*abs(v(PLUS,MINUS))/(l*10**6)+		
++     2.05*(abs(v(PLUS,MINUS))/(l*10**6))**2+(-0.5)*(abs(v(PLUS,MINUS))/		
++     (l*10**6))**3))'
+.endif
+
+.ends F_RS_BASE
+
+
+
+
+* OS00 Manual 00 calibration overlay.
+* The original F_RS equations above are retained as F_RS_BASE.  The public
+* F_RS name is calibrated without modifying models_IP62_res_v5.lib.
+* Fit basis: digitized OS00 rev1.1 p.16 RS R(T), L=50um W=4um,
+* V=0.2V.  The plotted data are approximate; keep this as engineering-only.
+.subckt F_RS PLUS MINUS
+.param w=1u l=1u tnom=27
+* Relative correction to the original F_RS resistance.
+* k(27C)=1.05194; dk/dT=-1.65704e-4/C; d2k/dT2=2.86822e-7/C2.
+.param k_os00 = '1.0519396292 - 1.657041662e-4*(temper-27) + 2.868216534e-7*(temper-27)**2'
+XBASE PLUS N_OS00_RS F_RS_BASE w=w l=l
+E_OS00 N_OS00_RS MINUS VALUE = '(k_os00-1)*v(PLUS,N_OS00_RS)'
+.ends F_RS
+* END SOURCE models_IP62_res_os00_calibrated.lib
+
+* BEGIN SOURCE models_IP62_cap_os00_calibrated.lib
+* TR-1um IP62 CSIO calibration overlay for OS00 Manual 00 rev1.1.
+* Original models_IP62_cap_v5p1.lib is not modified.
+* Fitted to the digitized L=W=37.1um C(V) and C(T) figures.
+* The public F_CSIO name is retained so the calibrated deck can be selected
+* without changing schematic symbols or LVS device names.
+* simulator lang=spectre
+* ;change 20131017
+
+* ///  2024.09.30 D.Aoki  fixed tnom
+
+* //macro F_CSIO/////////////////////////////////
+.model m_CSIO C tnom=27 tc1=2.2e-5
+
+.subckt F_CSIO_mst plus minus sub
+.param c=0 y=0 x=0 m=1 magCSIO=1
+
+C1 plus minus c='c*magCSIO*1.0300*(1+0.00129*v(plus,minus))*(1+0.000022*(temper-27))*m'
+
+C2 minus sub
++ c = '0.56*(((x+18.8+sqrt(2.03e-8*(0.61+v(minus,sub)))*1e4)*(y+18.8+sqrt(2.03e-8*(0.61+v(minus,sub)))*1e4)*1.053e-20/sqrt(2.03e-8*(0.61+v(minus,sub))))+(2.0*(x+18.8+sqrt(1.03e-8*(0.71+v(minus,sub)))*1e4)*(10+0.5*sqrt(1.03e-8*(0.71+v(minus,sub)))*1e4)+2.0*(y+18.8+sqrt(1.03e-8*(0.71+v(minus,sub)))*1e4)*(10+0.5*sqrt(1.03e-8*(0.71+v(minus,sub)))*1e4))*1.053e-20/sqrt(1.03e-8*(0.71+v(minus,sub))))*m'
+
+.ends F_CSIO_mst
+
+.subckt F_CSIO plus minus sub
+.param c=0 y=0 x=0 m=1
+                           
+X1 plus minus sub F_CSIO_mst c=c m=m  x=x*1e+6  y=y*1e+6  
+.ends F_CSIO
+* END SOURCE models_IP62_cap_os00_calibrated.lib
+
+.endl tr1um

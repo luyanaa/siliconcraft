@@ -1,0 +1,65 @@
+# Basic check for layer polygons
+# ----- ------ ----- ----- ------ ----- ----- ------ ----- 
+# Original version was made by jun1okamura from TokaiRika's document 
+# LICENSE: Apache License Version 2.0, January 2004,
+#          http://www.apache.org/licenses/
+# ----- ------ ----- ----- ------ ----- ----- ------ ----- 
+#  PTECT
+#
+(WN & PTECT).output("ERR00: WN on Prohibted area")
+(AP & PTECT).output("ERR00: AP on Prohibted area")
+(AN & PTECT).output("ERR00: AN on Prohibted area")
+(AR & PTECT).output("ERR00: AR on Prohibted area")
+(AC & PTECT).output("ERR00: AC on Prohibted area")
+(GC & PTECT).output("ERR00: GC on Prohibted area")
+(GR & PTECT).output("ERR00: GR on Prohibted area")
+(CO & PTECT).output("ERR00: CO on Prohibted area")
+(M1 & PTECT).output("ERR00: M1 on Prohibted area")
+(V1 & PTECT).output("ERR00: V1 on Prohibted area")
+(M2 & PTECT).output("ERR00: M2 on Prohibted area")
+(PO & PTECT).output("ERR00: PO on Prohibted area")
+# ----- ------ ----- ----- ------ ----- ----- ------ ----- 
+#  Check off Grid
+#
+(WN).ongrid( 0.050 ).output( "ERR01: OFFGRID 0.050" )
+(AP).ongrid( 0.050 ).output( "ERR01: OFFGRID 0.050" )
+(AN).ongrid( 0.050 ).output( "ERR01: OFFGRID 0.050" )
+(AR).ongrid( 0.050 ).output( "ERR01: OFFGRID 0.050" )
+(AC).ongrid( 0.050 ).output( "ERR01: OFFGRID 0.050" )
+(GC).ongrid( 0.050 ).output( "ERR01: OFFGRID 0.050" )
+(GR).ongrid( 0.050 ).output( "ERR01: OFFGRID 0.050" )
+(CO).ongrid( 0.050 ).output( "ERR01: OFFGRID 0.050" )
+(M1).ongrid( 0.050 ).output( "ERR01: OFFGRID 0.050" )
+(V1).ongrid( 0.050 ).output( "ERR01: OFFGRID 0.050" )
+(M2).ongrid( 0.050 ).output( "ERR01: OFFGRID 0.050" )
+(PO).ongrid( 0.050 ).output( "ERR01: OFFGRID 0.050" )
+# --------- --------- --------- --------- --------- --------- ---------
+#  Twisted Polygon
+#
+(WN).odd_polygons.output("ERR02: twisted polygon")
+(AP).odd_polygons.output("ERR02: twisted polygon")
+(AN).odd_polygons.output("ERR02: twisted polygon")
+(AR).odd_polygons.output("ERR02: twisted polygon")
+(AC).odd_polygons.output("ERR02: twisted polygon")
+(GC).odd_polygons.output("ERR02: twisted polygon")
+(GR).odd_polygons.output("ERR02: twisted polygon")
+(CO).odd_polygons.output("ERR02: twisted polygon")
+(M1).odd_polygons.output("ERR02: twisted polygon")
+(V1).odd_polygons.output("ERR02: twisted polygon")
+(M2).odd_polygons.output("ERR02: twisted polygon")
+(PO).odd_polygons.output("ERR02: twisted polygon")
+# --------- --------- --------- --------- --------- --------- ---------
+#  Check Non-diagonal shape
+#
+(WN.edges).without_angle(diagonal).output( "ERR03: WN edge not 90 or 45 degrees" )
+(AP.edges).without_angle(diagonal).output( "ERR03: AP edge not 90 or 45 degrees" )
+(AN.edges).without_angle(diagonal).output( "ERR03: AN edge not 90 or 45 degrees" )
+(AR.edges).without_angle(diagonal).output( "ERR03: AR edge not 90 or 45 degrees" )
+(AC.edges).without_angle(diagonal).output( "ERR03: AC edge not 90 or 45 degrees" )
+(GC.edges).without_angle(diagonal).output( "ERR03: GC edge not 90 or 45 degrees" )
+(GR.edges).without_angle(diagonal).output( "ERR03: GR edge not 90 or 45 degrees" )
+(CO.edges).without_angle(diagonal).output( "ERR03: CO edge not 90 or 45 degrees" )
+(M1.edges).without_angle(diagonal).output( "ERR03: M1 edge not 90 or 45 degrees" )
+(V1.edges).without_angle(diagonal).output( "ERR03: V1 edge not 90 or 45 degrees" )
+(M2.edges).without_angle(diagonal).output( "ERR03: M2 edge not 90 or 45 degrees" )
+(PO.edges).without_angle(diagonal).output( "ERR03: PO edge not 90 or 45 degrees" )

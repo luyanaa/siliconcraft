@@ -75,6 +75,16 @@ profiles:
     model_prefix: cnm25mod
     rule_family: scmos
     note: "IMB-CNM(CSIC) 2.5um 2-poly 2-metal academic process; classic-SCMOS conservative abstraction (lambda_cover 1.5um) with native contact 2.5um cut; native deck is the reference oracle"
+  - name: tr1um
+    source_process: TR_1UM
+    mosis_code: null
+    lambda_um: 0.5
+    grid_um: 0.05
+    min_channel_um: 1.0
+    min_width_um: 3.4
+    model_prefix: tr1um
+    rule_family: scmos
+    note: "Tokai-Rika 1um OpenSUSI/IP62; standard SCMOS lambda compatibility family with explicit native AP/AN/WN/HVCMOS overrides and native KLayout DRC/LVS oracle"
   - name: ams_c35
     source_process: C35B4C3
     mosis_code: SCN4ME_SUBM

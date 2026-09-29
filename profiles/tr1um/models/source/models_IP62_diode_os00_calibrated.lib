@@ -1,0 +1,16 @@
+* TR-1um IP62 diode models with OS00 calibration overlay.
+* Original models_IP62_diode_v2.lib is not modified.
+* DN remains the original model because OS00 does not provide a valid DN Vf(T)
+* calibration dataset. DP is fitted only to the digitized OS00 p.16 current-vs-
+* temperature points at |Vf|=0.7 V; this is engineering-only until raw data exist.
+.model DN D tnom=27
++ is=1.0e-17 rs=47.59 cj=2.76e-17
++ cjsw=1.17e-17 imax=10 imelt=10 xti=0.492 n=1.00129 ikf=4.051e-5 bv=14.45 ibv=1.0e-6
+
+* DP calibration: original is=2.3431e-18, xti=1.0611.
+* Calibrated is=2.457156748e-18, xti=4.55.  25C is normalized to the
+* approximate digitized point; xti supplies the systematic high-temperature
+* slope correction.  Use the sign-off guardband in os00_model_calibration.json.
+.model DP D tnom=27
++ is=2.457156748e-18 rs=33.71 cj=4.79e-17
++ cjsw=3.91e-17 imax=10 imelt=10 xti=4.55 n=1.00066 ik=1.619e-4 bv=10.35 ibv=1.0e-6

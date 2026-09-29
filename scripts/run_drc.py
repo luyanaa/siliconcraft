@@ -162,11 +162,12 @@ def _deck_command(klayout, deck_path, spec, extra_args=None):
     return f"{klayout} -b -r {deck_path} {' '.join(args)}".strip()
 
 def run_deck(deck_path, spec, meta, layermap, features, layout, report, klayout, top_cell=None):
-    Path(report).parent.mkdir(parents=True, exist_ok=True)
+    layout_path = Path(layout).resolve()
+    report_path = Path(report).resolve()
+    report_path.parent.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
-    env["LAYOUT"] = str(layout)
-    env["REPORT"] = str(report)
-    env["MARKERS"] = str(report)
+    env["LAYOUT"] = str(layout_path)
+    env["REPORT"] = str(report_path)
     env["LAMBDA"] = str(meta["lambda_um"])
     env["GRID"] = str(meta.get("grid_um", 0.15))
     env["TECH"] = str(meta.get("process", ""))
@@ -195,15 +196,15 @@ def run_deck(deck_path, spec, meta, layermap, features, layout, report, klayout,
         print(proc.stderr, file=sys.stderr)
         raise SystemExit(f"klayout failed ({proc.returncode}) for deck {deck_path}")
     if (spec or {}).get("format") == "klayout-drc" and not summary:
-        if not Path(report).exists():
+        if not report_path.exists():
             raise SystemExit(
                 f"KLayout DRC deck {deck_path} produced no JSON summary or report; "
                 "refusing to report a false clean result"
             )
-        parsed = _parse_klayout_report(report)
+        parsed = _parse_klayout_report(report_path)
         if parsed is not None:
             return parsed
-        return {"summary_available": False, "report": str(report)}
+        return {"summary_available": False, "report": str(report_path)}
     return summary
 
 

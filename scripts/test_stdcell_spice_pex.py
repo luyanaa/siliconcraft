@@ -15,7 +15,7 @@ import yamlish  # noqa: E402
 from common.process_ir import load_process, profile_names  # noqa: E402
 
 
-EXPECTED_PROFILES = {"ami06", "ami16", "hp06", "cnm25", "ams_c35", "ls1u", "openrule1um"}
+EXPECTED_PROFILES = {"ami06", "ami16", "hp06", "cnm25", "ams_c35", "tr1um", "ls1u", "openrule1um"}
 
 
 def model_sections(path: Path) -> set[str]:
@@ -88,6 +88,7 @@ def main() -> int:
         "hp06",
         "cnm25",
         "ams_c35",
+        "tr1um",
     ]
     assert "simulator_model_library_and_section" in policy["required_inputs"]
     assert "lef" in policy["required_output_views"]
@@ -113,9 +114,9 @@ def main() -> int:
 
     ami06_blockers = set(profiles["ami06"]["readiness"]["blockers"])
     assert "native_pin_access_not_verified" in ami06_blockers
-    for name in ("ami16", "hp06", "cnm25", "ams_c35", "ls1u", "openrule1um"):
+    for name in ("ami16", "hp06", "cnm25", "ams_c35", "tr1um", "ls1u", "openrule1um"):
         blockers = set(profiles[name]["readiness"]["blockers"])
-        if name in {"ami16", "hp06", "cnm25", "ams_c35"}:
+        if name in {"ami16", "hp06", "cnm25", "ams_c35", "tr1um"}:
             assert "no_stdcell_geometry_contract" not in blockers, name
         else:
             assert "no_stdcell_geometry_contract" in blockers, name
@@ -135,6 +136,13 @@ def main() -> int:
         assert "direct_junction_and_substrate_capacitance_mapping" in spec["pex"][
             "withheld_terms"
         ]
+
+    tr1um = profiles["tr1um"]
+    assert tr1um["spice"]["representation"] == "primitive"
+    assert tr1um["spice"]["section"] == "tr1um"
+    assert tr1um["spice"]["corners"]["available"] == ["nominal"]
+    assert tr1um["pex"]["status"] == "source_reference_partial"
+    assert "parasitic_bjt_model_unavailable" in tr1um["spice"]["limitations"]
 
     ls1u = profiles["ls1u"]
     assert ls1u["spice"]["representation"] == "subckt"

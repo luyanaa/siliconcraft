@@ -12,6 +12,7 @@ policy:
     - hp06
     - cnm25
     - ams_c35
+    - tr1um
   signoff_claims: forbidden
   historical_model_import: forbidden
   purpose: "The stdcell planner emits fixed-height SCMOS geometry/routing candidates; native pin, DRC/LVS/PEX, and characterization gates remain required."
@@ -570,3 +571,90 @@ profiles:
         - no_lef_view
         - no_liberty_view
         - no_process_corner_contract
+
+  tr1um:
+    role: active_profile_candidate
+    process: TR_1UM
+    spice:
+      library: profiles/tr1um/models/tr1um.lib
+      section: tr1um
+      representation: primitive
+      geometry_units: um
+      corners:
+        available:
+          - nominal
+        missing:
+          - slow
+          - fast
+          - fnsp
+          - snfp
+      devices:
+        -
+          binding: nmos_core
+          model: NMOS_mst
+          prefix: m
+          terminals:
+            - d
+            - g
+            - s
+            - b
+        -
+          binding: pmos_core
+          model: PMOS_mst
+          prefix: m
+          terminals:
+            - d
+            - g
+            - s
+            - b
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+      source_status: public_nominal_engineering_cards
+      limitations:
+        - no_foundry_qualification
+        - no_complete_process_voltage_temperature_corner_pack
+        - hvcmos_cards_are_engineering_only
+        - parasitic_bjt_model_unavailable
+    pex:
+      manifest: profiles/tr1um/pex/manifest.yaml
+      profile: tr1um_engineering
+      status: source_reference_partial
+      topology: true
+      runtime: true
+      rc: estimated
+      model_owned_terms:
+        - transistor_intrinsic_capacitance
+        - gate_overlap_capacitance
+        - junction_area_capacitance
+        - junction_sidewall_capacitance
+      pex_owned_terms:
+        - diffusion_sheet_resistance
+        - metal_interconnect_rc
+        - contact_and_via_resistance
+      withheld_terms:
+        - foundry_rc_qualification
+        - independent_junction_and_substrate_calibration
+        - standalone_bjt_extraction
+    reference_cells:
+      catalog: profiles/tr1um/reference/stdcell/access_manifest.json
+      gds_top_cells: 38
+      xschem_symbols: generated_core_and_hv_symbols
+      lef: source_reference_only
+      liberty: unavailable
+    readiness:
+      characterization_level: partial_rc
+      signoff: blocked
+      blockers:
+        - native_pin_access_not_verified
+        - native_bulk_tap_policy_not_signoff_verified
+        - no_process_voltage_temperature_corner_pack
+        - pex_rc_not_foundry_qualified
+        - no_standalone_bjt_model_or_extractor
+        - no_signoff_lef_liberty_characterization

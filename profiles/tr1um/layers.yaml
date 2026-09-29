@@ -1,0 +1,286 @@
+# TR-1um drawing-layer contract.
+# Native KLayout streams are the source of physical layer identity; SCMOS
+# aliases are compatibility names only and do not replace the native deck.
+meta:
+  name: tr1um
+  process: TR_1UM
+  foundry: Tokai-Rika / OpenSUSI
+  description: "Tokai-Rika 1um CMOS, two-metal drawing-layer contract"
+  node_um: 1.0
+  lambda_um: 0.5
+  grid_um: 0.05
+  manufacturing_grid_um: 0.05
+  min_channel_um: 1.0
+  min_width_um: 3.4
+  model_prefix: tr1um
+  well_type: n
+  rule_family: scmos
+  stacked_vias: false
+  stdcell_layers:
+    active_n: nactive
+    active_p: pactive
+    select_n: nselect
+    select_p: pselect
+    well_p: nwell
+  stdcell_pin_label_layer: metal1
+  features:
+    ccdAvailable: false
+    cwellAvailable: false
+    elecAvailable: false
+    highresAvailable: false
+    hvAvailable: true
+    hvcmosAvailable: true
+    hvcmosRuleOverride: true
+    voltageAwareSpacing: true
+    metal3Available: false
+    metal4Available: false
+    metal5Available: false
+    metal6Available: false
+    metalcapAvailable: false
+    npnAvailable: false
+    pnpAvailable: false
+    bipolarModelsAvailable: false
+    polycapAvailable: false
+    sblockAvailable: false
+  license: "Apache-2.0; OpenSUSI/TR-1um source attribution preserved"
+  sources:
+    - "OpenSUSI/TR-1um openIP62/IP62 at d83eb77fcbe8c587809dd9f4532f9464c5501ab2"
+    - "native KLayout 00_Layers.drc and TR-1um.lyt"
+  notes:
+    - "This profile uses standard SCMOS lambda, not SCMOS_SUBM; native values are explicit overrides."
+    - "NW is the native voltage-domain mask; V15/V27 are marker annotations, not fabricated devices."
+    - "The native deck recognizes a bipolar well region (WB) but ships no standalone BJT extractor or model card."
+layers:
+  -
+    name: pwell
+    purpose: drawing
+    role: well
+    available: false
+  -
+    name: nwell
+    purpose: drawing
+    gds:
+      - layer: 140
+        datatype: 0
+    role: well
+    available: true
+    cif: [CWN]
+  -
+    name: nw_mask
+    purpose: drawing
+    gds:
+      - layer: 36
+        datatype: 0
+    role: well
+    available: true
+    cif: [NW]
+  -
+    name: nactive
+    purpose: drawing
+    gds:
+      - layer: 3
+        datatype: 2
+    role: active
+    available: true
+    cif: [AN]
+  -
+    name: pactive
+    purpose: drawing
+    gds:
+      - layer: 3
+        datatype: 1
+    role: active
+    available: true
+    cif: [AP]
+  -
+    name: active
+    purpose: drawing
+    gds:
+      - layer: 3
+        datatype: 2
+    role: active
+    available: true
+    cif: [AN]
+    note: "SCMOS compatibility alias for native AN"
+  -
+    name: nselect
+    purpose: drawing
+    gds:
+      - layer: 3
+        datatype: 2
+    role: select
+    available: true
+    cif: [AN]
+  -
+    name: pselect
+    purpose: drawing
+    gds:
+      - layer: 3
+        datatype: 1
+    role: select
+    available: true
+    cif: [AP]
+  -
+    name: ractive
+    purpose: drawing
+    gds:
+      - layer: 3
+        datatype: 3
+    role: resistor
+    available: true
+    cif: [AR]
+  -
+    name: cactive
+    purpose: drawing
+    gds:
+      - layer: 3
+        datatype: 4
+    role: capacitor
+    available: true
+    cif: [AC]
+  -
+    name: poly
+    purpose: drawing
+    gds:
+      - layer: 8
+        datatype: 1
+    role: gate
+    available: true
+    cif: [GC]
+  -
+    name: poly_res
+    purpose: drawing
+    gds:
+      - layer: 8
+        datatype: 2
+    role: resistor
+    available: true
+    cif: [GR]
+  -
+    name: cc
+    purpose: drawing
+    gds:
+      - layer: 11
+        datatype: 0
+    role: cut
+    available: true
+    cif: [CO]
+  -
+    name: metal1
+    purpose: drawing
+    gds:
+      - layer: 13
+        datatype: 0
+      - layer: 48
+        datatype: 0
+    role: metal
+    available: true
+    cif: [M1]
+  -
+    name: via
+    purpose: drawing
+    gds:
+      - layer: 19
+        datatype: 0
+    role: cut
+    available: true
+    cif: [V1]
+  -
+    name: metal2
+    purpose: drawing
+    gds:
+      - layer: 20
+        datatype: 0
+      - layer: 49
+        datatype: 0
+    role: metal
+    available: true
+    cif: [M2]
+  -
+    name: pad
+    purpose: drawing
+    gds:
+      - layer: 14
+        datatype: 0
+    role: pad
+    available: true
+    cif: [PO]
+  -
+    name: glass
+    purpose: drawing
+    gds:
+      - layer: 14
+        datatype: 0
+    role: pad
+    available: true
+    cif: [PO]
+  -
+    name: mask
+    purpose: drawing
+    gds:
+      - layer: 63
+        datatype: 0
+    role: misc
+    available: true
+    cif: [MASK]
+  -
+    name: protect
+    purpose: drawing
+    gds:
+      - layer: 63
+        datatype: 1
+    role: misc
+    available: true
+    cif: [PTECT]
+  -
+    name: esd
+    purpose: drawing
+    gds:
+      - layer: 63
+        datatype: 2
+    role: misc
+    available: true
+    cif: [ESD]
+  -
+    name: temp
+    purpose: drawing
+    gds:
+      - layer: 80
+        datatype: 0
+    role: misc
+    available: true
+    cif: [TEMP]
+  -
+    name: hv_n_marker
+    purpose: drawing
+    gds:
+      - layer: 150
+        datatype: 0
+    role: marker
+    available: true
+    cif: [V15_MARKER]
+  -
+    name: hv_p_marker
+    purpose: drawing
+    gds:
+      - layer: 151
+        datatype: 0
+    role: marker
+    available: true
+    cif: [V27_MARKER]
+  -
+    name: text_m1
+    purpose: labels
+    gds:
+      - layer: 48
+        datatype: 0
+    role: text
+    available: true
+  -
+    name: text_m2
+    purpose: labels
+    gds:
+      - layer: 49
+        datatype: 0
+    role: text
+    available: true

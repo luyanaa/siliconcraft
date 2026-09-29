@@ -1,0 +1,1330 @@
+{
+  "cells": [
+    {
+      "gds": "AND2_X1.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 17.3,
+          "y_um": 17.8
+        },
+        {
+          "pin": "B",
+          "x_um": 17.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 22.8,
+          "y_um": 34.300000000000004
+        }
+      ],
+      "lef": "AND2_X1.lef",
+      "name": "AND2_X1",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "AND2_X1.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 34.6
+    },
+    {
+      "gds": "AND3_X1.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 17.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "B",
+          "x_um": 17.3,
+          "y_um": 17.8
+        },
+        {
+          "pin": "C",
+          "x_um": 22.8,
+          "y_um": 23.3
+        },
+        {
+          "pin": "Y",
+          "x_um": 28.3,
+          "y_um": 34.300000000000004
+        }
+      ],
+      "lef": "AND3_X1.lef",
+      "name": "AND3_X1",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "C",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "AND3_X1.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 40.1
+    },
+    {
+      "gds": "AND4_X1.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 17.3,
+          "y_um": 17.8
+        },
+        {
+          "pin": "B",
+          "x_um": 17.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "C",
+          "x_um": 22.8,
+          "y_um": 23.3
+        },
+        {
+          "pin": "D",
+          "x_um": 22.8,
+          "y_um": 34.300000000000004
+        },
+        {
+          "pin": "Y",
+          "x_um": 33.8,
+          "y_um": 28.8
+        }
+      ],
+      "lef": "AND4_X1.lef",
+      "name": "AND4_X1",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "AND4_X1.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 45.6
+    },
+    {
+      "gds": "BUF_X1.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 23.3
+        },
+        {
+          "pin": "Y",
+          "x_um": 17.3,
+          "y_um": 34.300000000000004
+        }
+      ],
+      "lef": "BUF_X1.lef",
+      "name": "BUF_X1",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "BUF_X1.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 29.1
+    },
+    {
+      "gds": "BUF_X12.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 61.300000000000004,
+          "y_um": 23.3
+        }
+      ],
+      "lef": "BUF_X12.lef",
+      "name": "BUF_X12",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "BUF_X12.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 78.60000000000001
+    },
+    {
+      "gds": "BUF_X16.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 94.3,
+          "y_um": 28.8
+        }
+      ],
+      "lef": "BUF_X16.lef",
+      "name": "BUF_X16",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "BUF_X16.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 106.10000000000001
+    },
+    {
+      "gds": "BUF_X2.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 22.8,
+          "y_um": 34.300000000000004
+        }
+      ],
+      "lef": "BUF_X2.lef",
+      "name": "BUF_X2",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "BUF_X2.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 34.6
+    },
+    {
+      "gds": "BUF_X4.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 28.3,
+          "y_um": 23.3
+        }
+      ],
+      "lef": "BUF_X4.lef",
+      "name": "BUF_X4",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "BUF_X4.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 45.6
+    },
+    {
+      "gds": "BUF_X8.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 23.3
+        },
+        {
+          "pin": "Y",
+          "x_um": 50.300000000000004,
+          "y_um": 28.8
+        }
+      ],
+      "lef": "BUF_X8.lef",
+      "name": "BUF_X8",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "BUF_X8.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 62.1
+    },
+    {
+      "gds": "CLKBUF_X1.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 23.3
+        },
+        {
+          "pin": "Y",
+          "x_um": 33.8,
+          "y_um": 23.3
+        }
+      ],
+      "lef": "CLKBUF_X1.lef",
+      "name": "CLKBUF_X1",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "CLKBUF_X1.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 51.1
+    },
+    {
+      "gds": "CLKBUF_X12.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 28.3,
+          "y_um": 23.3
+        },
+        {
+          "pin": "Y",
+          "x_um": 286.8,
+          "y_um": 23.3
+        }
+      ],
+      "lef": "CLKBUF_X12.lef",
+      "name": "CLKBUF_X12",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "CLKBUF_X12.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 305.40000000000003
+    },
+    {
+      "gds": "CLKBUF_X16.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 33.8,
+          "y_um": 23.3
+        },
+        {
+          "pin": "Y",
+          "x_um": 374.8,
+          "y_um": 23.3
+        }
+      ],
+      "lef": "CLKBUF_X16.lef",
+      "name": "CLKBUF_X16",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "CLKBUF_X16.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 392.1
+    },
+    {
+      "gds": "CLKBUF_X2.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 17.3,
+          "y_um": 23.3
+        },
+        {
+          "pin": "Y",
+          "x_um": 61.300000000000004,
+          "y_um": 23.3
+        }
+      ],
+      "lef": "CLKBUF_X2.lef",
+      "name": "CLKBUF_X2",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "CLKBUF_X2.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 78.60000000000001
+    },
+    {
+      "gds": "CLKBUF_X4.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 22.8,
+          "y_um": 23.3
+        },
+        {
+          "pin": "Y",
+          "x_um": 110.8,
+          "y_um": 23.3
+        }
+      ],
+      "lef": "CLKBUF_X4.lef",
+      "name": "CLKBUF_X4",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "CLKBUF_X4.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 128.1
+    },
+    {
+      "gds": "CLKBUF_X8.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 28.3,
+          "y_um": 23.3
+        },
+        {
+          "pin": "Y",
+          "x_um": 198.8,
+          "y_um": 23.3
+        }
+      ],
+      "lef": "CLKBUF_X8.lef",
+      "name": "CLKBUF_X8",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "CLKBUF_X8.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 216.1
+    },
+    {
+      "gds": "DEL1.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 39.300000000000004,
+          "y_um": 17.8
+        }
+      ],
+      "lef": "DEL1.lef",
+      "name": "DEL1",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "DEL1.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 51.1
+    },
+    {
+      "gds": "DEL2.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 61.300000000000004,
+          "y_um": 23.3
+        }
+      ],
+      "lef": "DEL2.lef",
+      "name": "DEL2",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "DEL2.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 73.10000000000001
+    },
+    {
+      "gds": "DEL4.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 105.3,
+          "y_um": 23.3
+        }
+      ],
+      "lef": "DEL4.lef",
+      "name": "DEL4",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "DEL4.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 117.10000000000001
+    },
+    {
+      "gds": "DFFR.gds",
+      "landings": [
+        {
+          "pin": "CK",
+          "x_um": 17.3,
+          "y_um": 28.75
+        },
+        {
+          "pin": "D",
+          "x_um": 28.2,
+          "y_um": 22.900000000000002
+        },
+        {
+          "pin": "Q",
+          "x_um": 88.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "QB",
+          "x_um": 83.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "RST",
+          "x_um": 55.800000000000004,
+          "y_um": 23.3
+        }
+      ],
+      "lef": "DFFR.lef",
+      "name": "DFFR",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "CK",
+        "D",
+        "Q",
+        "QB",
+        "RST"
+      ],
+      "site_height_um": 75.6,
+      "source": "DFFR.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 100.60000000000001
+    },
+    {
+      "gds": "DFFS.gds",
+      "landings": [
+        {
+          "pin": "CK",
+          "x_um": 17.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "D",
+          "x_um": 28.2,
+          "y_um": 23.3
+        },
+        {
+          "pin": "Q",
+          "x_um": 88.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "QB",
+          "x_um": 83.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "SET",
+          "x_um": 77.8,
+          "y_um": 17.8
+        }
+      ],
+      "lef": "DFFS.lef",
+      "name": "DFFS",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "CK",
+        "D",
+        "Q",
+        "QB",
+        "SET"
+      ],
+      "site_height_um": 75.6,
+      "source": "DFFS.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 100.60000000000001
+    },
+    {
+      "gds": "INV_X1.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 17.3,
+          "y_um": 34.300000000000004
+        }
+      ],
+      "lef": "INV_X1.lef",
+      "name": "INV_X1",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "INV_X1.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 29.1
+    },
+    {
+      "gds": "INV_X12.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 55.800000000000004,
+          "y_um": 28.8
+        }
+      ],
+      "lef": "INV_X12.lef",
+      "name": "INV_X12",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "INV_X12.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 73.10000000000001
+    },
+    {
+      "gds": "INV_X16.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 72.3,
+          "y_um": 28.8
+        }
+      ],
+      "lef": "INV_X16.lef",
+      "name": "INV_X16",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "INV_X16.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 89.60000000000001
+    },
+    {
+      "gds": "INV_X2.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 17.3,
+          "y_um": 34.300000000000004
+        }
+      ],
+      "lef": "INV_X2.lef",
+      "name": "INV_X2",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "INV_X2.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 29.1
+    },
+    {
+      "gds": "INV_X4.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 28.3,
+          "y_um": 34.300000000000004
+        }
+      ],
+      "lef": "INV_X4.lef",
+      "name": "INV_X4",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "INV_X4.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 40.1
+    },
+    {
+      "gds": "INV_X8.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 39.300000000000004,
+          "y_um": 28.8
+        }
+      ],
+      "lef": "INV_X8.lef",
+      "name": "INV_X8",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "INV_X8.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 56.6
+    },
+    {
+      "gds": "MUX2.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 44.7,
+          "y_um": 28.8
+        },
+        {
+          "pin": "B",
+          "x_um": 33.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "S",
+          "x_um": 17.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 39.300000000000004,
+          "y_um": 28.8
+        }
+      ],
+      "lef": "MUX2.lef",
+      "name": "MUX2",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "S",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "MUX2.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 62.1
+    },
+    {
+      "gds": "NAND2.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 28.8
+        },
+        {
+          "pin": "B",
+          "x_um": 11.8,
+          "y_um": 17.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 20.400000000000002,
+          "y_um": 32.6
+        }
+      ],
+      "lef": "NAND2.lef",
+      "name": "NAND2",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "NAND2.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 29.1
+    },
+    {
+      "gds": "NAND3.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 17.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "B",
+          "x_um": 16.5,
+          "y_um": 18.8
+        },
+        {
+          "pin": "C",
+          "x_um": 22.8,
+          "y_um": 23.25
+        },
+        {
+          "pin": "Y",
+          "x_um": 22.900000000000002,
+          "y_um": 35.6
+        }
+      ],
+      "lef": "NAND3.lef",
+      "name": "NAND3",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "C",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "NAND3.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 34.6
+    },
+    {
+      "gds": "NAND4.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 17.3,
+          "y_um": 17.8
+        },
+        {
+          "pin": "B",
+          "x_um": 17.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "C",
+          "x_um": 22.8,
+          "y_um": 23.3
+        },
+        {
+          "pin": "D",
+          "x_um": 22.8,
+          "y_um": 34.300000000000004
+        },
+        {
+          "pin": "Y",
+          "x_um": 28.3,
+          "y_um": 28.8
+        }
+      ],
+      "lef": "NAND4.lef",
+      "name": "NAND4",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "NAND4.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 40.1
+    },
+    {
+      "gds": "NOR2.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 11.8,
+          "y_um": 23.3
+        },
+        {
+          "pin": "B",
+          "x_um": 11.8,
+          "y_um": 34.300000000000004
+        },
+        {
+          "pin": "Y",
+          "x_um": 17.3,
+          "y_um": 28.8
+        }
+      ],
+      "lef": "NOR2.lef",
+      "name": "NOR2",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "NOR2.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 29.1
+    },
+    {
+      "gds": "NOR3.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 17.3,
+          "y_um": 17.8
+        },
+        {
+          "pin": "B",
+          "x_um": 17.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "C",
+          "x_um": 22.8,
+          "y_um": 23.3
+        },
+        {
+          "pin": "Y",
+          "x_um": 22.8,
+          "y_um": 34.300000000000004
+        }
+      ],
+      "lef": "NOR3.lef",
+      "name": "NOR3",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "C",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "NOR3.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 34.6
+    },
+    {
+      "gds": "NOR4.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 17.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "B",
+          "x_um": 17.3,
+          "y_um": 17.8
+        },
+        {
+          "pin": "C",
+          "x_um": 22.8,
+          "y_um": 34.2
+        },
+        {
+          "pin": "D",
+          "x_um": 22.8,
+          "y_um": 23.3
+        },
+        {
+          "pin": "Y",
+          "x_um": 28.3,
+          "y_um": 28.8
+        }
+      ],
+      "lef": "NOR4.lef",
+      "name": "NOR4",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "NOR4.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 40.1
+    },
+    {
+      "gds": "OR2.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 17.3,
+          "y_um": 17.8
+        },
+        {
+          "pin": "B",
+          "x_um": 17.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 22.8,
+          "y_um": 34.300000000000004
+        }
+      ],
+      "lef": "OR2.lef",
+      "name": "OR2",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "OR2.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 34.6
+    },
+    {
+      "gds": "OR3.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 17.3,
+          "y_um": 17.8
+        },
+        {
+          "pin": "B",
+          "x_um": 17.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "C",
+          "x_um": 22.8,
+          "y_um": 23.3
+        },
+        {
+          "pin": "Y",
+          "x_um": 28.3,
+          "y_um": 34.300000000000004
+        }
+      ],
+      "lef": "OR3.lef",
+      "name": "OR3",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "C",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "OR3.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 40.1
+    },
+    {
+      "gds": "OR4.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 22.8,
+          "y_um": 23.3
+        },
+        {
+          "pin": "B",
+          "x_um": 22.8,
+          "y_um": 34.300000000000004
+        },
+        {
+          "pin": "C",
+          "x_um": 17.3,
+          "y_um": 17.8
+        },
+        {
+          "pin": "D",
+          "x_um": 17.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 28.3,
+          "y_um": 28.8
+        }
+      ],
+      "lef": "OR4.lef",
+      "name": "OR4",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "OR4.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 45.6
+    },
+    {
+      "gds": "XNOR2.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 17.3,
+          "y_um": 23.3
+        },
+        {
+          "pin": "B",
+          "x_um": 28.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 37.9,
+          "y_um": 16.8
+        }
+      ],
+      "lef": "XNOR2.lef",
+      "name": "XNOR2",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "XNOR2.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 45.6
+    },
+    {
+      "gds": "XOR2.gds",
+      "landings": [
+        {
+          "pin": "A",
+          "x_um": 17.3,
+          "y_um": 23.3
+        },
+        {
+          "pin": "B",
+          "x_um": 28.3,
+          "y_um": 28.8
+        },
+        {
+          "pin": "Y",
+          "x_um": 35.1,
+          "y_um": 33.3
+        }
+      ],
+      "lef": "XOR2.lef",
+      "name": "XOR2",
+      "power_pins": [
+        "GND",
+        "VDD"
+      ],
+      "signal_pins": [
+        "A",
+        "B",
+        "Y"
+      ],
+      "site_height_um": 75.6,
+      "source": "XOR2.gds",
+      "source_height_um": 62.6,
+      "source_width_um": 45.6
+    }
+  ],
+  "excluded_non_digital": [
+    "RR$1",
+    "RS",
+    "TOP"
+  ],
+  "failures": [],
+  "output_root": "flow/pdk_root/TR-1um/libs.ref/TR-1um_stdcell_access",
+  "row_gap_um": 12.999999999999993,
+  "site": "TR1um_access_site",
+  "site_height_um": 75.6,
+  "source_dir": "flow/pdk_root/TR-1um/libs.ref/TR-1um_stdcell/source/gds",
+  "source_height_um": 62.6,
+  "source_manifest": {
+    "access_root": "flow/pdk_root/TR-1um/libs.ref/TR-1um_stdcell_access",
+    "commit": "d83eb77fcbe8c587809dd9f4532f9464c5501ab2",
+    "license": "Apache-2.0",
+    "repository": "OpenSUSI/TR-1um",
+    "source_root": "flow/pdk_root/TR-1um/libs.ref/TR-1um_stdcell"
+  },
+  "status": "generated_pending_qualification"
+}

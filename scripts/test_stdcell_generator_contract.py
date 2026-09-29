@@ -46,6 +46,7 @@ def main() -> int:
         "hp06",
         "cnm25",
         "ams_c35",
+        "tr1um",
     ]
     assert policy["solver_escalation"] == "exhaustive_first_then_constraint_solver"
     assert "buried_or_local_interconnect" in policy["unsupported_assumptions"]

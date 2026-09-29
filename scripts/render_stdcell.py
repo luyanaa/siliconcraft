@@ -36,6 +36,10 @@ from common.stdcell.process import StdcellProcess  # noqa: E402
 def render_tap(top, layout, layer, process, tap):
     """Render the small self-tap geometry without the analog PCell library."""
     tech = process.tech
+    polarity = "n" if tap["cell"].lower() == "ntap" else "p"
+    active_layer = process.stdcell_layer("active", polarity)
+    select_layer_name = process.stdcell_layer("select", polarity)
+    well_layer = process.stdcell_layer("well", polarity)
     rows = max(1, int(tap["rows"]))
     columns = max(1, int(tap["columns"]))
     size = tech.contact_size
@@ -75,7 +79,7 @@ def render_tap(top, layout, layer, process, tap):
         extra = (tech.active_min - (active_top - active_bottom)) / 2.0
         active_bottom -= extra
         active_top += extra
-    rect("active", active_left, active_bottom, active_right, active_top)
+    rect(active_layer, active_left, active_bottom, active_right, active_top)
     metal_enc = tech.metal_contact_enc
     rect(
         "metal1",
@@ -84,7 +88,7 @@ def render_tap(top, layout, layer, process, tap):
         left + contact_w + metal_enc,
         bottom + contact_h + metal_enc,
     )
-    select = "nselect" if tap["cell"].lower() == "ntap" else "pselect"
+    select = str(select_layer_name).lower()
     select_layer = process.ir.layers.get(select)
     select_available = bool(select_layer and select_layer.get("available", True))
     select_enc = tech.select_active_enc
@@ -115,7 +119,7 @@ def render_tap(top, layout, layer, process, tap):
             extra = (tech.nwell_min_width - (well_top - well_bottom)) / 2.0
             well_bottom -= extra
             well_top += extra
-        rect("nwell", well_left, well_bottom, well_right, well_top)
+        rect(well_layer, well_left, well_bottom, well_right, well_top)
 
 def db(value: float, dbu: float) -> int:
     return int(round(float(value) / dbu))
@@ -232,7 +236,7 @@ def main() -> int:
     widths = {
         "M1": process.metal_width_um("M1"),
         "M2": process.metal_width_um("M2"),
-        "POLY": profile.rule_value("width", "3.1", "poly", None),
+        "POLY": profile.semantic_rule("poly.min_width", ("width", "3.1", "poly", None)),
         "VIA12": process.via_size_um("M1", "M2"),
     }
     if process.has_layer("M3"):
@@ -318,7 +322,7 @@ def main() -> int:
                 name,
                 segment["x0"],
                 (segment["y0"] + segment["y1"]) / 2.0,
-                segment["layer"],
+                profile.ir.meta.get("stdcell_pin_label_layer") or segment["layer"],
             )
             continue
         net_segments = [segment for segment in segments if segment["net"] == name]

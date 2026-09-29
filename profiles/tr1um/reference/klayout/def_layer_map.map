@@ -1,0 +1,11 @@
+# TR-1um LEF/DEF layer map (KLayout lefdef format: layer PURPOSE,.. gdslayer gdsdt)
+M1 NET,SPNET,VIA,PIN,LEFPIN,LEFOBS 13 0
+NAME M1/LABEL,M1/LEFPIN 13 0
+M2 NET,SPNET,VIA,PIN,LEFPIN,LEFOBS 20 0
+NAME M2/LABEL,M2/LEFPIN 20 0
+V1 VIA,LEFPIN,PIN 19 0
+CO VIA,LEFPIN,PIN 11 0
+DIEAREA ALL 235 4
+# Project-owned GDS overlay markers (used by the electrical DRC; not LEF/DEF routing layers).
+# V15_MARKER 150/0
+# V27_MARKER 151/0

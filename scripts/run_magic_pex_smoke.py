@@ -75,6 +75,13 @@ def run_ngspice(
         for field in device[1:5]
         if field != "0" and field.lower() != "gnd"
     }
+    for line in logical_spice_lines(extracted):
+        fields = line.split()
+        if len(fields) >= 3 and fields[0].startswith("C"):
+            nodes.update(
+                field for field in fields[1:3]
+                if field != "0" and field.lower() != "gnd"
+            )
     deck_lines = [
         f"* {profile} extracted-device smoke",
         f".lib '{models}' {model_section}",

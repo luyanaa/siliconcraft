@@ -1,0 +1,36 @@
+schema_version: 1
+profile: tr1um
+upstream:
+  repository: https://github.com/OpenSUSI/TR-1um
+  commit: d83eb77fcbe8c587809dd9f4532f9464c5501ab2
+  license: Apache-2.0
+  license_file: reference/UPSTREAM-LICENSE.txt
+  source_scope: openIP62/IP62
+  signoff_status: public_reference_not_foundry_signoff
+ported_assets:
+  native_drc:
+    - reference/klayout/drc/run.drc
+    - reference/klayout/drc/00_Layers.drc
+    - reference/klayout/drc/01_Basics.drc
+    - reference/klayout/drc/02_Device.drc
+    - reference/klayout/drc/03_Electrical.drc
+  native_lvs:
+    - reference/klayout/lvs/run.lvs
+    - reference/klayout/lvs/01_Extract.lvs
+    - reference/klayout/lvs/02_Extract.lvs
+    - reference/klayout/lvs/03_Combiner.lvs
+    - reference/klayout/lvs/04_Custom.lvs
+    - reference/klayout/lvs/05_Compare.lvs
+  klayout_technology:
+    technology: reference/klayout/TR-1um.lyt
+    layer_properties: reference/klayout/TR-1um.lyp
+    pcell_source: reference/klayout/python/cells
+  magic_pex:
+    technology: reference/magic/TR-1um.tech
+    input_map: reference/magic/cifin-tr1um.gen
+    note: "The profile map adds CMF/CMS aliases for native 48/49 annotation streams present in source stdcell GDS."
+  spice_models:
+    - models/source/models_IP62_mos_os00_calibrated.lib
+    - models/source/models_IP62_diode_os00_calibrated.lib
+    - models/source/models_IP62_res_os00_calibrated.lib
+    - models/source/models_IP62_cap_os00_calibrated.lib
