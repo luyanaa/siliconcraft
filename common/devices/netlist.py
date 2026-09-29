@@ -17,9 +17,16 @@ class NetlistContract:
     """Simulation and LVS identity for one canonical device variant."""
 
     device: str
+    canonical_family: str
+    canonical_id: str
     canonical_variant: str
+    topology: str | None
+    voltage_class: str | None
+    gate_stack: str | None
+    isolation_domain: str | None
     terminals: tuple[str, ...]
     terminal_order: tuple[str, ...]
+    terminal_semantics: tuple[tuple[str, str], ...]
     symmetry_groups: tuple[tuple[str, ...], ...]
     representation: str
     name: str
@@ -51,11 +58,22 @@ class NetlistContract:
             raise ProcessIRError(
                 f"{binding.name}: symmetry group contains an unknown terminal"
             )
+        if binding.topology == "asymmetric_drift" and binding.lvs_permutable:
+            raise ProcessIRError(
+                f"{binding.name}: asymmetric drift devices cannot permute terminals"
+            )
         return cls(
             device=binding.name,
+            canonical_family=binding.canonical_family,
+            canonical_id=binding.canonical_id,
             canonical_variant=binding.canonical_variant,
+            topology=binding.topology,
+            voltage_class=binding.voltage_class,
+            gate_stack=binding.gate_stack,
+            isolation_domain=binding.isolation_domain,
             terminals=binding.terminals,
             terminal_order=binding.terminal_order,
+            terminal_semantics=tuple(sorted(binding.terminal_semantics.items())),
             symmetry_groups=binding.symmetry_groups,
             representation=representation,
             name=name,

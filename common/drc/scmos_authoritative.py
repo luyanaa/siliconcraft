@@ -18,8 +18,9 @@ Layer names resolve to raw input layers, Diva-derived layers
 near_<layer>).
 
 Env: LAYOUT, MARKERS, LAYERMAP, FEATURES, LAMBDA, GRID, TECH, RULE_FAMILY,
-WELL, PAD, RULES (path to rules.yaml).  Same output contract as the reference deck:
-marker GDS (layer = 1000 + crc32(rule_id) & 0x3FFF) + JSON summary.
+WELL, PAD, RULES, RULE_AUTHORITY (public_native, scmos_compat, or
+foundry_private). Same output contract as the reference deck: marker GDS
+(layer = 1000 + crc32(rule_id) & 0x3FFF) + JSON summary.
 """
 
 import json
@@ -148,6 +149,52 @@ def cond_ok(cond, F, TECH, RULE_FAMILY):
 
 
 
+RULE_AUTHORITIES = {
+    "public_native": {"public_native"},
+    "scmos_compat": {"public_native", "scmos_compat", "provisional_hv_policy", "legacy"},
+    "foundry_private": {
+        "public_native",
+        "scmos_compat",
+        "provisional_hv_policy",
+        "foundry_private",
+        "legacy",
+    },
+}
+
+
+def _entry_authority(entry, table: str) -> str:
+    explicit = entry.get("authority")
+    if explicit:
+        return str(explicit)
+    if table == "hvcmos":
+        return "provisional_hv_policy"
+    source = str(entry.get("source", "")).lower()
+    if "public" in source:
+        return "public_native"
+    if "scmos" in source:
+        return "scmos_compat"
+    return "legacy"
+
+
+def _authority_allowed(entry, table: str, selected: str) -> bool:
+    try:
+        allowed = RULE_AUTHORITIES[selected]
+    except KeyError as exc:
+        raise SystemExit(f"unsupported RULE_AUTHORITY {selected!r}") from exc
+    return _entry_authority(entry, table) in allowed
+
+
+def _filtered_hvcmos(hvcmos: dict, selected: str) -> dict:
+    result = dict(hvcmos)
+    for table in ("markers", "hierarchy", "drift", "voltage_spacing"):
+        result[table] = [
+            entry
+            for entry in hvcmos.get(table, []) or []
+            if _authority_allowed(entry, "hvcmos", selected)
+        ]
+    return result
+
+
 # ------------------------------------------------------------------- run
 
 def run():
@@ -176,6 +223,9 @@ def run():
     RULE_FAMILY = os.environ.get("RULE_FAMILY") or FEATURES.get("rule_family", "scmos")
     if RULE_FAMILY not in ("scmos", "scmos_subm"):
         raise SystemExit(f"unsupported SCMOS rule family: {RULE_FAMILY!r}")
+    SELECTED_AUTHORITY = os.environ.get("RULE_AUTHORITY", "scmos_compat")
+    if SELECTED_AUTHORITY not in RULE_AUTHORITIES:
+        raise SystemExit(f"unsupported RULE_AUTHORITY {SELECTED_AUTHORITY!r}")
 
     def F(name):
         return FEATURES.get(name, False)
@@ -418,6 +468,8 @@ def run():
                      ("enclosure", echeck), ("extension", echeck),
                      ("area", areacheck), ("overlap", ocheck)):
         for entry in tables.get(kind, []):
+            if not _authority_allowed(entry, kind, SELECTED_AUTHORITY):
+                continue
             if not cond_ok(entry.get("condition"), F, TECH, RULE_FAMILY):
                 continue
             rid = entry["id"]
@@ -437,7 +489,7 @@ def run():
                 fn(r, entry["value_um"], msg, rid)
 
     run_hvcmos_checks(
-        rules.get("hvcmos") or {},
+        _filtered_hvcmos(rules.get("hvcmos") or {}, SELECTED_AUTHORITY),
         D,
         resolve,
         layout,

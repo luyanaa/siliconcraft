@@ -1,10 +1,11 @@
-# Canonical MOS netlist binding for the initial XH018 contract.
-# Public cards and the foundry PDK are not redistributed; this is a
-# contract_only binding for LVS identity and future model integration.
-schema_version: 1
+# Canonical MOS/device bindings for the initial XH018 contract.
+# Public cards and the foundry PDK are not redistributed; contract_only keeps
+# identity stable for LVS, simulator integration, PEX, and future generators.
+schema_version: 2
 canonical_source: "../../../common/devices/canonical/mos.yaml"
 bindings:
   nmos_core:
+    canonical_family: mos4
     canonical_variant: nmos_core
     layout:
       gate_types: nfet
@@ -21,8 +22,11 @@ bindings:
       extracted_class: xh018N
       netgen_class: xh018N
       permutable:
-        - [d, s]
+        -
+          - d
+          - s
   pmos_core:
+    canonical_family: mos4
     canonical_variant: pmos_core
     layout:
       gate_types: pfet
@@ -39,4 +43,134 @@ bindings:
       extracted_class: xh018P
       netgen_class: xh018P
       permutable:
-        - [d, s]
+        -
+          - d
+          - s
+  nmos_hv:
+    canonical_family: mos4
+    canonical_variant: nmos_hv_sym
+    layout:
+      gate_types: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      marker_types: hv_n_marker
+      voltage_class: hv
+      substrate_node: Gnd!
+    simulation:
+      representation: contract_only
+      name: xh018Nhv
+      prefix: m
+      model_library: null
+      parameter_map: {w: w, l: l, nf: nf, m: m, ad: ad, as: as, pd: pd, ps: ps}
+    lvs:
+      extracted_class: xh018Nhv
+      netgen_class: xh018Nhv
+      permutable:
+        -
+          - d
+          - s
+  pmos_hv:
+    canonical_family: mos4
+    canonical_variant: pmos_hv_sym
+    layout:
+      gate_types: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      marker_types: hv_p_marker
+      voltage_class: hv
+      substrate_node: Vdd!
+    simulation:
+      representation: contract_only
+      name: xh018Phv
+      prefix: m
+      model_library: null
+      parameter_map: {w: w, l: l, nf: nf, m: m, ad: ad, as: as, pd: pd, ps: ps}
+    lvs:
+      extracted_class: xh018Phv
+      netgen_class: xh018Phv
+      permutable:
+        -
+          - d
+          - s
+  nmos_isolated:
+    canonical_family: mos4
+    canonical_variant: nmos_isolated
+    layout:
+      gate_types: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      isolation_types: deep_nwell
+      substrate_node: ISO_GND!
+    simulation:
+      representation: contract_only
+      name: xh018Niso
+      prefix: m
+      model_library: null
+      parameter_map: {w: w, l: l, nf: nf, m: m, ad: ad, as: as, pd: pd, ps: ps}
+    lvs:
+      extracted_class: xh018Niso
+      netgen_class: xh018Niso
+      permutable:
+        -
+          - d
+          - s
+  pmos_isolated:
+    canonical_family: mos4
+    canonical_variant: pmos_isolated
+    layout:
+      gate_types: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      isolation_types: deep_nwell
+      substrate_node: ISO_VDD!
+    simulation:
+      representation: contract_only
+      name: xh018Piso
+      prefix: m
+      model_library: null
+      parameter_map: {w: w, l: l, nf: nf, m: m, ad: ad, as: as, pd: pd, ps: ps}
+    lvs:
+      extracted_class: xh018Piso
+      netgen_class: xh018Piso
+      permutable:
+        -
+          - d
+          - s
+  nldmos:
+    canonical_family: asymmetric_mos4
+    canonical_variant: nldmos
+    layout:
+      gate_types: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      drift_types: drift_n
+      channel_types: nDmosChannel
+      substrate_node: Gnd!
+    simulation:
+      representation: contract_only
+      name: xh018Nldmos
+      prefix: m
+      model_library: null
+      parameter_map: {w: w, l: l, nf: nf, m: m, ad: ad, as: as, pd: pd, ps: ps}
+    lvs:
+      extracted_class: xh018Nldmos
+      netgen_class: xh018Nldmos
+  pldmos:
+    canonical_family: asymmetric_mos4
+    canonical_variant: pldmos
+    layout:
+      gate_types: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      drift_types: drift_p
+      channel_types: pDmosChannel
+      substrate_node: Vdd!
+    simulation:
+      representation: contract_only
+      name: xh018Pldmos
+      prefix: m
+      model_library: null
+      parameter_map: {w: w, l: l, nf: nf, m: m, ad: ad, as: as, pd: pd, ps: ps}
+    lvs:
+      extracted_class: xh018Pldmos
+      netgen_class: xh018Pldmos

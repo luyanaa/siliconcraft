@@ -22,45 +22,35 @@ if _ROOT not in sys.path:
 from common.lvs.scmos_lvs_core import build_nets  # noqa: E402
 
 
-_LABEL_HV = re.compile(r"(^|[:_@])HV($|[:_@])|HV", re.IGNORECASE)
-_LABEL_LV = re.compile(r"(^|[:_@])LV($|[:_@])|LV", re.IGNORECASE)
-_POTENTIAL = re.compile(r"(?:@POT=|HV[:_]|LV[:_]|HV_|LV_)([^:@]+)", re.IGNORECASE)
+_LABEL = re.compile(
+    r"^\s*(?:@POT=)?(?P<class>HV|LV)"
+    r"(?:(?::|_)(?P<potential>[^:@\s]+))?\s*$",
+    re.IGNORECASE,
+)
 
 
 def _empty() -> pya.Region:
     return pya.Region()
 
 
-def _as_region(value) -> pya.Region:
-    return value if isinstance(value, pya.Region) else pya.Region(value)
 
 
-def _to_region(edge_pairs) -> pya.Region:
-    """Turn KLayout edge-pair markers into small visible polygons."""
-    step = max(1, int(round(0.001 / _to_region.dbu)))
-    out = pya.Region()
-    for pair in edge_pairs.each():
-        out += pya.Region(pair.first.bbox().enlarged(step))
-        out += pya.Region(pair.second.bbox().enlarged(step))
-    return out
+def _label_match(label: str):
+    return _LABEL.fullmatch(str(label or ""))
 
 
-_to_region.dbu = 0.001
-
-
-def _label_class(label: str) -> str | None:
-    if _LABEL_HV.search(label or ""):
-        return "hv"
-    if _LABEL_LV.search(label or ""):
-        return "lv"
-    return None
+def _label_class(label: str) -> str:
+    match = _label_match(label)
+    return match.group("class").lower() if match else "unknown"
 
 
 def _potential(label: str, root: int) -> str:
-    match = _POTENTIAL.search(label or "")
+    match = _label_match(label)
+    if match and match.group("potential"):
+        return match.group("potential").strip().upper()
     if match:
-        return match.group(1).strip().upper()
-    return label if label and not label.startswith("n") else f"ROOT:{root}"
+        return match.group("class").upper()
+    return str(label).strip().upper() if label else f"ROOT:{root}"
 
 
 def _resolve(D, resolver, name: str) -> pya.Region:
@@ -81,7 +71,12 @@ def _relation_bad(marker: pya.Region, target: pya.Region, relation: str) -> pya.
     if relation in {"disjoint", "forbid_overlap"}:
         return marker.interacting(target)
     if relation == "overlap":
-        return marker.interacting(target)
+        # ``overlap`` is a positive relation: an empty intersection is the
+        # violation.  ``interacting`` itself is the violating region for the
+        # opposite ``disjoint`` relation.
+        if not marker.interacting(target).is_empty():
+            return _empty()
+        return target
     raise ValueError(f"unsupported HVCMOS relation {relation!r}")
 
 
@@ -115,28 +110,40 @@ def _run_geometry_contracts(hvcmos, D, resolve, report) -> None:
                 entry["id"] + ".PARENT",
                 entry.get("note", "HVCMOS drift parent"),
             )
-def _net_groups(D, resolve, layout, top, L, F, WELL, DBU, layer: str):
-    """Return voltage-class regions grouped by connected net root.
+def _voltage_policy(hvcmos) -> tuple[str, bool, bool, str]:
+    config = hvcmos.get("voltage_classification") or {}
+    mode = str(config.get("mode", "strict")).lower()
+    if mode not in {"strict", "exploratory"}:
+        raise ValueError(f"unsupported HVCMOS voltage classification mode {mode!r}")
+    infer_marker = bool(config.get("marker_inference", mode == "exploratory"))
+    require_annotation = bool(config.get("require_annotation", mode == "strict"))
+    unknown_rule_id = str(config.get("unknown_rule_id", "HVCMOS.VOLTAGE.UNKNOWN"))
+    return mode, infer_marker, require_annotation, unknown_rule_id
 
-    Labels on GDS 64/0 use ``HV:<potential>`` or ``LV:<potential>``.  An
-    unlabelled conductor falls back to the HV marker geometry; this keeps the
-    deck useful for early layout work while making labelled connectivity the
-    authoritative path for voltage-aware spacing.
+
+def _net_groups(
+    D, resolve, layout, top, L, F, WELL, DBU, layer: str, infer_marker: bool
+):
+    """Return LV/HV/UNKNOWN regions grouped by connected net root.
+
+    ``UNKNOWN`` is intentionally preserved.  Marker inference is an explicit
+    exploratory-mode policy, never an implicit LV fallback.
     """
     conductor = _resolve(D, resolve, layer)
     if conductor.is_empty():
-        return {"hv": {}, "lv": {}}
+        return {"hv": {}, "lv": {}, "unknown": {}}
     nets = build_nets(D, L, F, WELL, layout, top, DBU)
     marker = D.get("hvMarker", _empty())
-    groups = {"hv": {}, "lv": {}}
+    groups = {"hv": {}, "lv": {}, "unknown": {}}
     for index, (name, polygon) in enumerate(nets.comps):
         if name != layer:
             continue
         region = pya.Region(polygon)
         label = nets.net_of(index)
         voltage_class = _label_class(label)
-        if voltage_class is None:
-            voltage_class = "hv" if not region.interacting(marker).is_empty() else "lv"
+        if voltage_class == "unknown" and infer_marker:
+            if not region.interacting(marker).is_empty():
+                voltage_class = "hv"
         root = nets.uf.find(index)
         key = (root, _potential(label, root))
         groups[voltage_class].setdefault(key, pya.Region())
@@ -148,22 +155,39 @@ def _spacing(report, left, right, value_um, rule_id, message, dbu, same_root=Fal
     if left.is_empty() or right.is_empty() or same_root:
         return
     distance = max(1, int(round(value_um / dbu)))
-    # KLayout's cross-region overload does not report the nearest edge pair
-    # for all layer/region combinations.  The caller supplies only the two
-    # voltage classes/potential groups being compared, so a union is exact.
-    combined = left + right
-    _to_region.dbu = dbu
-    report.item(_to_region(combined.space_check(distance)), rule_id, message)
+    # Expand only the left class and intersect the right class.  A union
+    # followed by space_check() also checks left-left/right-right polygon
+    # spacing and creates false cross-class violations for multi-polygon nets.
+    report.item(
+        left.sized(distance) & right,
+        rule_id,
+        message,
+    )
 
 
 def _voltage_spacing(hvcmos, D, resolve, layout, top, L, F, WELL, DBU, report) -> None:
+    _mode, infer_marker, require_annotation, unknown_rule_id = _voltage_policy(hvcmos)
+    unknown_reported: set[str] = set()
     for entry in hvcmos.get("voltage_spacing", []) or []:
         layer1 = str(entry["layer"])
         layer2 = str(entry.get("layer2", layer1))
-        groups1 = _net_groups(D, resolve, layout, top, L, F, WELL, DBU, layer1)
-        groups2 = groups1 if layer2 == layer1 else _net_groups(
-            D, resolve, layout, top, L, F, WELL, DBU, layer2
+        groups1 = _net_groups(
+            D, resolve, layout, top, L, F, WELL, DBU, layer1, infer_marker
         )
+        groups2 = groups1 if layer2 == layer1 else _net_groups(
+            D, resolve, layout, top, L, F, WELL, DBU, layer2, infer_marker
+        )
+        if require_annotation:
+            for layer, groups in ((layer1, groups1), (layer2, groups2)):
+                if layer in unknown_reported:
+                    continue
+                unknown_reported.add(layer)
+                for region in groups["unknown"].values():
+                    report.item(
+                        region,
+                        unknown_rule_id,
+                        f"{layer}: voltage class annotation is required",
+                    )
         class1 = str(entry["class1"]).lower()
         class2 = str(entry.get("class2", class1)).lower()
         potential = str(entry.get("potential", "any")).lower()

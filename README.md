@@ -12,9 +12,11 @@ monolithic process YAML.
 
 ## ProcessIR and canonical contracts
 
-- `common/devices/canonical/mos.yaml` defines the process-independent MOS4
-  terminals, D/S symmetry, geometry units, `w`/`nf`/`m` semantics, and
-  parasitic ownership.
+- `common/devices/canonical/mos.yaml` defines the process-independent
+  `mos4` family (`nmos_core`/`pmos_core`, symmetric HV, and isolated variants)
+  plus the separate asymmetric `asymmetric_mos4` family for `nldmos`/`pldmos`.
+  Voltage class, gate stack, isolation domain, topology, and terminal semantics
+  are canonical attributes; LDMOS D/S terminals are never LVS-permutable.
 - `profiles/*/devices/bindings.yaml` binds canonical devices to layout,
   simulator, and LVS identities. `common/devices/netlist.py` exposes the
   validated typed contract.
@@ -42,6 +44,27 @@ profile. `meta.rule_family` is one of `scmos` or `scmos_subm`; non-SCMOS
 profiles use `native`. `SCMOS_DEEP`, `deep_rules`, and `submicron_rules` are
 not normalized assets. The shared DRC/PCell engines implement only the
 standard-vs-SUBM split.
+
+### XH035/XH018 authority and HVCMOS boundary
+
+XH profiles keep rule authority explicit at runtime:
+`public_native` contains only native-datasheet geometry,
+`scmos_compat` adds SCMOS compatibility overrides and the
+`provisional_hv_policy`, and `foundry_private` is reserved for unreleased
+foundry collateral. Generate the named XH decks with:
+
+```bash
+python3 scripts/gen_drc.py --profile xh035 --authority public_native
+python3 scripts/gen_drc.py --profile xh035 --authority scmos_compat \
+  --output profiles/xh035/generated/drc/xh035-scmos-compat.drc
+```
+
+The `.drc` files preserve release naming; generated Python companions are the
+KLayout-runnable decks. XH voltage classification is strict in production:
+`HV:<potential>` and `LV:<potential>` annotations are required, `UNKNOWN` is
+reported, and marker inference is exploratory-only. XH035/XH018 remain outside
+the supported stdcell profile list; their LV semantic adapters are smoke-test
+contracts only, and HV cells are not ordinary stdcells.
 
 `schema/scmos_process_matrix.yaml` records the supported NCSU target mapping:
 TSMC 0.35 4M/2P and 4M options, `tsmc03` (`SCN5M_SUBM`, lambda 0.15), and

@@ -140,8 +140,40 @@
             "markers": { "type": "array", "items": { "$ref": "#/$defs/hv_contract" } },
             "hierarchy": { "type": "array", "items": { "$ref": "#/$defs/hv_contract" } },
             "drift": { "type": "array", "items": { "$ref": "#/$defs/hv_contract" } },
-            "voltage_spacing": { "type": "array", "items": { "$ref": "#/$defs/voltage_rule" } }
+            "voltage_spacing": { "type": "array", "items": { "$ref": "#/$defs/voltage_rule" } },
+            "voltage_classification": {
+              "type": "object",
+              "properties": {
+                "mode": { "enum": ["strict", "exploratory"] },
+                "marker_inference": { "type": "boolean" },
+                "require_annotation": { "type": "boolean" },
+                "unknown_rule_id": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
           }
+        },
+        "stdcell": {
+          "type": "object",
+          "description": "semantic fixed-height stdcell rules resolved by a profile adapter",
+          "properties": {
+            "adapter": { "type": "string" },
+            "rule_map": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "group": { "type": "string" },
+                  "id": { "type": "string" },
+                  "layer": { "type": "string" },
+                  "layer2": { "type": "string" },
+                  "value_um": { "type": "number" }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
         }
       }
     },
@@ -234,6 +266,10 @@
         "nets": { "enum": ["any", "same", "diff"], "description": "sameNet/diffNet connectivity qualifier" },
         "app": { "type": "boolean", "description": "apposition filter (Diva app > 0); approximated by opposite-edge space_check" },
         "condition": { "type": "string", "description": "process feature condition, e.g. submicron" },
+        "authority": {
+          "enum": ["public_native", "scmos_compat", "provisional_hv_policy", "foundry_private"],
+          "description": "rule authority layer used to select public and compatibility decks"
+        },
         "source": { "type": "string", "description": "provenance: divaDRC.rul rule id, MOSIS doc, ..." },
         "note": { "type": "string" },
         "net_property": { "type": "string" }
@@ -251,6 +287,9 @@
         "relation": { "type": "string" },
         "parent": { "type": "string" },
         "forbid_overlap": { "type": "string" },
+        "authority": {
+          "enum": ["public_native", "scmos_compat", "provisional_hv_policy", "foundry_private"]
+        },
         "note": { "type": "string" }
       },
       "additionalProperties": true
@@ -266,6 +305,9 @@
         "class2": { "enum": ["lv", "hv"] },
         "potential": { "enum": ["any", "same", "different"] },
         "value_um": { "type": "number" },
+        "authority": {
+          "enum": ["public_native", "scmos_compat", "provisional_hv_policy", "foundry_private"]
+        },
         "source": { "type": "string" },
         "note": { "type": "string" }
       },

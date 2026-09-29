@@ -6,8 +6,10 @@ Deck precedence (for users with an OFFICIAL foundry DRC):
                   This is the override slot: drop a foundry-approved KLayout
                   runset (or a pya script) there, declare it in manifest.yaml,
                   and it takes precedence over everything else.
-    authoritative profiles/<proc>/generated/drc/run.drc  (Phase 2: generated
-                  from pdk.yaml `rules`; the shipped deck)
+    authoritative profiles/<proc>/generated/drc/run.py  (SCMOS compatibility
+                  authority; generated from pdk.yaml `rules`)
+    public-native  profiles/<proc>/generated/drc/<proc>-public.drc/.py
+    scmos-compat   profiles/<proc>/generated/drc/<proc>-scmos-compat.drc/.py
     reference     profiles/<proc>/reference/manifest.yaml -> deck file (+ args)
                   or common/drc/scmos_reference.py fallback
 
@@ -21,6 +23,7 @@ Usage:
   python3 scripts/run_drc.py --profile ami06 --deck reference \\
       --layout <in.gds> --out <report.lyrdb> [--summary <rules.json>]
   --deck auto    official if present, else authoritative if generated, else reference
+  --deck public-native|scmos-compat|foundry-private selects an explicit generated authority
   --klayout      command/prefix to invoke klayout (default "klayout"); may be a
                  compound shell command, e.g. 'nix develop ~/Documents/librelane --command klayout'
 """
@@ -90,14 +93,37 @@ def resolve_deck(profile_dir: Path, deck: str):
             if f:
                 return profile_dir / "reference" / f, spec, "reference"
         return ROOT / "common/drc/scmos_reference.py", {"format": "klayout-pya"}, "reference"
+    if deck in ("public-native", "scmos-compat", "foundry-private"):
+        authority = {
+            "public-native": "public_native",
+            "scmos-compat": "scmos_compat",
+            "foundry-private": "foundry_private",
+        }[deck]
+        suffix = {
+            "public-native": "public",
+            "scmos-compat": "scmos-compat",
+            "foundry-private": "foundry-private",
+        }[deck]
+        p = profile_dir / "generated" / "drc" / f"{profile_dir.name}-{suffix}.drc"
+        runtime_p = p.with_suffix(".py")
+        if runtime_p.exists():
+            p = runtime_p
+        elif deck == "scmos-compat" and not p.exists():
+            p = profile_dir / "generated" / "drc" / "run.py"
+        if p.exists():
+            return p, {"format": "klayout-pya", "rule_authority": authority}, deck
+        return None, None, deck
     if deck == "authoritative":
         p = profile_dir / "generated" / "drc" / "run.py"
         if not p.exists():
             p = profile_dir / "generated" / "drc" / "run.drc"
         if p.exists():
-            return p, {"format": "klayout-pya"}, "authoritative"
+            return p, {"format": "klayout-pya", "rule_authority": "scmos_compat"}, "authoritative"
         return None, None, "authoritative"
-    raise SystemExit(f"unknown deck '{deck}' (reference|authoritative|official|auto)")
+    raise SystemExit(
+        f"unknown deck '{deck}' "
+        "(reference|authoritative|public-native|scmos-compat|foundry-private|official|auto)"
+    )
 
 
 def _expand_args(args):
@@ -149,6 +175,8 @@ def run_deck(deck_path, spec, meta, layermap, features, layout, report, klayout,
     env["LAYERMAP"] = json.dumps(layermap)
     env["FEATURES"] = json.dumps(features)
     env["RULE_FAMILY"] = str(features["rule_family"])
+    if (spec or {}).get("rule_authority"):
+        env["RULE_AUTHORITY"] = str(spec["rule_authority"])
     extra_args = []
     if top_cell:
         env["TOPCELL"] = top_cell
@@ -184,8 +212,19 @@ def run_deck(deck_path, spec, meta, layermap, features, layout, report, klayout,
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--profile", required=True)
-    ap.add_argument("--deck", default="auto",
-                    choices=["auto", "reference", "authoritative", "official"])
+    ap.add_argument(
+        "--deck",
+        default="auto",
+        choices=[
+            "auto",
+            "reference",
+            "authoritative",
+            "public-native",
+            "scmos-compat",
+            "foundry-private",
+            "official",
+        ],
+    )
     ap.add_argument("--layout", required=True)
     ap.add_argument("--top-cell", default=None,
                     help="optional explicit KLayout source top cell for multi-root GDS")

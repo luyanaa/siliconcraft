@@ -132,6 +132,39 @@ class Profile:
             )
         return candidates[0]
 
+    def semantic_rule(self, key: str, fallback=None) -> float:
+        """Resolve a consumer-facing stdcell rule through a profile adapter.
+
+        Profile-specific ``rules.stdcell.rule_map`` entries own the mapping
+        from semantic names to physical rule IDs.  ``fallback`` keeps the
+        established SCMOS adapter available for profiles that predate the
+        semantic map.
+        """
+        mapping = (self.rules_doc.get("rules", {}).get("stdcell") or {}).get(
+            "rule_map", {}
+        )
+        spec = mapping.get(key) if isinstance(mapping, dict) else None
+        if spec is not None:
+            if "value_um" in spec:
+                return float(spec["value_um"])
+            try:
+                return self.rule_value(
+                    str(spec["group"]),
+                    str(spec["id"]),
+                    str(spec["layer"]),
+                    spec.get("layer2"),
+                )
+            except KeyError as exc:
+                raise ProfileError(
+                    f"{self.profile_dir.name}: incomplete semantic stdcell rule {key}"
+                ) from exc
+        if fallback is None:
+            raise ProfileError(
+                f"{self.profile_dir.name}: no semantic stdcell rule {key}"
+            )
+        group, rule_id, layer, layer2 = fallback
+        return self.rule_value(group, rule_id, layer, layer2)
+
 
     def validate_pcell(self, name: str, kind: str):
         spec = self.pcells.get(name)

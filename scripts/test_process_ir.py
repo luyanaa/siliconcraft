@@ -48,6 +48,36 @@ def main() -> int:
     ami06_contracts = validate_netlist_contracts(processes["ami06"])
     assert {contract.name for contract in ami06_contracts} == {"ami06N", "ami06P"}
     assert all(contract.representation == "primitive" for contract in ami06_contracts)
+    for name, expected_process in (("xh035", "XH035"), ("xh018", "XH018")):
+        xh_contracts = {
+            contract.device: contract
+            for contract in validate_netlist_contracts(processes[name])
+        }
+        assert set(xh_contracts) == {
+            "nmos_core",
+            "pmos_core",
+            "nmos_hv",
+            "pmos_hv",
+            "nmos_isolated",
+            "pmos_isolated",
+            "nldmos",
+            "pldmos",
+        }
+        assert xh_contracts["nmos_hv"].canonical_variant == "nmos_hv_sym"
+        assert xh_contracts["nmos_hv"].canonical_family == "mos4"
+        assert xh_contracts["nmos_hv"].voltage_class == "hv"
+        assert xh_contracts["nmos_hv"].gate_stack == "hv"
+        assert xh_contracts["nmos_isolated"].isolation_domain == "deep_nwell_pwell"
+        for variant in ("nldmos", "pldmos"):
+            contract = xh_contracts[variant]
+            assert contract.canonical_family == "asymmetric_mos4"
+            assert contract.topology == "asymmetric_drift"
+            assert contract.lvs_permutable == ()
+            assert dict(contract.terminal_semantics)["d"].startswith("drain side")
+            assert dict(contract.terminal_semantics)["s"].startswith("source side")
+        assert xh_contracts["nldmos"].name == f"{name}Nldmos"
+        assert xh_contracts["pldmos"].name == f"{name}Pldmos"
+        assert processes[name].meta["process"] == expected_process
     assert processes["ami16"].rule_family == "scmos"
     assert processes["ami06"].rule_family == "scmos_subm"
     assert processes["hp06"].rule_family == "scmos_subm"

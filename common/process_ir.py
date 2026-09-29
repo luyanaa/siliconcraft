@@ -141,6 +141,39 @@ class DeviceBinding:
         groups = self.canonical.get("symmetry_groups") or []
         return tuple(tuple(group) for group in groups)
     @property
+    def canonical_family(self) -> str:
+        return str(self.canonical.get("canonical_family") or "mos4")
+
+    @property
+    def canonical_id(self) -> str:
+        return str(self.canonical.get("canonical_id") or self.canonical_family)
+
+    @property
+    def voltage_class(self) -> str | None:
+        value = self.canonical.get("voltage_class")
+        return str(value) if value is not None else None
+
+    @property
+    def gate_stack(self) -> str | None:
+        value = self.canonical.get("gate_stack")
+        return str(value) if value is not None else None
+
+    @property
+    def isolation_domain(self) -> str | None:
+        value = self.canonical.get("isolation_domain")
+        return str(value) if value is not None else None
+
+    @property
+    def topology(self) -> str | None:
+        value = self.canonical.get("topology")
+        return str(value) if value is not None else None
+
+    @property
+    def terminal_semantics(self) -> dict[str, Any]:
+        value = self.canonical.get("terminal_semantics") or {}
+        return dict(value) if isinstance(value, dict) else {}
+
+    @property
     def simulation_name(self) -> str | None:
         value = self.simulation.get("name")
         return str(value) if value is not None else None
@@ -332,21 +365,38 @@ def _canonical_path(root: Path, profile_dir: Path, bindings_path: Path, source: 
 def _device_bindings(
     canonical_doc: dict[str, Any], bindings_doc: dict[str, Any]
 ) -> dict[str, DeviceBinding]:
-    canonical_device = canonical_doc.get("device") or {}
-    variants = canonical_doc.get("variants") or {}
+    canonical_families = canonical_doc.get("families") or {}
+    default_family = str(canonical_doc.get("default_family") or "mos4")
     result: dict[str, DeviceBinding] = {}
     for name, raw in (bindings_doc.get("bindings") or {}).items():
         if not isinstance(raw, dict):
             raise ProcessIRError(f"device binding {name!r} must be a mapping")
+        family_name = str(raw.get("canonical_family") or default_family)
+        if canonical_families:
+            family_doc = canonical_families.get(family_name)
+            if not isinstance(family_doc, dict):
+                raise ProcessIRError(
+                    f"device binding {name!r} references unknown canonical family "
+                    f"{family_name!r}"
+                )
+            canonical_device = family_doc.get("device") or {}
+            variants = family_doc.get("variants") or {}
+        else:
+            # Compatibility with pre-family canonical documents.
+            family_name = "mos4"
+            canonical_device = canonical_doc.get("device") or {}
+            variants = canonical_doc.get("variants") or {}
         variant_name = str(raw.get("canonical_variant") or name)
         variant = variants.get(variant_name)
         if not isinstance(variant, dict):
             raise ProcessIRError(
                 f"device binding {name!r} references unknown canonical variant "
-                f"{variant_name!r}"
+                f"{variant_name!r} in family {family_name!r}"
             )
         canonical = dict(canonical_device)
         canonical.update(variant)
+        canonical["canonical_family"] = family_name
+        canonical["canonical_id"] = str(canonical_device.get("id") or family_name)
         result[name] = DeviceBinding(
             name=name,
             canonical_variant=variant_name,

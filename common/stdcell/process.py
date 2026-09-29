@@ -247,20 +247,28 @@ class StdcellProcess:
         return inspect_profile(self.profile_name, self.root)
 
     def metal_width_um(self, logical: str) -> float:
-        rule_ids = {"M1": "7.1", "M2": "9.1", "M3": "15.1"}
         logical = logical.upper()
-        if logical not in rule_ids:
+        keys = {
+            "M1": "metal.M1.min_width",
+            "M2": "metal.M2.min_width",
+            "M3": "metal.M3.min_width",
+        }
+        if logical not in keys:
             raise ProcessError(f"{self.profile_name}: no standard-cell width rule for {logical}")
-        physical = self.physical_layer(logical)
-        return self.profile.rule_value("width", rule_ids[logical], physical, None)
+        self.physical_layer(logical)
+        return self.tech.semantic_rule(keys[logical])
 
     def metal_spacing_um(self, logical: str) -> float:
-        rule_ids = {"M1": "7.2", "M2": "9.2", "M3": "15.2"}
         logical = logical.upper()
-        if logical not in rule_ids:
+        keys = {
+            "M1": "metal.M1.min_spacing",
+            "M2": "metal.M2.min_spacing",
+            "M3": "metal.M3.min_spacing",
+        }
+        if logical not in keys:
             raise ProcessError(f"{self.profile_name}: no standard-cell spacing rule for {logical}")
-        physical = self.physical_layer(logical)
-        return self.profile.rule_value("spacing", rule_ids[logical], physical, None)
+        self.physical_layer(logical)
+        return self.tech.semantic_rule(keys[logical])
 
     def via_size_um(self, lower: str, upper: str) -> float:
         pair = (lower.upper(), upper.upper())

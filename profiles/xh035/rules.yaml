@@ -6,6 +6,135 @@
 # it is not an X-FAB signoff runset.
 rules:
   grid: {x: 0.05, y: 0.05}
+  # Semantic fixed-height-cell adapter.  XH035 is not in the supported
+  # production stdcell profile set; these mappings are LV-only smoke-test
+  # geometry and do not authorize HV cells.
+  stdcell:
+    adapter: xh035_lv_provisional
+    rule_map:
+      contact.cut_size:
+        group: width
+        id: XH035.W.CC
+        layer: cc
+      contact.cut_spacing:
+        group: spacing
+        id: XH035.S.CC
+        layer: cc
+      active.min_width:
+        group: width
+        id: XH035.W.ACTIVE
+        layer: active
+      poly.min_width:
+        group: width
+        id: XH035.W.POLY
+        layer: poly
+      poly.min_spacing:
+        group: spacing
+        id: XH035.S.POLY
+        layer: poly
+      poly.contact_enclosure:
+        group: enclosure
+        id: XH035.E.POLY.CC
+        layer: poly
+        layer2: cc
+      active.contact_enclosure:
+        group: enclosure
+        id: XH035.E.ACTIVE.CC
+        layer: active
+        layer2: cc
+      active.contact_gate_spacing:
+        value_um: 0.2
+      select.active_enclosure.n:
+        group: enclosure
+        id: XH035.E.NSELECT.ACTIVE
+        layer: nselect
+        layer2: active
+      select.active_enclosure.p:
+        group: enclosure
+        id: XH035.E.PSELECT.ACTIVE
+        layer: pselect
+        layer2: active
+      select.channel_enclosure.n:
+        value_um: 0.15
+      select.channel_enclosure.p:
+        value_um: 0.15
+      gate.extension:
+        value_um: 0.2
+      select.contact_enclosure.n:
+        value_um: 0.15
+      select.contact_enclosure.p:
+        value_um: 0.15
+      metal1.contact_enclosure:
+        group: enclosure
+        id: XH035.E.M1.CC
+        layer: metal1
+        layer2: cc
+      nwell.active_enclosure:
+        group: spacing
+        id: XH035.S.NWELL
+        layer: nwell
+      nwell.min_width:
+        group: width
+        id: XH035.W.NWELL
+        layer: nwell
+      via12.cut_size:
+        group: width
+        id: XH035.W.VIA1
+        layer: via
+      via12.cut_spacing:
+        group: spacing
+        id: XH035.S.VIA1
+        layer: via
+      via12.lower_enclosure:
+        value_um: 0.05
+      via12.upper_enclosure:
+        group: enclosure
+        id: XH035.E.M2.VIA1
+        layer: metal2
+        layer2: via
+      via12.poly_spacing:
+        value_um: 0.2
+      via12.active_spacing:
+        value_um: 0.2
+      via23.cut_size:
+        group: width
+        id: XH035.W.VIA2
+        layer: via2
+      via23.cut_spacing:
+        group: spacing
+        id: XH035.S.VIA2
+        layer: via2
+      via23.lower_enclosure:
+        value_um: 0.05
+      via23.upper_enclosure:
+        group: enclosure
+        id: XH035.E.M3.VIA2
+        layer: metal3
+        layer2: via2
+      metal.M1.min_width:
+        group: width
+        id: XH035.W.M1
+        layer: metal1
+      metal.M1.min_spacing:
+        group: spacing
+        id: XH035.S.M1
+        layer: metal1
+      metal.M2.min_width:
+        group: width
+        id: XH035.W.M2
+        layer: metal2
+      metal.M2.min_spacing:
+        group: spacing
+        id: XH035.S.M2
+        layer: metal2
+      metal.M3.min_width:
+        group: width
+        id: XH035.W.M3
+        layer: metal3
+      metal.M3.min_spacing:
+        group: spacing
+        id: XH035.S.M3
+        layer: metal3
   width:
     - {id: XH035.W.NWELL, layer: nwell, value_um: 1.6, source: "XH035 public datasheet", note: "N-well minimum width"}
     - {id: XH035.W.PWELL, layer: pwell, value_um: 1.6, source: "SCMOS_SUBM baseline", note: "P-well baseline; foundry HV hierarchy not public"}
@@ -27,7 +156,8 @@ rules:
     - {id: XH035.S.NSELECT, layer: nselect, value_um: 0.6, source: "SCMOS_SUBM baseline", note: "Select spacing"}
     - {id: XH035.S.PSELECT, layer: pselect, value_um: 0.6, source: "SCMOS_SUBM baseline", note: "Select spacing"}
     - {id: XH035.S.CC, layer: cc, value_um: 0.4, source: "XH035 public datasheet", note: "Contact spacing"}
-    - {id: XH035.S.M1, layer: metal1, value_um: 0.525, source: "SCMOS_SUBM baseline (3lambda)", override_of: "XH035 public datasheet 0.45", note: "Selected baseline LV spacing; voltage table handles net class"}
+    - {id: XH035.S.M1.PUBLIC, layer: metal1, value_um: 0.45, authority: public_native, source: "XH035 public datasheet", note: "Public-native metal1 spacing"}
+    - {id: XH035.S.M1, layer: metal1, value_um: 0.525, authority: scmos_compat, source: "SCMOS_SUBM baseline (3lambda)", override_of: "XH035 public datasheet 0.45", note: "SCMOS compatibility metal1 spacing; voltage table handles net class"}
     - {id: XH035.S.VIA1, layer: via, value_um: 0.45, source: "XH035 public datasheet", note: "Via1 spacing"}
     - {id: XH035.S.M2, layer: metal2, value_um: 0.5, source: "XH035 public datasheet", note: "Metal2 spacing"}
     - {id: XH035.S.VIA2, layer: via2, value_um: 0.45, source: "XH035 public datasheet", note: "Via2 spacing"}
@@ -45,6 +175,11 @@ rules:
   notch: []
   overlap: []
 hvcmos:
+  voltage_classification:
+    mode: strict
+    marker_inference: false
+    require_annotation: true
+    unknown_rule_id: XH035.HV.VOLTAGE.UNKNOWN
   markers:
     - {id: XH035.HV.MARK.N, marker: hvNMarker, target: nHVDiff, relation: inside, source: "Initial HVCMOS contract", note: "HV-N marker must cover derived HV diffusion"}
     - {id: XH035.HV.MARK.P, marker: hvPMarker, target: pHVDiff, relation: inside, source: "Initial HVCMOS contract", note: "HV-P marker must cover derived HV diffusion"}

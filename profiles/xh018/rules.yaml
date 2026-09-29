@@ -3,6 +3,45 @@
 # voltage table is an explicit provisional policy, not an X-FAB signoff deck.
 rules:
   grid: {x: 0.01, y: 0.01}
+  # Semantic fixed-height-cell adapter.  XH018 is a voltage-classification
+  # pressure test only; this LV adapter is not a production stdcell claim.
+  stdcell:
+    adapter: xh018_lv_provisional
+    rule_map:
+      contact.cut_size: {value_um: 0.22}
+      contact.cut_spacing: {value_um: 0.25}
+      active.min_width: {value_um: 0.22}
+      poly.min_width: {value_um: 0.18}
+      poly.min_spacing: {value_um: 0.25}
+      poly.contact_enclosure: {value_um: 0.05}
+      active.contact_enclosure: {value_um: 0.05}
+      active.contact_gate_spacing: {value_um: 0.1}
+      select.active_enclosure.n: {value_um: 0.08}
+      select.active_enclosure.p: {value_um: 0.08}
+      select.channel_enclosure.n: {value_um: 0.08}
+      select.channel_enclosure.p: {value_um: 0.08}
+      gate.extension: {value_um: 0.1}
+      select.contact_enclosure.n: {value_um: 0.08}
+      select.contact_enclosure.p: {value_um: 0.08}
+      metal1.contact_enclosure: {value_um: 0.05}
+      nwell.active_enclosure: {value_um: 1.4}
+      nwell.min_width: {value_um: 0.86}
+      via12.cut_size: {value_um: 0.26}
+      via12.cut_spacing: {value_um: 0.26}
+      via12.lower_enclosure: {value_um: 0.04}
+      via12.upper_enclosure: {value_um: 0.04}
+      via12.poly_spacing: {value_um: 0.1}
+      via12.active_spacing: {value_um: 0.1}
+      via23.cut_size: {value_um: 0.26}
+      via23.cut_spacing: {value_um: 0.26}
+      via23.lower_enclosure: {value_um: 0.04}
+      via23.upper_enclosure: {value_um: 0.04}
+      metal.M1.min_width: {value_um: 0.23}
+      metal.M1.min_spacing: {value_um: 0.27}
+      metal.M2.min_width: {value_um: 0.28}
+      metal.M2.min_spacing: {value_um: 0.28}
+      metal.M3.min_width: {value_um: 0.28}
+      metal.M3.min_spacing: {value_um: 0.28}
   width:
     - {id: XH018.W.NWELL, layer: nwell, value_um: 0.86, source: "XH018 public datasheet", note: "N-well minimum width"}
     - {id: XH018.W.PWELL, layer: pwell, value_um: 0.86, source: "SCMOS_SUBM baseline", note: "P-well baseline"}
@@ -27,7 +66,8 @@ rules:
     - {id: XH018.S.NSELECT, layer: nselect, value_um: 0.28, source: "SCMOS_SUBM baseline", note: "Select spacing"}
     - {id: XH018.S.PSELECT, layer: pselect, value_um: 0.28, source: "SCMOS_SUBM baseline", note: "Select spacing"}
     - {id: XH018.S.CC, layer: cc, value_um: 0.25, source: "XH018 public datasheet", note: "Contact spacing"}
-    - {id: XH018.S.M1, layer: metal1, value_um: 0.27, source: "SCMOS_SUBM baseline (3lambda)", override_of: "XH018 public datasheet 0.23", note: "Selected baseline LV spacing"}
+    - {id: XH018.S.M1.PUBLIC, layer: metal1, value_um: 0.23, authority: public_native, source: "XH018 public datasheet", note: "Public-native metal1 spacing"}
+    - {id: XH018.S.M1, layer: metal1, value_um: 0.27, authority: scmos_compat, source: "SCMOS_SUBM baseline (3lambda)", override_of: "XH018 public datasheet 0.23", note: "SCMOS compatibility metal1 spacing; voltage table handles net class"}
     - {id: XH018.S.VIA1, layer: via, value_um: 0.26, source: "XH018 public datasheet", note: "Via1 spacing"}
     - {id: XH018.S.M2, layer: metal2, value_um: 0.28, source: "XH018 public datasheet", note: "Metal2 spacing"}
     - {id: XH018.S.VIA2, layer: via2, value_um: 0.26, source: "XH018 public datasheet", note: "Via2 spacing"}
@@ -51,6 +91,11 @@ rules:
   notch: []
   overlap: []
 hvcmos:
+  voltage_classification:
+    mode: strict
+    marker_inference: false
+    require_annotation: true
+    unknown_rule_id: XH018.HV.VOLTAGE.UNKNOWN
   markers:
     - {id: XH018.HV.MARK.N, marker: hvNMarker, target: nHVDiff, relation: inside, source: "Initial HVCMOS contract", note: "HV-N marker must cover derived HV diffusion"}
     - {id: XH018.HV.MARK.P, marker: hvPMarker, target: pHVDiff, relation: inside, source: "Initial HVCMOS contract", note: "HV-P marker must cover derived HV diffusion"}

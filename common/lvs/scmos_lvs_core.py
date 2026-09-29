@@ -23,7 +23,7 @@ TEXT_GDS = (64, 0)
 
 MODEL_SUFFIX = {
     "nmos": "N", "pmos": "P", "nmos_hv": "Nhv", "pmos_hv": "Phv",
-    "ndmos": "Nhv", "pdmos": "Phv", "nldmos": "Nhv", "pldmos": "Phv",
+    "ndmos": "Nhv", "pdmos": "Phv", "nldmos": "Nldmos", "pldmos": "Pldmos",
     "nelec": "NE", "pelec": "PE", "npdiode": "NP", "pndiode": "PN",
     "nwpdiode": "NwP",
 }

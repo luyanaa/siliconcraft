@@ -25,3 +25,27 @@ models:
     source: "Public XH018 HVMOS/HVPMOS/DMOS module names; model identity only"
     fit_status: unavailable
     limitation: "HV model parameters and validity envelope are not public"
+  xh018Niso:
+    simulator: null
+    representation: contract_only
+    source: "Canonical isolated LV MOS identity; no public calibrated card"
+    fit_status: unavailable
+    limitation: "Deep-well isolation model parameters are not public"
+  xh018Piso:
+    simulator: null
+    representation: contract_only
+    source: "Canonical isolated LV MOS identity; no public calibrated card"
+    fit_status: unavailable
+    limitation: "Deep-well isolation model parameters are not public"
+  xh018Nldmos:
+    simulator: null
+    representation: contract_only
+    source: "Public XH018 NDMOS/LDMOS module identity only"
+    fit_status: unavailable
+    limitation: "LDMOS drift and substrate model parameters are not public"
+  xh018Pldmos:
+    simulator: null
+    representation: contract_only
+    source: "Public XH018 PDMOS/LDMOS module identity only"
+    fit_status: unavailable
+    limitation: "LDMOS drift and substrate model parameters are not public"

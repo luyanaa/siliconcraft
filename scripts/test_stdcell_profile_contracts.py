@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+import shutil
 import sys
+import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -47,6 +49,57 @@ def inverter(process: StdcellProcess):
     )
 
 
+def xh_lv_smoke() -> None:
+    """Exercise XH LV adapters without promoting either profile to support."""
+    cases = (
+        ("xh035", 0.5, 0.5, 0.525),
+        ("xh018", 0.22, 0.23, 0.27),
+    )
+    with tempfile.TemporaryDirectory(prefix="siliconcraft-xh-stdcell-") as tmp:
+        for name, active_min, metal_width, metal_spacing in cases:
+            overlay = Path(tmp) / name
+            shutil.copytree(ROOT / "profiles" / name, overlay)
+            bindings = overlay / "devices" / "bindings.yaml"
+            bindings.write_text(
+                bindings.read_text().replace(
+                    "../../../common/devices/canonical/mos.yaml",
+                    str(ROOT / "common/devices/canonical/mos.yaml"),
+                )
+            )
+            (overlay / "cells.yaml").write_text(
+                f"""schema_version: 1
+profile: {name}
+stdcell:
+  site_height_um: 10.5
+  row_heights_um:
+    n: 4.0
+    p: 5.0
+  row_gap_um: 0.5
+  rail_margin_um: 0.5
+  tap_policy: self_tapped
+  tapcell:
+    required: false
+  orientations:
+    even_row: R0
+    odd_row: MX
+    legal:
+      - R0
+      - MX
+"""
+            )
+            process = StdcellProcess.load(overlay, ROOT)
+            assert process.tech.active_min == active_min
+            assert process.metal_width_um("M1") == metal_width
+            assert process.metal_spacing_um("M1") == metal_spacing
+            candidates = generate_candidates(
+                inverter(process),
+                process,
+                architecture="two_metal_classic",
+                max_candidates=1,
+            )
+            assert candidates[0].profile == name
+            assert candidates[0].constraints["rail_contract"]["fixed_height"] is True
+
 def main() -> int:
     for name, architecture in PROFILES.items():
         process = StdcellProcess.load(name, ROOT)
@@ -66,8 +119,11 @@ def main() -> int:
         else:
             assert not architecture.startswith("three_metal")
             assert candidates[0].feedthrough_layer == "M2"
-    print(f"Stdcell profile contracts: PASS ({len(PROFILES)} profiles)")
-    return 0
+    xh_lv_smoke()
+    print(
+        f"Stdcell profile contracts: PASS ({len(PROFILES)} supported profiles; "
+        "xh035/xh018 LV adapter smoke)"
+    )
 
 
 if __name__ == "__main__":

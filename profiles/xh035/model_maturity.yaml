@@ -25,3 +25,27 @@ models:
     source: "Public XH035 HVMOS/PHV module names; model identity only"
     fit_status: unavailable
     limitation: "HV model parameters and validity envelope are not public"
+  xh035Niso:
+    simulator: null
+    representation: contract_only
+    source: "Canonical isolated LV MOS identity; no public calibrated card"
+    fit_status: unavailable
+    limitation: "Deep-well isolation model parameters are not public"
+  xh035Piso:
+    simulator: null
+    representation: contract_only
+    source: "Canonical isolated LV MOS identity; no public calibrated card"
+    fit_status: unavailable
+    limitation: "Deep-well isolation model parameters are not public"
+  xh035Nldmos:
+    simulator: null
+    representation: contract_only
+    source: "Public XH035 NDMOS/LDMOS module identity only"
+    fit_status: unavailable
+    limitation: "LDMOS drift and substrate model parameters are not public"
+  xh035Pldmos:
+    simulator: null
+    representation: contract_only
+    source: "Public XH035 PDMOS/LDMOS module identity only"
+    fit_status: unavailable
+    limitation: "LDMOS drift and substrate model parameters are not public"
