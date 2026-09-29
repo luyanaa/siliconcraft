@@ -1,0 +1,18 @@
+schema_version: 1
+kind: private_foundry_oracle_overlay
+authority: foundry_private
+root_policy:
+  source: environment_variable
+  must_be_absolute: true
+  tracked_data: forbidden
+artifact_roles:
+  - official_xfab_spice
+  - official_xfab_drc
+  - official_xfab_lvs
+  - official_xfab_qrc
+  - foundry_authoritative_stream_map
+precedence:
+  public_surrogate: private_official_model_when_installed
+  public_r_only: private_qrc_when_installed
+  field_solver_estimated: private_qrc_when_installed
+  internal_logical: private_stream_map_when_installed

@@ -66,6 +66,47 @@ reported, and marker inference is exploratory-only. XH035/XH018 remain outside
 the supported stdcell profile list; their LV semantic adapters are smoke-test
 contracts only, and HV cells are not ordinary stdcells.
 
+### XH public PEX, model, and tapeout boundary
+
+The XH035/XH018 public PEX contract is intentionally split:
+
+- `public_r_only` uses public-typical sheet resistance and emits
+  `R_wire_only = R_sheet * length / width`. Contact and via resistance remain
+  `unknown`; they are never guessed or folded into wire resistance.
+- `field_solver_estimated` emits canonical FastCap/FasterCap/Palace sweep
+  descriptions and consumes a parameterized public BEOL fit. It produces no
+  foundry QRC table and is not calibrated or signoff-qualified.
+- Active substrate extraction remains
+  `external_foundry_or_calibrated_substrate_extractor`; ordinary SCMOS/Magic
+  RC is forbidden for the HVCMOS substrate network.
+
+Run a deterministic wire-only estimate with:
+
+```bash
+python3 scripts/run_r_only_pex.py --profile xh018 \
+  --segment metal1:10:0.56
+python3 scripts/gen_field_solver_sweep.py --profile xh018
+```
+
+XH model records use maturity levels `L0` contract-only, `L1` public
+surrogate, `L2` silicon-calibrated, and `L3` foundry-private. Both profiles
+remain at `L0`; no official BSIM/HiSIM card is claimed. Candidate L1 forms
+are explicit (`bsim3v3` for core, `bsim4_external_hv_elements` or `HiSIM_HV`
+for HV, and a MOS4 + drift-resistor + body-diode topology for LDMOS).
+
+`profiles/xh018/characterization.yaml` and
+`profiles/xh035/characterization.yaml` define MPW structures for MOS W/L,
+Kelvin interconnects, contact/via chains, PIP/MIM/comb capacitors, FO4, ring
+oscillators, and temperature points. The tracked
+`oracle_overlay.yaml` files define an environment-selected private overlay;
+NDA model cards, runsets, QRC databases, and foundry stream maps stay outside
+Git.
+
+XH018's `reference_maps/EFXH018D_lite.yaml` is a public ontology/numeric-anchor
+cross-check only. The XH 300/100-series profile maps remain
+`internal_logical`; a current foundry-authoritative map is required for
+tapeout.
+
 `schema/scmos_process_matrix.yaml` records the supported NCSU target mapping:
 TSMC 0.35 4M/2P and 4M options, `tsmc03` (`SCN5M_SUBM`, lambda 0.15), and
 `tsmc02` (`SCN6M_SUBM`, lambda 0.10). The matrix also records

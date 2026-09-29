@@ -1,0 +1,45 @@
+schema_version: 1
+kind: public_pex_contract
+maturity_values:
+  - public_typical
+  - public_typical_r_only
+  - field_solver_estimated
+  - silicon_calibrated
+  - foundry_private
+wire_only:
+  mode: R_wire_only
+  formula: "R_sheet * length_um / width_um"
+  required_inputs: [layer, length_um, width_um]
+  required_outputs: [wire_resistance_ohm, excluded_terms]
+  excluded_terms: [contact_resistance, via_resistance, junction_resistance, substrate_network]
+  unknown_policy: "unknown terms are never guessed or folded into wire resistance"
+extraction_domains:
+  PEX_INTERCONNECT:
+    maturity: public_typical_r_only
+    output: R_wire_only
+  PEX_DEVICE:
+    maturity: contract_only
+  PEX_SUBSTRATE_HV:
+    maturity: unavailable
+    ordinary_rc_allowed: false
+    distributed_network_required: true
+field_solver_estimated:
+  calibrated: false
+  required_patterns:
+    - single_wire_over_plane
+    - parallel_wires
+    - adjacent_metal
+    - crossing_metal
+    - min_width_spacing
+    - scaled_width_spacing_2x
+    - scaled_width_spacing_4x
+  solver_candidates: [FastCap, FasterCap, Palace]
+  output: research_rc_table
+  consumers: [OpenRCX, custom_import]
+beol_fit:
+  required_fields: [metal_thickness_um, ild_thickness_um, ild_relative_permittivity]
+  public_capacitor_data_policy: "constrain dielectric fit only; never promote PIP/MIM data to ordinary routing C without stack evidence"
+substrate:
+  ordinary_rc_allowed: false
+  backend: external_foundry_or_calibrated_substrate_extractor
+  signoff_requires: [distributed_substrate_network, calibrated_coefficients, foundry_or_silicon_authority]

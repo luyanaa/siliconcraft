@@ -1,0 +1,28 @@
+schema_version: 1
+kind: mpw_characterization_contract
+status_values: [planning_only, data_loaded, silicon_calibrated]
+required_structures:
+  mos_wl_matrix:
+    class: device
+    measurements: [vth, idsat, ft]
+  kelvin_interconnects:
+    class: resistance
+    measurements: [four_terminal_resistance, temperature_coefficient]
+  contact_via_chains:
+    class: resistance
+    measurements: [daisy_chain_resistance, Kelvin_contact_resistance]
+  capacitor_plates_comb:
+    class: capacitance
+    measurements: [cv, fringe_capacitance]
+  inverter_fo4:
+    class: timing
+    measurements: [rise_delay, fall_delay]
+  ring_oscillator:
+    class: timing
+    measurements: [frequency, supply_current]
+required_conditions:
+  temperature_points: 2
+maturity_gates:
+  L1_public_surrogate: [mos_wl_matrix]
+  L2_silicon_calibrated: [mos_wl_matrix, kelvin_interconnects, contact_via_chains, capacitor_plates_comb, inverter_fo4, ring_oscillator]
+  L3_foundry_private: [private_foundry_overlay]

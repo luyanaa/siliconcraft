@@ -1,0 +1,39 @@
+# Optional private XH035 foundry/oracle overlay interface.
+# No NDA collateral belongs in this repository.
+schema_version: 1
+profile: xh035
+status: optional_not_installed
+authority: foundry_private
+root_environment: SILICONCRAFT_XH035_PRIVATE_ROOT
+repository_policy: "Never commit NDA PDK files, model cards, runsets, or QRC databases."
+artifacts:
+  spice:
+    required: false
+    relative_path: spice/xh035_models.lib
+    role: official_xfab_spice
+  drc:
+    required: false
+    relative_path: pv/xh035_drc.run
+    role: official_xfab_drc
+  lvs:
+    required: false
+    relative_path: pv/xh035_lvs.run
+    role: official_xfab_lvs
+  qrc:
+    required: false
+    relative_path: qrc/xh035_rcx
+    role: official_xfab_qrc
+  layer_map:
+    required: false
+    relative_path: tech/xh035_out.map
+    role: foundry_authoritative_stream_map
+precedence:
+  spice: private_overlay_over_public_contract
+  drc: private_overlay_over_public_native
+  lvs: private_overlay_over_public_contract
+  qrc: private_overlay_over_field_solver_estimated
+  layer_map: private_overlay_over_internal_logical_and_public_reference
+activation:
+  requires_absolute_root: true
+  requires_all_declared_artifacts: false
+  signoff_requires: [foundry_authority, current_process_revision, compatible_layer_map]

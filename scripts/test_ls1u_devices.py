@@ -22,7 +22,7 @@ def main() -> int:
     )
     bindings = yamlish.load((PROFILE / "devices/bindings.yaml").read_text())
     maturity = yamlish.load((PROFILE / "model_maturity.yaml").read_text())
-    mos4 = canonical["device"]
+    mos4 = canonical["families"]["mos4"]["device"]
     assert mos4["id"] == "mos4"
     assert mos4["terminals"] == ["d", "g", "s", "b"]
     assert mos4["geometry"]["required"] == ["w", "l"]
@@ -33,8 +33,15 @@ def main() -> int:
         "physical gate-finger"
     )
     assert mos4["symmetry_groups"] == [["d", "s"]]
-    assert canonical["device"]["parasitics"]["diffusion_sheet_r"] == "pex"
-    assert set(canonical["variants"]) == {"nmos_core", "pmos_core"}
+    assert mos4["parasitics"]["diffusion_sheet_r"] == "pex"
+    assert set(canonical["families"]["mos4"]["variants"]) == {
+        "nmos_core",
+        "pmos_core",
+        "nmos_hv_sym",
+        "pmos_hv_sym",
+        "nmos_isolated",
+        "pmos_isolated",
+    }
 
     assert bindings["bindings"]["nmos_core"]["simulation"]["name"] == "LV1UNMOS"
     assert bindings["bindings"]["pmos_core"]["simulation"]["name"] == "LV1UPMOS"

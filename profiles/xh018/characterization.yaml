@@ -1,0 +1,67 @@
+# XH018 MPW characterization plan. No measured data is bundled.
+schema_version: 1
+profile: xh018
+status: planning_only
+maturity: not_characterized
+structures:
+  - id: mos_wl_matrix
+    class: device
+    purpose: extract_vth_idsat_ft_and_geometry_dependence
+    devices: [nmos_core, pmos_core, nmos_hv, pmos_hv, nldmos, pldmos]
+    geometry_matrix:
+      l_um: [0.18, 0.36, 0.72]
+      w_um: [0.22, 0.5, 1.0, 5.0, 20.0]
+    measurements: [id_vg, id_vd, vth, idsat, gm, ft]
+  - id: kelvin_interconnects
+    class: resistance
+    purpose: calibrate_metal_and_diffusion_sheet_resistance
+    layers: [metal1, metal2, metal3, metal4, metal5, metal6, poly, n_diffusion, p_diffusion]
+    geometries: [short, medium, long]
+    measurements: [four_terminal_resistance, temperature_coefficient]
+  - id: contact_via_chains
+    class: resistance
+    purpose: calibrate_contact_and_via_resistance
+    chains: [poly_contact, active_contact, via1, via2, via3, via4, via5]
+    measurements: [daisy_chain_resistance, Kelvin_contact_resistance]
+  - id: capacitor_plates_comb
+    class: capacitance
+    purpose: constrain_pip_mim_and_routing_capacitance_separately
+    structures: [PIP, MIM, metal_comb, metal_crossing, metal_over_plane]
+    measurements: [cv, s_parameter_or_impedance, fringe_capacitance]
+  - id: inverter_fo4
+    class: timing
+    purpose: calibrate_cell_delay_and_slew
+    loads: [FO1, FO2, FO4, FO8]
+    measurements: [rise_delay, fall_delay, rise_slew, fall_slew, leakage]
+  - id: ring_oscillator
+    class: timing
+    purpose: validate_aggregate_device_interconnect_model
+    stages: [5, 11,  ring_oscillator_odd_stage]
+    measurements: [frequency, supply_current, duty_cycle]
+conditions:
+  temperatures_c:
+    - -40
+    - 25
+    - 85
+    - 125
+  process_corners:
+    - nominal
+    - slow_if_available
+    - fast_if_available
+  supplies_v:
+    - 1.8
+    - 3.3
+    - 5.0
+activation_gates:
+  L1_public_surrogate:
+    requires: [mos_wl_matrix]
+    targets: [vth, idsat, ft]
+    allows: rough_relative_timing
+    signoff: false
+  L2_silicon_calibrated:
+    requires: [mos_wl_matrix, kelvin_interconnects, contact_via_chains, capacitor_plates_comb, inverter_fo4, ring_oscillator]
+    requires_temperature_sweep: true
+    signoff: false
+  L3_foundry_private:
+    requires: [private_foundry_overlay]
+    signoff: conditional_on_foundry_authority

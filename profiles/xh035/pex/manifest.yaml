@@ -1,34 +1,141 @@
-# XH035 PEX boundary.  Public collateral does not provide sheet/cap
-# coefficients or the PNAware/foundry runset, so this manifest is a topology
-# and substrate-extraction hook, not a runnable signoff flow.
-schema_version: 2
+# XH035 parasitic contract.
+# Public typical metal sheet resistance is usable for R_wire_only estimates.
+# It is not a foundry QRC table and is not a signoff extraction deck.
+schema_version: 3
 profile: xh035
 default: none
 flow:
-  backend: contract_only
-  source_driven: false
+  backend: r_only_python
+  source_driven: true
   parasitic_ownership:
     transistor_intrinsic_capacitance: model
     gate_overlap_capacitance: model
     junction_area_capacitance: withheld
     junction_sidewall_capacitance: withheld
-    diffusion_sheet_resistance: withheld
-    gate_sheet_resistance: withheld
-    metal_interconnect_rc: withheld
-    substrate_network: external_active_substrate
-  note: "Do not route XH035 HVCMOS through ordinary SCMOS/Magic RC for signoff"
+    diffusion_sheet_resistance: public_typical
+    gate_sheet_resistance: public_typical
+    well_sheet_resistance: public_typical
+    metal_sheet_resistance: public_typical
+    metal_interconnect_rc: public_typical_r_only
+    interconnect_capacitance: estimated
+    contact_resistance: unknown
+    via_resistance: unknown
+    substrate_network: unavailable_active_distributed
+  electrical_evidence:
+    metal_sheet_resistance:
+      status: public_typical
+      source: xfab_public_datasheet
+    diffusion_sheet_resistance:
+      status: public_typical
+      source: xfab_public_datasheet
+    well_sheet_resistance:
+      status: public_typical
+      source: xfab_public_datasheet
+    gate_sheet_resistance:
+      status: public_typical
+      source: xfab_public_datasheet
+    interconnect_capacitance:
+      status: estimated
+      source: parameterized_beol_field_solver_reconstruction
+    contact_resistance:
+      status: unknown
+    via_resistance:
+      status: unknown
+  extraction_domains:
+    PEX_INTERCONNECT:
+      maturity: public_typical_r_only
+      output: R_wire_only
+      calibrated: false
+    PEX_DEVICE:
+      maturity: contract_only
+      ownership: model
+      calibrated: false
+    PEX_SUBSTRATE_HV:
+      maturity: unavailable
+      backend: external_foundry_or_calibrated_substrate_extractor
+      distributed_network_required: true
+  r_wire_only:
+    status: public_typical
+    output: R_wire_only
+    formula: "R_ohm = R_sheet_ohm_per_square * length_um / width_um"
+    includes:
+      - metal
+      - poly
+      - diffusion
+      - well
+    excludes:
+      - contact
+      - via
+      - junction
+      - substrate_network
+    contact_resistance: unknown
+    via_resistance: unknown
+    temperature_model:
+      status: public_typical
+      unit: "1/K"
+      values: {}
+      limitation: "Temperature-coefficient values are source-declared but not materialized in this repository; no temperature correction is applied."
+  capacitance:
+    status: field_solver_estimated
+    calibrated: false
+    solver_candidates:
+      - FastCap
+      - FasterCap
+      - Palace
+    stack_source: "public metal geometry plus parameterized ILD reconstruction"
+    output: research_rc_table
+    consumer: OpenRCX_or_custom_import
+    limitation: "No foundry QRC coefficients or ordinary metal capacitance table is claimed."
 substrate_extraction:
   mode: active_distributed
   required_for_signoff: true
   ordinary_rc_allowed: false
-  backend: external_pnaaware_or_foundry_runset
-  domains: [substrate, pwell, deep_nwell, hv_nwell]
+  backend: external_foundry_or_calibrated_substrate_extractor
+  domains:
+    - substrate
+    - pwell
+    - deep_nwell
+    - hv_nwell
   preserve_distributed_network: true
   source: "X-FAB active substrate parasitic extraction methodology; public flow description only"
-  limitation: "PNAware coefficients, substrate stack, and foundry extraction deck are not public"
+  limitation: "Public methodology establishes active/distributed substrate extraction; calibrated coefficients, substrate stack, and current backend are not in this repository."
 profiles:
-  topology_only:
+  public_r_only:
     generated: false
-    status: topology_only
-    description: "HVCMOS substrate-domain contract only; no Magic coefficients or runtime extractor"
-    magic_directives: []
+    extractor: r_only_python
+    status: public_typical
+    maturity: public_typical
+    source: xfab_public_datasheet
+    source_note: "Public typical values supplied for the XH035 contract; verify against the exact datasheet revision before use."
+    sheet_resistance_ohm_sq:
+      metal1: {value: 0.090, status: public_typical, nominal_width_um: 0.58, variant: regular}
+      metal2: {value: 0.090, status: public_typical, nominal_width_um: 0.58, variant: regular}
+      metal3: {value: 0.043, status: public_typical, variant: top, width_status: not_supplied}
+      metal_top: {value: 0.043, status: public_typical, variant: top_alias, width_status: not_supplied}
+      metal_thick: {value: 0.012, status: public_typical, variant: thick_option, width_status: not_supplied}
+      poly: {value: null, status: public_typical, availability: source_value_not_materialized}
+      n_diffusion: {value: null, status: public_typical, availability: source_value_not_materialized}
+      p_diffusion: {value: null, status: public_typical, availability: source_value_not_materialized}
+      n_well: {value: null, status: public_typical, availability: source_value_not_materialized}
+      deep_n_well: {value: null, status: public_typical, availability: source_value_not_materialized}
+    contact_resistance_mohm: {status: unknown, value: null}
+    via_resistance_mohm: {status: unknown, value: null}
+    output_policy: "wire resistance only; contact and via resistance are never guessed"
+  field_solver_estimated:
+    generated: false
+    extractor: field_solver_reconstruction
+    maturity: field_solver_estimated
+    calibrated: false
+    beol_fit: xh035_beol_public_fit.yaml
+    canonical_patterns:
+      - single_wire_over_plane
+      - parallel_wires
+      - adjacent_metal
+      - crossing_metal
+      - min_width_spacing
+      - scaled_width_spacing_2x
+      - scaled_width_spacing_4x
+    output:
+      format: research_rc_table
+      consumer: OpenRCX_or_custom_import
+      signoff: false

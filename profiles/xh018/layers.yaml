@@ -18,6 +18,17 @@ meta:
   stacked_vias: false
   hvcmos_rule_source: "Public XH018 datasheet basic geometry plus explicit initial voltage-policy rules; HV stream map/signoff deck unavailable"
   mask_map_status: provisional
+  mask_map_authority: internal_logical
+  public_reference_maps:
+    - path: reference_maps/EFXH018D_lite.yaml
+      authority: public_reference
+      scope: ontology_and_numeric_anchors
+      tapeout_eligible: false
+  physical_layer_ontology:
+    middle_metal_aliases: [metal5, METMID]
+    top_metal_aliases: [metal6, METTHK, metaltp]
+    thick_metal_aliases: [metal_thick, metaltpl]
+    note: "Ordinal M5/M6 names are internal aliases; public reference METMID/METTHK and top/thick module roles remain distinct from the logical map."
   gds_output_policy: "provisional_logical_map_only; X-FAB PDK GDS/DRC/LVS/PEX remains tapeout authority"
   features:
     elecAvailable: false
@@ -163,6 +174,12 @@ layers:
     gds:
       - {layer: 340, datatype: 0}
     role: metal
+    electrical:
+      status: public_typical
+      sheet_resistance_ohm_per_square: 0.095
+      nominal_width_um: 0.56
+      source: xfab_public_datasheet
+      use: R_wire_only
     note: "Public XH018 basic rule: width/spacing 0.23um"
   -
     name: via
@@ -177,6 +194,12 @@ layers:
     gds:
       - {layer: 342, datatype: 0}
     role: metal
+    electrical:
+      status: public_typical
+      sheet_resistance_ohm_per_square: 0.085
+      nominal_width_um: 0.56
+      source: xfab_public_datasheet
+      use: R_wire_only
     note: "Public XH018 M2 width/spacing 0.28um"
   -
     name: via2
@@ -191,6 +214,12 @@ layers:
     gds:
       - {layer: 344, datatype: 0}
     role: metal
+    electrical:
+      status: public_typical
+      sheet_resistance_ohm_per_square: 0.085
+      nominal_width_um: 0.56
+      source: xfab_public_datasheet
+      use: R_wire_only
     note: "Public XH018 M3 width/spacing 0.28um"
   -
     name: via3
@@ -205,6 +234,12 @@ layers:
     gds:
       - {layer: 346, datatype: 0}
     role: metal
+    electrical:
+      status: public_typical
+      sheet_resistance_ohm_per_square: 0.085
+      nominal_width_um: 0.56
+      source: xfab_public_datasheet
+      use: R_wire_only
     note: "Public XH018 M4 width/spacing 0.28um"
   -
     name: via4
@@ -219,6 +254,12 @@ layers:
     gds:
       - {layer: 348, datatype: 0}
     role: metal
+    electrical:
+      status: public_typical
+      sheet_resistance_ohm_per_square: 0.085
+      nominal_width_um: 0.56
+      source: xfab_public_datasheet
+      use: R_wire_only
     note: "Public XH018 M5 width/spacing 0.28um"
   -
     name: via5
@@ -233,6 +274,13 @@ layers:
     gds:
       - {layer: 350, datatype: 0}
     role: metal
+    electrical:
+      status: public_typical
+      sheet_resistance_ohm_per_square: 0.043
+      nominal_width_um: 0.98
+      source: xfab_public_datasheet
+      variant: top
+      use: R_wire_only
     note: "Logical top-metal alias; public XH018 top-metal rule is 0.44um/0.46um"
   -
     name: glass

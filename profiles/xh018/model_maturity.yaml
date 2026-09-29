@@ -1,51 +1,194 @@
-# Public evidence is sufficient for netlist identity only.  X-FAB model cards
-# and PDK binaries are not redistributed by this repository.
+# XH018 public model maturity contract.
+# No official X-FAB BSIM/HiSIM card is redistributed or implied here.
+schema_version: 2
+profile: xh018
+model_policy:
+  current_level: L0
+  levels:
+    L0:
+      name: contract_only
+      enables: [DRC, LVS, netlist_identity]
+      timing_use: forbidden
+    L1:
+      name: public_surrogate
+      enables: [rough_relative_timing]
+      requires: [public_vth, public_idsat, public_ft, geometry_sweep]
+      limitations: [no_mismatch, no_noise, no_temperature, no_signoff]
+    L2:
+      name: silicon_calibrated
+      enables: [research_simulation, characterization]
+      requires: [MPW_measurements, process_corners, temperature_sweep]
+    L3:
+      name: foundry_private
+      enables: [foundry_signoff_when_authorized]
+      requires: [private_foundry_model_and_decks]
+  signoff_policy: "Only L3 with foundry-authorized collateral may support signoff claims."
 models:
   xh018N:
     simulator: null
     representation: contract_only
-    source: "Public XH018 datasheet: 1.8/3.3V core and HV/DMOS module topology"
+    source: "Public XH018 datasheet: core and HV/DMOS module identity"
     fit_status: unavailable
-    limitation: "No public calibrated SPICE card or foundry corner deck; simulation is not enabled"
+    model_form:
+      current: none
+      L1_candidate: bsim3v3
+      official_card: unknown
+    maturity:
+      level: L0
+      structural: true
+      functional: false
+      characterized: false
+      signoff: false
+      levels:
+        L0: {status: available, representation: contract_only, model_form: none}
+        L1: {status: planned_not_enabled, representation: public_surrogate, model_form: bsim3v3, fit_targets: [vth, idsat, ft]}
+        L2: {status: unavailable, representation: silicon_calibrated, model_form: bsim3v3}
+        L3: {status: private_only, representation: foundry_private, model_form: official_unknown}
+    limitation: "No public calibrated SPICE card or complete fit data; no simulation is enabled."
   xh018P:
     simulator: null
     representation: contract_only
-    source: "Public XH018 datasheet: 1.8/3.3V core and HV/DMOS module topology"
+    source: "Public XH018 datasheet: core and HV/DMOS module identity"
     fit_status: unavailable
-    limitation: "No public calibrated SPICE card or foundry corner deck; simulation is not enabled"
+    model_form:
+      current: none
+      L1_candidate: bsim3v3
+      official_card: unknown
+    maturity:
+      level: L0
+      structural: true
+      functional: false
+      characterized: false
+      signoff: false
+      levels:
+        L0: {status: available, representation: contract_only, model_form: none}
+        L1: {status: planned_not_enabled, representation: public_surrogate, model_form: bsim3v3, fit_targets: [vth, idsat, ft]}
+        L2: {status: unavailable, representation: silicon_calibrated, model_form: bsim3v3}
+        L3: {status: private_only, representation: foundry_private, model_form: official_unknown}
+    limitation: "No public calibrated SPICE card or complete fit data; no simulation is enabled."
   xh018Nhv:
     simulator: null
     representation: contract_only
-    source: "Public XH018 HVMOS/HVNMOS/DMOS module names; model identity only"
+    source: "Public XH018 HVMOS/HVNMOS/DMOS module identity only"
     fit_status: unavailable
-    limitation: "HV model parameters and validity envelope are not public"
+    model_form:
+      current: none
+      L1_candidates: [bsim4_external_hv_elements, HiSIM_HV]
+      official_card: unknown
+    maturity:
+      level: L0
+      structural: true
+      functional: false
+      characterized: false
+      signoff: false
+      levels:
+        L0: {status: available, representation: contract_only, model_form: none}
+        L1: {status: planned_not_enabled, representation: public_surrogate, model_form: bsim4_external_hv_elements, alternatives: [HiSIM_HV], fit_targets: [vth, idsat, ft]}
+        L2: {status: unavailable, representation: silicon_calibrated, model_form: HiSIM_HV_or_calibrated_topology}
+        L3: {status: private_only, representation: foundry_private, model_form: official_unknown}
+    limitation: "HV parameters, field plates, breakdown, temperature, and validity envelope are not public."
   xh018Phv:
     simulator: null
     representation: contract_only
-    source: "Public XH018 HVMOS/HVPMOS/DMOS module names; model identity only"
+    source: "Public XH018 HVMOS/HVPMOS/DMOS module identity only"
     fit_status: unavailable
-    limitation: "HV model parameters and validity envelope are not public"
+    model_form:
+      current: none
+      L1_candidates: [bsim4_external_hv_elements, HiSIM_HV]
+      official_card: unknown
+    maturity:
+      level: L0
+      structural: true
+      functional: false
+      characterized: false
+      signoff: false
+      levels:
+        L0: {status: available, representation: contract_only, model_form: none}
+        L1: {status: planned_not_enabled, representation: public_surrogate, model_form: bsim4_external_hv_elements, alternatives: [HiSIM_HV], fit_targets: [vth, idsat, ft]}
+        L2: {status: unavailable, representation: silicon_calibrated, model_form: HiSIM_HV_or_calibrated_topology}
+        L3: {status: private_only, representation: foundry_private, model_form: official_unknown}
+    limitation: "HV parameters, field plates, breakdown, temperature, and validity envelope are not public."
   xh018Niso:
     simulator: null
     representation: contract_only
     source: "Canonical isolated LV MOS identity; no public calibrated card"
     fit_status: unavailable
-    limitation: "Deep-well isolation model parameters are not public"
+    model_form:
+      current: none
+      L1_candidate: bsim3v3_plus_isolation_network
+      official_card: unknown
+    maturity:
+      level: L0
+      structural: true
+      functional: false
+      characterized: false
+      signoff: false
+      levels:
+        L0: {status: available, representation: contract_only, model_form: none}
+        L1: {status: planned_not_enabled, representation: public_surrogate, model_form: bsim3v3_plus_isolation_network, fit_targets: [vth, idsat, ft]}
+        L2: {status: unavailable, representation: silicon_calibrated, model_form: calibrated_isolated_device}
+        L3: {status: private_only, representation: foundry_private, model_form: official_unknown}
+    limitation: "Deep-well isolation and substrate coupling are not modeled without calibrated substrate data."
   xh018Piso:
     simulator: null
     representation: contract_only
     source: "Canonical isolated LV MOS identity; no public calibrated card"
     fit_status: unavailable
-    limitation: "Deep-well isolation model parameters are not public"
+    model_form:
+      current: none
+      L1_candidate: bsim3v3_plus_isolation_network
+      official_card: unknown
+    maturity:
+      level: L0
+      structural: true
+      functional: false
+      characterized: false
+      signoff: false
+      levels:
+        L0: {status: available, representation: contract_only, model_form: none}
+        L1: {status: planned_not_enabled, representation: public_surrogate, model_form: bsim3v3_plus_isolation_network, fit_targets: [vth, idsat, ft]}
+        L2: {status: unavailable, representation: silicon_calibrated, model_form: calibrated_isolated_device}
+        L3: {status: private_only, representation: foundry_private, model_form: official_unknown}
+    limitation: "Deep-well isolation and substrate coupling are not modeled without calibrated substrate data."
   xh018Nldmos:
     simulator: null
     representation: contract_only
     source: "Public XH018 NDMOS/LDMOS module identity only"
     fit_status: unavailable
-    limitation: "LDMOS drift and substrate model parameters are not public"
+    model_form:
+      current: none
+      L1_candidates: [mos4_plus_drift_resistor_body_diode, HiSIM_HV]
+      official_card: unknown
+    maturity:
+      level: L0
+      structural: true
+      functional: false
+      characterized: false
+      signoff: false
+      levels:
+        L0: {status: available, representation: contract_only, model_form: none}
+        L1: {status: planned_not_enabled, representation: topology_surrogate, model_form: mos4_plus_drift_resistor_body_diode, alternatives: [HiSIM_HV], fit_targets: [idsat, breakdown]}
+        L2: {status: unavailable, representation: silicon_calibrated, model_form: calibrated_ldmos}
+        L3: {status: private_only, representation: foundry_private, model_form: official_unknown}
+    limitation: "Drift, body-diode, breakdown, substrate, and temperature parameters are not public; D/S order remains physical and non-permutable."
   xh018Pldmos:
     simulator: null
     representation: contract_only
     source: "Public XH018 PDMOS/LDMOS module identity only"
     fit_status: unavailable
-    limitation: "LDMOS drift and substrate model parameters are not public"
+    model_form:
+      current: none
+      L1_candidates: [mos4_plus_drift_resistor_body_diode, HiSIM_HV]
+      official_card: unknown
+    maturity:
+      level: L0
+      structural: true
+      functional: false
+      characterized: false
+      signoff: false
+      levels:
+        L0: {status: available, representation: contract_only, model_form: none}
+        L1: {status: planned_not_enabled, representation: topology_surrogate, model_form: mos4_plus_drift_resistor_body_diode, alternatives: [HiSIM_HV], fit_targets: [idsat, breakdown]}
+        L2: {status: unavailable, representation: silicon_calibrated, model_form: calibrated_ldmos}
+        L3: {status: private_only, representation: foundry_private, model_form: official_unknown}
+    limitation: "Drift, body-diode, breakdown, substrate, and temperature parameters are not public; D/S order remains physical and non-permutable."

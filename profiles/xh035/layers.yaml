@@ -20,6 +20,13 @@ meta:
   stacked_vias: false
   hvcmos_rule_source: "Public XH035 datasheet basic geometry plus explicit initial voltage-policy rules; HV stream map/signoff deck unavailable"
   mask_map_status: provisional
+  mask_map_authority: internal_logical
+  public_reference_maps: []
+  physical_layer_ontology:
+    regular_metal: [metal1, metal2]
+    top_metal: [metal3, metal_top]
+    thick_metal: [metal_thick]
+    note: "Ordinal metal aliases are logical only; top/thick options require the current private X-FAB map."
   gds_output_policy: "provisional_logical_map_only; X-FAB PDK GDS/DRC/LVS/PEX remains tapeout authority"
   features:
     elecAvailable: false
@@ -168,6 +175,12 @@ layers:
     gds:
       - {layer: 140, datatype: 0}
     role: metal
+    electrical:
+      status: public_typical
+      sheet_resistance_ohm_per_square: 0.090
+      nominal_width_um: 0.58
+      source: xfab_public_datasheet
+      use: R_wire_only
     note: "Public XH035 basic rule: width 0.5um, spacing 0.45um"
   -
     name: via
@@ -182,6 +195,12 @@ layers:
     gds:
       - {layer: 142, datatype: 0}
     role: metal
+    electrical:
+      status: public_typical
+      sheet_resistance_ohm_per_square: 0.090
+      nominal_width_um: 0.58
+      source: xfab_public_datasheet
+      use: R_wire_only
     note: "Public XH035 basic rule: width 0.6um, spacing 0.5um"
   -
     name: via2
@@ -196,6 +215,12 @@ layers:
     gds:
       - {layer: 144, datatype: 0}
     role: metal
+    electrical:
+      status: public_typical
+      sheet_resistance_ohm_per_square: 0.043
+      source: xfab_public_datasheet
+      variant: top
+      use: R_wire_only
     note: "Public XH035 basic rule: width 0.6um, spacing 0.5um"
   -
     name: via3

@@ -1,0 +1,75 @@
+# Public XH018 reference ontology derived from the named EFXH018D_lite.tech
+# collateral.  This is a cross-check/reference map, not a tapeout stream map.
+schema_version: 1
+profile: xh018
+process: XH018
+kind: public_reference_ontology
+authority: public_reference
+tapeout_eligible: false
+source:
+  file: EFXH018D_lite.tech
+  provenance: "Public reference collateral named by the XH018 layer-map contract"
+  current_foundry_map: unavailable
+  author: R. Timothy Edwards
+  numeric_anchor_only: true
+  gds_read_write: forbidden
+scope: ontology_and_numeric_anchors
+numeric_anchors:
+  - {name: via1, source_name: VIA1, stream_pattern: "17/*", confidence: historical_public_reference}
+  - {name: via2, source_name: VIA2, stream_pattern: "27/*", confidence: historical_public_reference}
+  - {name: via3, source_name: VIA3, stream_pattern: "29/*", confidence: historical_public_reference}
+  - {name: viatp, source_name: VIATP, stream_pattern: "51/*", confidence: historical_public_reference}
+  - {name: viatpl, source_name: VIATPL, stream_pattern: "36/*", confidence: historical_public_reference}
+ontology:
+  nwell: {source_name: nwell, role: well}
+  mvnwell: {source_name: mvnwell, role: hv_well}
+  rnwell: {source_name: rnwell, role: resistor_well}
+  mvrnwell: {source_name: mvrnwell, role: hv_resistor_well}
+  psub: {source_name: psub, role: substrate}
+  poly1: {source_name: poly1, role: poly}
+  thickox: {source_name: thickox, role: gate_oxide_marker}
+  nimp: {source_name: nimp, role: implant}
+  pimp: {source_name: pimp, role: implant}
+  metal1: {source_name: metal1, role: metal}
+  metal2: {source_name: metal2, role: metal}
+  metal3: {source_name: metal3, role: metal}
+  metal4: {source_name: metal4, role: metal}
+  viatp: {source_name: viatp, role: top_via}
+  metaltp: {source_name: metaltp, role: top_metal}
+  viatpl: {source_name: viatpl, role: thick_via}
+  metaltpl: {source_name: metaltpl, role: thick_metal}
+  mimcap: {source_name: mimcap, role: mim_capacitor}
+  mimcapcontact: {source_name: mimcapcontact, role: capacitor_contact}
+  glass: {source_name: glass, role: passivation}
+  nfet: {source_name: nfet, role: device_recognition}
+  pfet: {source_name: pfet, role: device_recognition}
+  mvnfet: {source_name: mvnfet, role: hv_device_recognition}
+  mvpfet: {source_name: mvpfet, role: hv_device_recognition}
+  nnfet: {source_name: nnfet, role: nldmos_recognition}
+  mvnnfet: {source_name: mvnnfet, role: hv_nldmos_recognition}
+  ndiff: {source_name: ndiff, role: diffusion}
+  pdiff: {source_name: pdiff, role: diffusion}
+  mvndiff: {source_name: mvndiff, role: hv_diffusion}
+  mvpdiff: {source_name: mvpdiff, role: hv_diffusion}
+physical_ontology:
+  METMID:
+    role: middle_metal
+    aliases: [metal5, M5]
+    mapping_status: ontology_only
+  METTHK:
+    role: thick_or_top_metal
+    aliases: [metal6, M6]
+    mapping_status: ontology_only
+  top_metal:
+    role: top_metal
+    aliases: [METTP, metaltp]
+    mapping_status: ontology_only
+  thick_metal:
+    role: thick_metal
+    aliases: [METTHK, metaltpl]
+    mapping_status: ontology_only
+cross_check:
+  internal_logical_map: profiles/xh018/layers.yaml
+  allowed: [ontology_comparison, numeric_anchor_comparison]
+  forbidden: [tapeout_gds_generation,_foundry_signoff, stream_map_substitution]
+  note: "The 300-series profile map remains internal_logical; private parsing of xh018_out.map or streamOut/techLEF/Magic maps is required for tapeout."

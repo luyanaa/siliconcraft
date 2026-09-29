@@ -1,0 +1,84 @@
+# Parameterized public-stack reconstruction for research capacitance sweeps.
+# This is not a foundry stack and intentionally contains no QRC coefficients.
+schema_version: 1
+profile: xh018
+kind: parameterized_beol_public_fit
+maturity: field_solver_estimated
+calibrated: false
+source:
+  process_collateral: profiles/xh018/layers.yaml#meta.sources
+  observables:
+    - public_typical_metal_sheet_resistance
+    - public_metal_module_and_geometry_names
+    - public_capacitor_data_if_supplied
+  limitation: "The repository does not assert a complete current XH018 thickness/epsilon table; fit inputs must be supplied or extracted from the cited public revision."
+fit_parameters:
+  metal_thickness_um:
+    status: fitted_from_public_observables
+    values: {}
+    units: um
+  ild_thickness_um:
+    status: fitted_parameter
+    values: {}
+    units: um
+  ild_relative_permittivity:
+    status: fitted_parameter
+    values: {}
+    units: dimensionless
+  substrate_effective_permittivity:
+    status: research_placeholder_only
+    value: null
+    units: dimensionless
+parameter_symbols:
+  metal1_thickness_um: t_metal1
+  metal2_thickness_um: t_metal2
+  metal3_thickness_um: t_metal3
+  metal4_thickness_um: t_metal4
+  metal5_thickness_um: t_metal5
+  metal6_thickness_um: t_metal6
+  ild_m1_m2_thickness_um: h_m1_m2
+  ild_m2_m3_thickness_um: h_m2_m3
+  ild_m3_m4_thickness_um: h_m3_m4
+  ild_m4_m5_thickness_um: h_m4_m5
+  ild_m5_m6_thickness_um: h_m5_m6
+  ild_m1_m2_relative_permittivity: eps_m1_m2
+  ild_m2_m3_relative_permittivity: eps_m2_m3
+  ild_m3_m4_relative_permittivity: eps_m3_m4
+  ild_m4_m5_relative_permittivity: eps_m4_m5
+  ild_m5_m6_relative_permittivity: eps_m5_m6
+constraints:
+  - id: metal_sheet_resistance
+    source: xfab_public_datasheet
+    use: constrain_conductor_geometry
+    route_capacitance_claim: false
+  - id: public_pip_or_mim_capacitance
+    source: public_reference_if_available
+    use: constrain_dielectric_fit_only
+    route_capacitance_claim: false
+    status: optional
+canonical_patterns:
+  - single_wire_over_plane
+  - parallel_wires
+  - adjacent_metal
+  - crossing_metal
+  - min_width_spacing
+  - scaled_width_spacing_2x
+  - scaled_width_spacing_4x
+solver_interface:
+  candidates:
+    - FastCap
+    - FasterCap
+    - Palace
+  input: canonical_sweep_manifest
+  output: research_rc_table
+  downstream:
+    - OpenRCX
+    - custom_import
+confidence:
+  M1_R: high
+  M1_M2_C: medium_low
+  upper_metal_C: low
+  substrate_C: unavailable
+signoff:
+  foundry_qrc: false
+  tapeout_qualification: false

@@ -1,0 +1,19 @@
+schema_version: 1
+kind: layer_map_provenance
+authorities:
+  internal_logical:
+    tapeout_eligible: false
+    purpose: contract_tests_and_early_layout
+  public_reference:
+    tapeout_eligible: false
+    purpose: ontology_and_numeric_cross_check
+  inferred_authorized:
+    tapeout_eligible: false
+    purpose: explicitly_reviewed_intermediate_map
+  foundry_authoritative:
+    tapeout_eligible: true
+    required_for: tapeout
+rules:
+  - "A public reference map must identify its source and set tapeout_eligible: false."
+  - "An internal logical map must never be substituted for a foundry stream map."
+  - "Private xh018_out.map, streamOut, techLEF, or Magic map parsing belongs outside Git."

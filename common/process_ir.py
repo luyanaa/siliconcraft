@@ -247,6 +247,8 @@ class ProcessIR:
     model_maturity_doc: dict[str, Any]
     model_contract_doc: dict[str, Any]
     pex_doc: dict[str, Any]
+    characterization_doc: dict[str, Any]
+    oracle_overlay_doc: dict[str, Any]
     xschem_smoke_doc: dict[str, Any]
     cells_doc: dict[str, Any]
     support_cells_doc: dict[str, Any]
@@ -428,15 +430,29 @@ def _capabilities(
     )
     has_model_file = any((profile_dir / "models").glob("*.lib"))
     has_model_contract = bool(model_maturity_doc or model_contract_doc)
+    r_only_profile = any(
+        isinstance(spec, dict) and spec.get("extractor") == "r_only_python"
+        for spec in pex_profiles.values()
+    )
     rc_profile = any(
         isinstance(spec, dict)
         and (
             spec.get("magic_directives")
             or spec.get("legacy_directives")
             or spec.get("metal_sheet_resistance_ohm_sq")
+            or spec.get("extractor") in {
+                "r_only_python",
+                "field_solver_reconstruction",
+            }
         )
         for spec in pex_profiles.values()
     )
+    if r_only_profile:
+        pex_rc: str | bool = "public_typical_r_only"
+    elif generated_pex and rc_profile:
+        pex_rc = "estimated"
+    else:
+        pex_rc = False
     return ProcessCapabilities(
         drc=(profile_dir / "rules.yaml").exists() and bool(rules_doc),
         lvs=(profile_dir / "devices.yaml").exists() and bool(devices_doc),
@@ -447,7 +463,7 @@ def _capabilities(
         pex_topology=(profile_dir / "pex" / "manifest.yaml").exists()
         and generated_pex,
         pex_runtime=pex_runtime,
-        pex_rc=("estimated" if generated_pex and rc_profile else False),
+        pex_rc=pex_rc,
     )
 
 
@@ -484,6 +500,8 @@ def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
     pex_doc = _load(profile_dir / "pex" / "manifest.yaml")
     model_maturity_doc = _load(profile_dir / "model_maturity.yaml")
     model_contract_doc = _load(profile_dir / "model_contract.yaml")
+    characterization_doc = _load(profile_dir / "characterization.yaml")
+    oracle_overlay_doc = _load(profile_dir / "oracle_overlay.yaml")
     symbols_doc = _load(profile_dir / "symbols.yaml")
     symbol_netlist_doc = _load(profile_dir / "devices" / "symbol_netlist.yaml")
     pcells_doc = _load(profile_dir / "pcells.yaml")
@@ -517,6 +535,8 @@ def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
         model_maturity_doc=model_maturity_doc,
         model_contract_doc=model_contract_doc,
         pex_doc=pex_doc,
+        characterization_doc=characterization_doc,
+        oracle_overlay_doc=oracle_overlay_doc,
         xschem_smoke_doc=xschem_smoke_doc,
         cells_doc=cells_doc,
         support_cells_doc=support_cells_doc,

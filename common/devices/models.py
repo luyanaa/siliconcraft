@@ -15,6 +15,8 @@ class ModelEvidence:
     status: str | None
     confidence: str | None
     maturity: tuple[tuple[str, Any], ...]
+    maturity_level: str | None
+    model_form: str | None
     limitations: tuple[str, ...]
     sources: tuple[str, ...]
 
@@ -24,6 +26,7 @@ class ModelCapabilities:
     simulator: bool
     lvs: bool
     calibrated: bool
+
 
 
 @dataclass(frozen=True)
@@ -56,6 +59,24 @@ class ModelIR:
             raise ProcessIRError(f"{self.name}: fit parameter {name!r} is absent") from exc
 
 
+def _maturity_view(raw: dict[str, Any]) -> tuple[str | None, str | None]:
+    maturity = raw.get("maturity") or {}
+    if not isinstance(maturity, dict):
+        return None, None
+    level = maturity.get("level") or maturity.get("current_level")
+    level_name = str(level) if level is not None else None
+    levels = maturity.get("levels") or {}
+    current = levels.get(level_name) if isinstance(levels, dict) and level_name else None
+    if not isinstance(current, dict):
+        current = {}
+    model_form = current.get("model_form")
+    if model_form is None:
+        raw_form = raw.get("model_form") or {}
+        if isinstance(raw_form, dict):
+            model_form = raw_form.get("current")
+    return level_name, (str(model_form) if model_form is not None else None)
+
+
 def _evidence(raw: dict[str, Any]) -> ModelEvidence:
     source = raw.get("source")
     sources: list[str] = []
@@ -65,11 +86,17 @@ def _evidence(raw: dict[str, Any]) -> ModelEvidence:
         for key in ("repository", "path", "commit"):
             if source.get(key) is not None:
                 sources.append(f"{key}={source[key]}")
+    maturity_level, model_form = _maturity_view(raw)
+    limitations = raw.get("limitations")
+    if limitations is None and raw.get("limitation") is not None:
+        limitations = [raw.get("limitation")]
     return ModelEvidence(
         status=(str(raw["evidence_status"]) if raw.get("evidence_status") is not None else None),
         confidence=(str(raw["confidence"]) if raw.get("confidence") is not None else None),
         maturity=tuple(sorted((raw.get("maturity") or {}).items())),
-        limitations=tuple(str(item) for item in (raw.get("limitations") or ())),
+        maturity_level=maturity_level,
+        model_form=model_form,
+        limitations=tuple(str(item) for item in (limitations or ())),
         sources=tuple(sources),
     )
 
@@ -83,8 +110,9 @@ def _model(
     default_lvs: bool,
 ) -> ModelIR:
     maturity = raw.get("maturity") or {}
+    if not isinstance(maturity, dict):
+        maturity = {}
     signoff = maturity.get("signoff") is True
-    coefficient = raw.get("coefficient")
     parameters = raw.get("parameters") or {}
     if not isinstance(parameters, dict):
         parameters = {"value": parameters}
@@ -92,6 +120,11 @@ def _model(
     fit_parameters = fit.get("parameters") or {}
     if not isinstance(fit_parameters, dict):
         fit_parameters = {"value": fit_parameters}
+    simulator_available = (
+        default_simulator
+        if "simulator" not in raw
+        else bool(raw.get("simulator"))
+    )
     return ModelIR(
         name=name,
         kind=(str(raw["kind"]) if raw.get("kind") is not None else None),
@@ -99,7 +132,7 @@ def _model(
             str(raw.get("subcircuit") or raw.get("model_id") or name)
             if raw.get("subcircuit") is not None
             or raw.get("model_id") is not None
-            or default_simulator
+            or simulator_available
             else None
         ),
         library=(str(raw["library"]) if raw.get("library") is not None else None),
@@ -108,7 +141,7 @@ def _model(
         fit_parameters=tuple(sorted(fit_parameters.items())),
         evidence=_evidence(raw),
         capabilities=ModelCapabilities(
-            simulator=default_simulator,
+            simulator=simulator_available,
             lvs=default_lvs,
             calibrated=signoff or raw.get("status") == "calibrated",
         ),

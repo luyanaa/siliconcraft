@@ -69,6 +69,42 @@ signoff: false
 
 Its 45-cell GDS / 38-symbol catalog is a conformance input, not a characterized standard-cell implementation. LEF and Liberty are unavailable upstream.
 
+### XH035/XH018 public PEX and model boundary
+
+The XH profiles deliberately expose a research-only split instead of
+pretending that a public datasheet restores the foundry deck:
+
+1. `profiles/xh035/pex/manifest.yaml` and `profiles/xh018/pex/manifest.yaml`
+   provide public-typical metal sheet resistance for `R_wire_only`.
+   `scripts/run_r_only_pex.py` applies
+   `R = R_sheet * length_um / width_um`; contact and via resistance are
+   explicit `unknown` exclusions.
+2. `field_solver_estimated` is a separate contract. The BEOL files
+   `xh035_beol_public_fit.yaml` and `xh018_beol_public_fit.yaml` describe
+   fitted/estimated thickness and ILD parameters, required canonical sweeps,
+   and the FastCap/FasterCap/Palace -> research RC table -> OpenRCX/custom
+   boundary. `calibrated: false` and `signoff: false` are mandatory.
+3. HVCMOS substrate extraction remains an external foundry or calibrated
+   distributed-substrate backend. Ordinary SCMOS/Magic RC is not permitted to
+   stand in for the substrate network.
+
+The XH model maturity contract is `L0` contract-only, `L1` public surrogate,
+`L2` silicon-calibrated, or `L3` foundry-private. Current XH profiles are
+`L0`; no official BSIM4 or HiSIM card is restored. L1 candidate model forms
+are recorded without enabling simulation until public Vth/Idsat/fT and
+geometry evidence exists. XH LDMOS D/S order remains physical and
+non-permutable.
+
+The characterization manifests specify MOS W/L matrices, Kelvin metal and
+diffusion structures, contact/via chains, PIP/MIM/comb/crossing capacitors,
+FO4 fixtures, ring oscillators, and temperature points. Private oracle
+overlays are environment-selected and may provide official SPICE, DRC, LVS,
+QRC, and stream-map artifacts; no NDA collateral is tracked.
+
+The XH018 `EFXH018D_lite.tech` reference snapshot is represented only as an
+ontology/numeric-anchor cross-check. The internal 300/100-series maps are not
+tapeout maps; a current foundry-authoritative stream map remains required.
+
 ## What the stdcell generator must consume
 
 The generator boundary should be process-parameterized and fail closed. For each selected profile it must resolve:
