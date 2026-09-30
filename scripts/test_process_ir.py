@@ -27,7 +27,7 @@ def main() -> int:
 
     for name, process in processes.items():
         assert process.meta.get("name") == name
-        assert process.rule_family in {"scmos", "scmos_subm", "native"}
+        assert process.rule_family in {"scmos", "scmos_subm", "scmos_deep", "native"}
         assert "deep_rules" not in process.meta
         assert "submicron_rules" not in process.meta
         assert process.layers, f"{name}: no normalized layers"
@@ -94,6 +94,26 @@ def main() -> int:
     assert processes["ami16"].rule_family == "scmos"
     assert processes["ami06"].rule_family == "scmos_subm"
     assert processes["hp06"].rule_family == "scmos_subm"
+    for name, source, mosis, lam, grid in (
+        ("tsmc025_deep", "TSMC_CMOS025_DEEP", "SCN5M_DEEP", 0.12, 0.06),
+        ("tsmc018_deep", "TSMC_CMOS018_DEEP", "SCN6M_DEEP", 0.09, 0.045),
+    ):
+        deep = processes[name]
+        assert deep.rule_family == "scmos_deep"
+        assert deep.meta["process"] == source
+        assert deep.meta["mosis_code"] == mosis
+        assert deep.meta["lambda_um"] == lam
+        assert deep.meta["grid_um"] == grid
+        assert deep.capabilities.drc
+        assert deep.capabilities.lvs
+        assert deep.capabilities.model
+        assert deep.capabilities.pex_topology is (name == "tsmc018_deep")
+        assert not deep.capabilities.pex_runtime
+        assert deep.capabilities.pex_rc is False
+        assert deep.meta["features"]["metal4Available"] is True
+        assert deep.meta["features"]["metal5Available"] is True
+    assert processes["tsmc025_deep"].meta["features"]["metal6Available"] is False
+    assert processes["tsmc018_deep"].meta["features"]["metal6Available"] is True
     assert processes["ls1u"].rule_family == "native"
     assert processes["openrule1um"].rule_family == "native"
     pmos_model = ls1u.model_ir("pmos_core")

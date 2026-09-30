@@ -24,7 +24,7 @@ class ProcessIRError(ValueError):
     """Raised when process fragments cannot form a coherent ProcessIR."""
 
 
-RULE_FAMILIES = frozenset({"scmos", "scmos_subm", "native"})
+RULE_FAMILIES = frozenset({"scmos", "scmos_subm", "scmos_deep", "native"})
 
 # HVCMOS is an undeclared SCMOS 7.2 option with marker layers (CVP/CVN) and
 # no official rule section.  Lambda-expressed HV rules (the process-specific
@@ -104,16 +104,21 @@ def validate_rule_family(meta: dict[str, Any], source: Path) -> str:
         raise ProcessIRError(
             f"{source}: meta.rule_family must be one of {allowed}; got {family!r}"
         )
-    if family in {"scmos", "scmos_subm"}:
-        identifiers = (
-            str(meta.get("process", "")),
-            str(meta.get("mosis_code", "")),
+    identifiers = (
+        str(meta.get("process", "")),
+        str(meta.get("mosis_code", "")),
+    )
+    is_deep = any("DEEP" in identifier.upper() for identifier in identifiers)
+    if is_deep and family != "scmos_deep":
+        raise ProcessIRError(
+            f"{source}: SCMOS_DEEP process identifiers require "
+            "meta.rule_family=scmos_deep"
         )
-        if any("DEEP" in identifier.upper() for identifier in identifiers):
-            raise ProcessIRError(
-                f"{source}: SCMOS_DEEP process identifiers are forbidden; "
-                "use the corresponding SCMOS_SUBM process"
-            )
+    if family == "scmos_deep" and not is_deep:
+        raise ProcessIRError(
+            f"{source}: meta.rule_family=scmos_deep requires a DEEP process "
+            "or MOSIS identifier"
+        )
     return str(family)
 
 @dataclass(frozen=True)
@@ -424,10 +429,16 @@ def _capabilities(
         isinstance(spec, dict) and spec.get("generated") is True
         for spec in pex_profiles.values()
     )
-    topology = pex_doc.get("topology") or {}
-    pex_runtime = (
-        generated_pex and topology.get("magic_device_class") == "mosfet"
+    # ``none`` may be marked generated to preserve a topology-only contract.
+    # It must not promote an external/deferred profile into runtime PEX.
+    runtime_pex = any(
+        isinstance(spec, dict)
+        and spec.get("generated") is True
+        and name != "none"
+        for name, spec in pex_profiles.items()
     )
+    topology = pex_doc.get("topology") or {}
+    pex_runtime = runtime_pex and topology.get("magic_device_class") == "mosfet"
     has_model_file = any((profile_dir / "models").glob("*.lib"))
     has_model_contract = bool(model_maturity_doc or model_contract_doc)
     r_only_profile = any(
@@ -449,7 +460,7 @@ def _capabilities(
     )
     if r_only_profile:
         pex_rc: str | bool = "public_typical_r_only"
-    elif generated_pex and rc_profile:
+    elif runtime_pex and rc_profile:
         pex_rc = "estimated"
     else:
         pex_rc = False

@@ -9,7 +9,7 @@ mirroring the reference deck (common/drc/scmos_reference.py), so per-rule
 violation accounting matches the oracle.
 
 Condition syntax (rules.yaml): comma = AND, | = OR, not- = negate.
-Rule-family terms: scmos, scmos_subm.
+Rule-family terms: scmos, scmos_subm, scmos_deep.
 Feature keys: stacked, elec, highres, metal3..metal6,
 cwell, sblock, polycap, ccd, npn, hv, metalcap, mems.
 
@@ -85,6 +85,8 @@ def _cond_one(term, F, TECH, RULE_FAMILY):
         v = RULE_FAMILY == "scmos"
     elif name == "scmos_subm":
         v = RULE_FAMILY == "scmos_subm"
+    elif name == "scmos_deep":
+        v = RULE_FAMILY == "scmos_deep"
     elif name == "stacked":
         v = F("stackedVias")
     elif name == "elec":
@@ -221,7 +223,7 @@ def run():
     LAYER_MAP = json.loads(os.environ.get("LAYERMAP", "{}"))
     FEATURES = json.loads(os.environ.get("FEATURES", "{}"))
     RULE_FAMILY = os.environ.get("RULE_FAMILY") or FEATURES.get("rule_family", "scmos")
-    if RULE_FAMILY not in ("scmos", "scmos_subm"):
+    if RULE_FAMILY not in ("scmos", "scmos_subm", "scmos_deep"):
         raise SystemExit(f"unsupported SCMOS rule family: {RULE_FAMILY!r}")
     SELECTED_AUTHORITY = os.environ.get("RULE_AUTHORITY", "scmos_compat")
     if SELECTED_AUTHORITY not in RULE_AUTHORITIES:
@@ -403,12 +405,12 @@ def run():
            (D["metal2"], "metal2"), (D["via"], "via")]
     if F("metal3Available"):
         _og += [(D["metal3"], "metal3"), (D["via2"], "via2")]
-    if F("elecAvailable"):
-        _og += [(D["elec"], "elec"), (D["ce"], "ce")]
-    if F("highresAvailable"):
-        _og += [(D["highres"], "highres")]
-    if F("hvAvailable"):
-        _og += [(D["tactive"], "tactive")]
+    if F("metal4Available"):
+        _og += [(D["metal4"], "metal4"), (D["via3"], "via3")]
+    if F("metal5Available"):
+        _og += [(D["metal5"], "metal5"), (D["via4"], "via4")]
+    if F("metal6Available"):
+        _og += [(D["metal6"], "metal6"), (D["via5"], "via5")]
     for _lyr, _nm in _og:
         R.off_grid(_lyr, GRID, "(SCMOS Inst) Edge not on grid")
 

@@ -15,7 +15,17 @@ flow:
   backend: none
   source_driven: true
   original_process: CNM25
-  capacitance_source: "APDK glade/verification/cnm25pex_2d.py (parallel-plate densities) + cnm25.tch FastCap conductor data"
+  capacitance:
+    status: field_solver_estimated
+    calibrated: false
+    solver_candidates:
+      - FastCap
+      - FasterCap
+      - Palace
+    source: profiles/cnm25/pex/cnm25_field_stack.yaml
+    output: research_rc_table
+    consumer: OpenRCX_or_custom_import
+  capacitance_source: "APDK glade/verification/cnm25pex_2d.py (parallel-plate densities) + profiles/cnm25/pex/cnm25_field_stack.yaml FastCap conductor data"
   contact_policy: "no Magic backend for CNM25 yet; contact/via resistance not extracted (APDK decks are capacitance-only)"
   parasitic_ownership:
     transistor_intrinsic_capacitance: model
@@ -47,5 +57,20 @@ profiles:
   fastcap_3d:
     generated: false
     status: source_reference_partial
-    description: "FastCap 3D capacitance via scripts/run_cnm25_em.py using cnm25.tch conductor data (METAL h=1.0 t=1.0, VIA h=2.0 t=0.8, METAL2 h=2.8 t=1.1 um); bulk/ref node vss."
+    description: "FastCap 3D capacitance via scripts/run_cnm25_em.py using profiles/cnm25/pex/cnm25_field_stack.yaml conductor data (METAL h=1.0 t=1.0, VIA h=2.0 t=0.8, METAL2 h=2.8 t=1.1 um); bulk/ref node vss."
     magic_directives: []
+  field_solver_estimated:
+    generated: false
+    extractor: field_solver_reconstruction
+    maturity: field_solver_estimated
+    calibrated: false
+    beol_fit: cnm25_field_stack.yaml
+    canonical_patterns:
+      - single_wire_over_plane
+      - parallel_wires
+      - adjacent_metal
+      - crossing_metal
+      - min_width_spacing
+      - scaled_width_spacing_2x
+      - scaled_width_spacing_4x
+    output: {format: research_rc_table, consumer: OpenRCX_or_custom_import}

@@ -29,7 +29,7 @@ sources:
     evidence:
       - "Separates logical SCMOS layers from foundry output layers and documents PC poly-cap versus LC cap-well."
       - "Adds 5M/6M, THICK_ACTIVE, SILICIDE_BLOCK, and richer SUBM rule/layer observations."
-      - "Records historical DEEP variants; those remain provenance-only in siliconcraft."
+      - "Records historical DEEP variants; the separate source-backed TSMC DEEP profiles are defined in schema/scmos_process_matrix.yaml, while historical non-TSMC entries here remain reference-only."
   magic_catalog:
     url: "https://opencircuitdesign.com/magic/tech.html"
     title: "Magic Technology Files catalog"

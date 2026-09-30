@@ -1,0 +1,357 @@
+# Non-TSMC SCMOS PEX source audit.
+# This is an evidence and promotion contract, not an active profile registry.
+schema_version: 1
+kind: scmos_legacy_pex_audit
+authority: source_audit
+scope: non_tsmc_only
+status: explicit_source_backed_or_blocked
+purpose: "Record public and bundled sources for sheet/contact/via/capacitance PEX without promoting unmatched historical coefficients."
+required_parameter_families:
+  - sheet_resistance
+  - contact_and_via_resistance
+  - area_capacitance
+  - overlap_capacitance
+  - perimeter_and_sidewall_capacitance
+  - device_and_model_ownership
+public_search_sources:
+  - id: mosis_rules_80_mirror
+    url: "https://www.fceia.unr.edu.ar/eca1/files/LDCI/Reglas_%20de_Diseno_MOSIS.pdf"
+    role: geometry_and_option_reference
+    supports:
+      - scmos_option_codes
+      - deep_rule_columns
+      - gds_layer_map
+    does_not_support:
+      - lot_specific_sheet_resistance
+      - lot_specific_contact_resistance
+      - lot_specific_capacitance
+  - id: magic_scmos_source
+    url: "https://fossies.org/linux/magic/scmos/scmos.tech.in"
+    role: historical_magic_method_and_branch_reference
+    supports:
+      - historical_process_style_names
+      - extraction_directive_grammar
+      - plane_and_device_method_context
+    does_not_support:
+      - current_foundry_signoff
+  - id: magic_hp_cmos26b_extract
+    url: "http://www.ittc.ku.edu/EECS/EECS_546/magic/files/techfiles/scmosExt26b.tech"
+    role: explicit_historical_non_tsmc_pex_example
+    supports:
+      - sheet_resistance
+      - contact_resistance
+      - area_capacitance
+      - overlap_capacitance
+      - perimeter_capacitance
+    does_not_support:
+      - current_lot_pairing
+      - current_foundry_signoff
+  - id: ami_c5n_rules
+    url: "https://cag-uconn.github.io/courses/ece3421_s13/SN05_Rules.pdf"
+    role: ami_layer_and_rule_cross_check
+    supports:
+      - ami_c5n_layer_map
+      - scmos_subm_rule_context
+  - id: mosis_run_archive
+    url: "https://research.ece.cmu.edu/~mems/intranet/mosis-run/submit_data.html"
+    role: historical_process_and_run_name_cross_check
+    supports:
+      - historical_mosis_process_labels
+
+source_policy:
+  exact_run_pair_required: true
+  model_and_rc_must_share_run: true
+  public_geometry_source_can_supply_coefficients: false
+  historical_magic_coefficients_are: reference_only_until_fixture_validated
+  missing_source_action: do_not_enable_profile
+
+profiles:
+  - profile: ami06
+    foundry_process: AMI_C5N
+    mosis_run: N8BN
+    status: active_source_reference_partial
+    source_manifest: profiles/ami06/pex/manifest.yaml
+    source_records:
+      - ncsu-cdk-1.6.0/models/MOSIS_reports/n8bn-params.txt
+      - ncsu-cdk-1.6.0/techfile/layerDefinitions.tf
+      - ncsu-cdk-1.6.0/techfile/divaMultiLevel.il
+    supplied_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+    withheld_parameter_families:
+      - junction_and_substrate_capacitance
+    promotion_note: "Active source-reference PEX only; the manifest records that CDK aggregate sheet/cap values are not all N8BN-lot matched."
+  - profile: hp06
+    foundry_process: HP_AMOS14TB
+    mosis_run: N8AG
+    status: active_source_reference_partial
+    source_manifest: profiles/hp06/pex/manifest.yaml
+    source_records:
+      - ncsu-cdk-1.6.0/models/MOSIS_reports/n8ag-params.txt
+      - ncsu-cdk-1.6.0/techfile/layerDefinitions.tf
+      - ncsu-cdk-1.6.0/techfile/divaEXT.rul
+    supplied_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+    withheld_parameter_families:
+      - junction_and_substrate_capacitance
+    promotion_note: "Active source-reference PEX only; the manifest records the N8AG/CDK aggregate boundary and missing well report row."
+  - profile: ami16
+    foundry_process: AMI_ABN
+    mosis_run: N88Z
+    status: active_source_reference_complete_rc
+    source_manifest: profiles/ami16/pex/manifest.yaml
+    source_records:
+      - ncsu-cdk-1.6.0/models/MOSIS_reports/n88z-params.txt
+      - ncsu-cdk-1.6.0/models/hspice/public/publicModel/ami16N
+      - ncsu-cdk-1.6.0/models/hspice/public/publicModel/ami16P
+    supplied_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+      - perimeter_and_sidewall_capacitance
+      - device_and_model_ownership
+    withheld_parameter_families:
+      - foundry_signoff
+    promotion_note: "The N88Z report supplies the RC table paired to the shipped ami16 model cards; signoff remains out of scope."
+  - profile: orbit20_reference
+    foundry_process: ORBIT_SCNA2
+    mosis_run: N91W
+    status: historical_reference_blocked
+    matrix_reference: orbit20_scna20_legacy
+    source_records:
+      - profiles/ls1u/reference/magic/scmos.tech.in
+      - schema/historical_scmos_process_matrix.yaml
+    supplied_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+      - perimeter_and_sidewall_capacitance
+      - device_and_model_ownership
+    blockers:
+      - exact_active_profile_layer_and_device_contract
+      - current_model_card_pairing
+      - fixture_validated_runtime_manifest
+    promotion_note: "SCNA20(ORB) is the exact bundled historical branch; generic SCNA archive files must not replace it."
+  - profile: ami_abn12_reference
+    foundry_process: AMI_ABN_12
+    mosis_run: N/A
+    status: historical_reference_blocked
+    matrix_reference: ami_abn_12
+    source_records:
+      - schema/historical_scmos_process_matrix.yaml
+      - https://www.fceia.unr.edu.ar/eca1/files/LDCI/Reglas_%20de_Diseno_MOSIS.pdf
+    supplied_parameter_families: []
+    missing_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+      - perimeter_and_sidewall_capacitance
+      - device_and_model_ownership
+    blockers:
+      - exact_ami_abn_12_extraction_source
+      - model_card_pairing
+      - fixture_validated_runtime_manifest
+    promotion_note: "SCNA.80 is labeled AMIabn 1.6um/lambda-0.8 and is not an exact AMI ABN 1.2um PEX target."
+  - profile: hp_cmos34_reference
+    foundry_process: HP_CMOS34
+    mosis_run: N36Y
+    status: historical_reference_blocked
+    matrix_reference: hp_cmos34_scn12lc
+    source_records:
+      - profiles/ls1u/reference/magic/scmos.tech.in
+      - schema/historical_scmos_process_matrix.yaml
+    supplied_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+      - perimeter_and_sidewall_capacitance
+      - device_and_model_ownership
+    blockers:
+      - exact_active_profile_layer_and_device_contract
+      - current_model_card_pairing
+      - fixture_validated_runtime_manifest
+    promotion_note: "SCN12LC(HP) is the bundled tight-metal linear-cap extraction family; no exact current native profile is assembled."
+  - profile: ami_cwl_reference
+    foundry_process: AMI_CWL
+    mosis_run: N87R
+    status: historical_reference_blocked
+    matrix_reference: ami_cwl
+    source_records:
+      - profiles/ls1u/reference/magic/scmos.tech.in
+      - schema/historical_scmos_process_matrix.yaml
+    supplied_parameter_families: []
+    missing_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+      - perimeter_and_sidewall_capacitance
+      - device_and_model_ownership
+    blockers:
+      - exact_scnpc_layer_and_device_contract
+      - model_card_pairing
+      - fixture_validated_runtime_manifest
+    promotion_note: "SCNPC/CPC poly-cap semantics remain distinct from SCNLC/CWC; no exact AMI CWL native Magic target was found."
+  - profile: hp_cmos26b_reference
+    foundry_process: HP_CMOS26B
+    mosis_run: N33H
+    status: historical_reference_blocked
+    matrix_reference: hp_cmos26b_scn08
+    source_records:
+      - profiles/ls1u/reference/magic/scmos.tech.in
+      - http://www.ittc.ku.edu/EECS/EECS_546/magic/files/techfiles/scmosExt26b.tech
+      - schema/historical_scmos_process_matrix.yaml
+    supplied_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+      - perimeter_and_sidewall_capacitance
+      - device_and_model_ownership
+    blockers:
+      - exact_model_card_pairing
+      - active_profile_layer_and_device_contract
+      - fixture_validated_runtime_manifest
+    promotion_note: "Public scmosExt26b.tech is a historical HP CMOS26B extraction example; do not treat its general-process assumptions as a current lot calibration."
+  - profile: hp_cmos26g_reference
+    foundry_process: HP_CMOS26G
+    mosis_run: N/A
+    status: historical_reference_blocked
+    matrix_reference: hp_cmos26g
+    source_records:
+      - "Magic 2001a archive: SCN3M.50.tech27"
+      - "Magic 2002a archive: SCN3M.50.tech27"
+      - schema/historical_scmos_process_matrix.yaml
+    supplied_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+      - perimeter_and_sidewall_capacitance
+      - device_and_model_ownership
+    blockers:
+      - exact_model_card_pairing
+      - active_profile_layer_and_device_contract
+      - fixture_validated_runtime_manifest
+    promotion_note: "The archive header is HPcmos26g; keep it separate from the bundled SCN08(HP) HP CMOS26B branch."
+  - profile: hp_cmos26g_subm_reference
+    foundry_process: HP_CMOS26G
+    mosis_run: N48R
+    status: historical_reference_blocked
+    matrix_reference: hp_cmos26g_scn08_subm_legacy
+    source_records:
+      - profiles/ls1u/reference/magic/scmos.tech.in
+      - schema/historical_scmos_process_matrix.yaml
+    supplied_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+      - perimeter_and_sidewall_capacitance
+      - device_and_model_ownership
+    blockers:
+      - active_profile_layer_and_device_contract
+      - model_card_pairing
+      - fixture_validated_runtime_manifest
+    promotion_note: "The bundled SCN08(HP26G) and archived SCN3M_SUBM.40.HP source styles are retained as separate historical references."
+  - profile: hp_mos14tb_reference
+    foundry_process: HP_MOS14TB
+    mosis_run: N/A
+    status: historical_reference_blocked
+    matrix_reference: hp_mos14tb
+    source_records:
+      - schema/historical_scmos_process_matrix.yaml
+      - "Magic 2002a archive: SCN3M.35.tech27 / SCN3MLC.35.tech27"
+      - "Magic 2002a archive: SCN3M.30.tech27 / SCN3MLC.30.tech27"
+    supplied_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+      - perimeter_and_sidewall_capacitance
+      - device_and_model_ownership
+    blockers:
+      - selected_run_identity
+      - active_profile_layer_and_device_contract
+      - fixture_validated_runtime_manifest
+    promotion_note: "CMOS14 exact contact/via size and array policy is part of the source contract; no generic oversized-contact shortcut is allowed."
+  - profile: hp_mos14tb_subm_reference
+    foundry_process: HP_MOS14TB
+    mosis_run: N/A
+    status: historical_reference_blocked
+    matrix_reference: hp_mos14tb_subm
+    source_records:
+      - schema/historical_scmos_process_matrix.yaml
+      - "Magic 2002a archive: SCN3M_SUBM.30.tech27 / SCN3MLC_SUBM.30.tech27"
+    supplied_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+      - perimeter_and_sidewall_capacitance
+      - device_and_model_ownership
+    blockers:
+      - selected_run_identity
+      - active_profile_layer_and_device_contract
+      - fixture_validated_runtime_manifest
+    promotion_note: "The SUBM source has exact-contact/array and stacked-via grammar; it remains historical until a profile-specific binding and fixture contract exists."
+  - profile: hp_gmos10qa_reference
+    foundry_process: HP_GMOS10QA
+    mosis_run: N88W
+    status: historical_reference_blocked
+    matrix_reference: hp_gmos10qa
+    source_records:
+      - ncsu-cdk-1.6.0/models/MOSIS_reports/n88w-params.txt
+      - ncsu-cdk-1.6.0/models/hspice/public/publicModel/hp10N
+      - ncsu-cdk-1.6.0/models/hspice/public/publicModel/hp10P
+      - schema/historical_scmos_process_matrix.yaml
+    supplied_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+      - perimeter_and_sidewall_capacitance
+      - device_and_model_ownership
+    blockers:
+      - exact_scn4n_magic_or_native_extraction_source
+      - active_profile_layer_and_device_contract
+      - fixture_validated_runtime_manifest
+    promotion_note: "N88W report/model evidence exists, but no exact GMOS10QA/SCN4N Magic target was located; SCN4M_SUBM.20 is TSMC35-labeled backend grammar only."
+
+  - profile: hp_gmos10qa_subm_reference
+    foundry_process: HP_GMOS10QA
+    mosis_run: N/A
+    status: historical_reference_blocked
+    matrix_reference: hp_gmos10qa_subm
+    source_records:
+      - schema/historical_scmos_process_matrix.yaml
+      - "Magic 2002a archive: SCN4M_SUBM.20.tech27"
+    supplied_parameter_families: []
+    missing_parameter_families:
+      - sheet_resistance
+      - contact_and_via_resistance
+      - area_capacitance
+      - overlap_capacitance
+      - perimeter_and_sidewall_capacitance
+      - device_and_model_ownership
+    blockers:
+      - exact_gmos10qa_subm_extraction_source
+      - model_card_pairing
+      - fixture_validated_runtime_manifest
+    promotion_note: "SCN4M_SUBM.20 is labeled TSMC35 and remains backend grammar only; do not use it as GMOS10QA coefficients."
+
+tsmc_boundary:
+  profiles:
+    - tsmc025_deep
+    - tsmc018_deep
+  pex_status: deferred
+  reason: "TSMC DEEP PEX is intentionally excluded from this non-TSMC audit; model cards and geometry do not establish lot-specific RC."

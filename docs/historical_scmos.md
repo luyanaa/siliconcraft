@@ -130,6 +130,32 @@ Rules that apply before any of these become active profiles:
   (λ=0.12) overlays on the same electrical process, the generator can measure
   the design-rule-abstraction penalty directly.
 
+## Non-TSMC PEX search and promotion boundary
+
+The web search found public SCMOS rule/layer references and historical Magic
+extraction sources, but not a current foundry-qualified RC table for every
+historical family. The exact non-TSMC source audit is
+[`schema/scmos_legacy_pex_audit.yaml`](../schema/scmos_legacy_pex_audit.yaml).
+
+- `ami06`, `hp06`, and `ami16` remain the only active non-TSMC source-reference
+  PEX profiles. Their manifests keep the MOSIS run, model cards, and RC source
+  boundary explicit; `ami06`/`hp06` still withhold junction/substrate terms.
+- Orbit, HP CMOS34, HP CMOS26B/26G, and HP MOS14TB have historical Magic
+  extraction terms in the bundled or archived technology files. These include
+  sheet resistance, contact/via resistance, area/overlap/perimeter capacitance,
+  and device/model ownership notes, but they are not active profiles.
+- AMI CWL has a distinct `SCNPC`/`CPC` option contract, but no exact public
+  native PEX target; its parameter families remain missing in the audit.
+- HP GMOS10QA has N88W report/model evidence, but no exact `SCN4N` Magic/native
+  extraction target was found. The TSMC35-labelled `SCN4M_SUBM` archive is
+  backend grammar only and must not supply GMOS10QA coefficients.
+
+The public SCMOS rules mirror confirms the DEEP/SCMOS geometry and option
+vocabulary; it does not make those historical coefficients lot-matched. A
+profile can be promoted only after layer/device bindings, model pairing, and
+runtime fixture validation are present. TSMC DEEP PEX is intentionally outside
+this audit and remains deferred.
+
 ## SCMOS 7.2 device extensions (defined / DRC+LVS / λ)
 
 The three-way feasibility analysis for the SCMOS 7.2 option device families

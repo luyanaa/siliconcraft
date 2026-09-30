@@ -1,0 +1,7 @@
+# Measured primitive model contract smoke; this is not a process-corner claim.
+expected_netlist:
+  - "m1 d in 0 0 or1_nmos"
+  - "v1 in 0 5"
+  - "v2 d 0 5"
+probe: "@m1[id]"
+min_current: 0

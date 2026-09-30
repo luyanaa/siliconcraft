@@ -1,0 +1,56 @@
+# TSMC018/DEEP field-solver reconstruction contract.
+# The stack is the closest official 6M specification to T28M; it is not a
+# run-qualified QRC deck and does not promote T28M substrate data by inference.
+schema_version: 2
+profile: tsmc018_deep
+default: none
+flow:
+  backend: external_field_solver
+  source_driven: true
+  capacitance:
+    status: field_solver_estimated
+    calibrated: false
+    solver_candidates:
+      - FastCap
+      - FasterCap
+      - Palace
+    source: pex/t018_field_stack.yaml
+    output: research_rc_table
+    consumer: OpenRCX_or_custom_import
+  contact_policy: "contact/via resistance and substrate network are not supplied by this field-stack contract"
+  parasitic_ownership:
+    transistor_intrinsic_capacitance: model
+    gate_overlap_capacitance: model
+    junction_area_capacitance: model
+    junction_sidewall_capacitance: model
+    diffusion_sheet_resistance: pex
+    gate_sheet_resistance: pex
+    metal_interconnect_rc: pex
+physical:
+  lambda_um: 0.09
+  grid_um: 0.045
+technology:
+  description: "TSMC018 DEEP public-stack reconstruction for research RC sweeps"
+topology:
+  scope: "six-metal core interconnect field patterns; device and substrate extraction remain outside this contract"
+  note: "T28M exact film and substrate values are not fully identical to the closest public 2004 specification"
+profiles:
+  none:
+    generated: true
+    status: topology_only
+    magic_directives: []
+  field_solver_estimated:
+    generated: false
+    extractor: field_solver_reconstruction
+    maturity: field_solver_estimated
+    calibrated: false
+    beol_fit: t018_field_stack.yaml
+    canonical_patterns:
+      - single_wire_over_plane
+      - parallel_wires
+      - adjacent_metal
+      - crossing_metal
+      - min_width_spacing
+      - scaled_width_spacing_2x
+      - scaled_width_spacing_4x
+    output: {format: research_rc_table, consumer: OpenRCX_or_custom_import}

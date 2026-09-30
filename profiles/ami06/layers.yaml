@@ -380,7 +380,7 @@ layers:
         layer: 61
         datatype: 0
     role: cut
-    available: false
+    available: true
     cif:
       - CVS
       - CV2

@@ -1,24 +1,39 @@
 # SPICE and PEX readiness for the stdcell generator
 
-The machine-readable preparation contract is [`schema/stdcell_spice_pex_readiness.yaml`](../schema/stdcell_spice_pex_readiness.yaml). The planner now has explicit rule-derived fixed-height geometry candidates for `ami06`, `ami16`, `hp06`, `cnm25`, `ams_c35`, and `tr1um`; this is deliberately not a foundry standard-cell library and does not claim timing, power, Liberty, or signoff. The generator can emit a geometry-plan LEF-compatible abstract, but that view is not a signoff library view.
+The machine-readable preparation contract is
+[`schema/stdcell_spice_pex_readiness.yaml`](../schema/stdcell_spice_pex_readiness.yaml).
+The all-profile collateral matrix is
+[`schema/profile_collateral_matrix.yaml`](../schema/profile_collateral_matrix.yaml);
+it requires a symbol/UI contract, an explicit SPICE identity, and one named
+PEX, field-solver, public-R-only, or deferred route for every materialized
+profile. Neither matrix is a foundry signoff claim. The planner now has
+explicit rule-derived fixed-height geometry candidates for `ami06`, `ami16`,
+`hp06`, `cnm25`, `ams_c35`, and `tr1um`; this is deliberately not a foundry
+standard-cell library and does not claim timing, power, Liberty, or signoff.
+The generator can emit a geometry-plan LEF-compatible abstract, but that view
+is not a signoff library view.
 
 ## Current SPICE status
 
 | Profile | SPICE representation | Current model IDs | Current corner contract | Current evidence |
 | --- | --- | --- | --- | --- |
 | `ami06` | Primitive MOS4 | `ami06N`, `ami06P` | Nominal only in `ami06` section | xschem/ngspice smoke passes; native PEX output simulates; stdcell INV/NAND2/NOR2 DRC/LVS smoke passes |
-| `ami16` | Primitive MOS4 | `ami16N`, `ami16P` | Nominal only in `ami16` section | Native PEX output simulates; stdcell INV authoritative DRC/LVS/PEX/LEF smoke passes; no xschem smoke contract |
-| `hp06` | Primitive MOS4 | `hp14tbN`, `hp14tbP` | Nominal only in `hp06` section | Native PEX output simulates; stdcell INV authoritative DRC/LVS/PEX/LEF smoke passes; no xschem smoke contract |
-| `cnm25` | Primitive MOS4 | `cnm25modN`, `cnm25modP` | Nominal only in `cnm25` section | Stdcell INV authoritative DRC/LVS/LEF smoke passes; no Magic runtime PEX backend |
-| `ams_c35` | Primitive MOS4 | `c35N`, `c35P` | Nominal only in `ams_c35` section | Stdcell INV authoritative DRC/LVS/LEF smoke passes; no Magic runtime PEX backend |
-| `tr1um` | Primitive MOS4 | `NMOS_mst`, `PMOS_mst` (`MNE_mst`, `MPE_mst` for HV) | Nominal engineering cards only in `tr1um` section | ngspice primitive smoke passes; native DRC/LVS/KLayout and Magic PEX are source-reference gates; stdcell candidate generation passes; signoff blocked |
+| `ami16` | Primitive MOS4 | `ami16N`, `ami16P` | Nominal only in `ami16` section | xschem/ngspice smoke and native PEX output simulate; stdcell candidate gates remain non-signoff |
+| `hp06` | Primitive MOS4 | `hp14tbN`, `hp14tbP` | Nominal only in `hp06` section | xschem/ngspice smoke and native PEX output simulate; stdcell candidate gates remain non-signoff |
+| `cnm25` | Primitive MOS4 | `cnm25modN`, `cnm25modP` | Nominal only in `cnm25` section | xschem/ngspice smoke; FastCap/FastHenry field-solver bridge; no Magic runtime PEX |
+| `ams_c35` | Primitive MOS4 | `c35N`, `c35P` | Nominal only in `ams_c35` section | xschem/ngspice smoke; ENG-182 field-stack reconstruction; no Magic runtime PEX |
+| `tr1um` | Primitive MOS4 | `NMOS_mst`, `PMOS_mst` (`MNE_mst`, `MPE_mst` for HV) | Nominal engineering cards only in `tr1um` section | ngspice/xschem smoke; native DRC/LVS/KLayout and engineering Magic PEX; signoff blocked |
 | `ls1u` | `LV1UNMOS` / `LV1UPMOS` subcircuits | `LV1UNMOS`, `LV1UPMOS` | No process-corner contract; partial characterization | xschem/ngspice and native Magic MOS smoke pass |
-| `openrule1um` | Model-contract-only | `or1_nmos`, `or1_pmos` plus passive variants | No corner contract | Measured primitive model contract; no active canonical bindings |
+| `openrule1um` | Primitive model contract | `or1_nmos`, `or1_pmos` plus passive variants | No corner contract | xschem/ngspice measured-card smoke; PEX explicitly deferred |
+| `tsmc018_deep` | Primitive MOS4 | `TSMC18dN`, `TSMC18dP` | Nominal CDK T29B cards | xschem/ngspice smoke; public 6M field-stack reconstruction; T28M run pairing remains separate evidence |
+| `tsmc025_deep` | Primitive MOS4 | `tsmc25dN`, `tsmc25dP` | Nominal CDK N94S/W08 cards | xschem/ngspice smoke; PEX/field stack deferred |
+| `xh018` | Contract-only MOS identities | `xh018N/P` and HV/isolated/LDMOS identities | No simulator card | xschem UI/netlist contracts; public-R-only and estimated field-solver routes |
+| `xh035` | Contract-only MOS identities | `xh035N/P` and HV/isolated/LDMOS identities | No simulator card | xschem UI/netlist contracts; public-R-only and estimated field-solver routes |
 
 ### Important SPICE details
 
 - AMI06, AMI16, and HP06 generated libraries are public BSIM3v3 nominal cards. The materialized files contain one `.lib` section each; the generator can consume CDK corner directories when supplied, but no fast/slow/fnsp/snfp sections are currently emitted in these artifacts.
-- Their canonical binding is stable for a generator: terminal order `d,g,s,b`, primitive `M` representation, and `w/l/nf/m/ad/as/pd/ps` parameter maps.
+- Their canonical binding is stable for a generator: terminal order `d,g,s,b`, primitive `M` representation, and `w/l/m/ad/as/pd/ps` maps. `nf` remains an optional canonical geometry field; the AMI16/HP06 xschem smoke contracts omit it because ngspice rejects it for those source cards.
 - LS1u uses `X` subcircuits rather than primitive `M` instances and intentionally exposes only `W/L/PD/PS`. The PMOS fit is low confidence; `NGATE` and `PGATE` remain unmeasured. A generator must not assume the AMI/HP parameter map applies to LS1u.
 - OpenRule1um has a useful measured primitive model contract and standard-cell reference catalog, but no active canonical device binding, so it cannot yet be consumed by the shared stdcell characterization path.
 
@@ -40,18 +55,21 @@ The active manifests are source-driven Magic extraction contracts:
 ### CNM25 and AMS C35
 
 Both ports are DRC/LVS-first: they carry no Magic extraction backend, so
-`pex_runtime`/`pex_rc` stay false and no RC coefficients are emitted yet.
+`pex_runtime`/`pex_rc` stay false. They now expose explicit field-solver
+reconstruction profiles; those emit canonical external-solver sweep manifests,
+not foundry QRC coefficients.
 
 - CNM25: the APDK field-solver path is the intended PEX route — FastCap 3D
-  capacitance (cross-section data in `profiles/cnm25/reference/klayout/`
-  deck provenance and `docs/cnm25_em_flow.md`) is solid, while the APDK has
-  no R extraction; the FastHenry GDS→EM preparation ships in
-  `scripts/run_cnm25_em.py`. The 2D parallel-plate densities are recorded in
-  the PEX manifest as the fast fallback.
-- AMS C35: interconnect PEX is deferred; the ENG-188 RF model topology
-  (BSIM3v3.1 + RG/RD/RS + RSUB + external junction diodes) owns the device
-  parasitics and is recorded as a contract in `model_contract.yaml`. ams
-  model cards are company confidential and user-supplied.
+  capacitance (the structured cross-section contract is
+  `profiles/cnm25/pex/cnm25_field_stack.yaml`, with deck provenance in
+  `docs/cnm25_em_flow.md`) is solid, while the APDK has no R extraction; the
+  FastHenry GDS→EM preparation ships in `scripts/run_cnm25_em.py`. The 2D
+  parallel-plate densities are recorded in the PEX manifest as the fast fallback.
+- AMS C35: `field_solver_estimated` consumes the ENG-182 nominal stack and
+  coefficient inventory. The ENG-188 RF model topology (BSIM3v3.1 +
+  RG/RD/RS + RSUB + external junction diodes) owns device parasitics and is
+  recorded as a contract in `model_contract.yaml`; licensed model cards remain
+  user-supplied.
 
 The native extraction smoke verifies model names, primitive MOS count, parasitic capacitors, and an ngspice operating point. It does not prove a standard-cell pin contract, corner coverage, contact-chain calibration, or timing accuracy.
 
@@ -102,6 +120,19 @@ signoff: false
 ```
 
 Its 45-cell GDS / 38-symbol catalog is a conformance input, not a characterized standard-cell implementation. LEF and Liberty are unavailable upstream.
+
+### TSMC018/DEEP and TSMC025/DEEP
+
+Both DEEP profiles now have generated xschem core-MOS symbols, explicit
+primitive bindings, and nominal CDK model-card smoke contracts. The TSMC018
+profile additionally has a source-backed external field-stack sweep contract
+from the archived T-018-MM-SP-001 Table 10.1 evidence. That stack is the
+closest public 6M specification, not a T28M-calibrated QRC deck; contact/via,
+substrate, exact-run deviations, and signoff calibration remain blocked.
+TSMC025 has no run-matched public BEOL fit in this repository, so its PEX and
+field-solver routes remain deferred. The local T28M report is preserved as
+separate run evidence and is not silently mixed with the CDK T29B model cards.
+
 
 ### XH035/XH018 public PEX and model boundary
 
@@ -406,9 +437,12 @@ fastest isolated cell.
    xschem/ngspice smoke in one path.
 3. **AMI16 and HP06.** Their source-reference PEX and nominal model cards are
    available; native stdcell pin/bulk/corner/characterization fixtures remain.
-4. **CNM25 and AMS C35.** Their geometry candidates are available, but PEX is
-   topology-only and the licensed/native process decks remain authoritative.
-5. **LS1u separately; OpenRule1um as a reference oracle only.**
+4. **CNM25, AMS C35, and TSMC018/DEEP.** Their geometry candidates and
+   external field-solver sweep contracts are available, but none is calibrated
+   runtime PEX; the licensed/native process decks remain authoritative.
+5. **TSMC025/DEEP** remains deferred because no run-matched BEOL/contact/via
+   field-solver contract is available. **LS1u** stays separate; **OpenRule1um**
+   is a reference oracle only.
 
 The implemented slice intentionally stops before shared-active geometry for
 folded wide complex cells, PEX-driven timing/power characterization, Liberty
@@ -423,6 +457,11 @@ Passed in the current workspace:
 ```bash
 python3 scripts/test_process_ir.py
 python3 scripts/run_pex_ci.py --static-only
+python3 scripts/test_profile_collateral_matrix.py
+python3 scripts/test_field_solver_contracts.py
+for profile in ami06 ami16 ams_c35 cnm25 hp06 ls1u openrule1um tr1um tsmc018_deep tsmc025_deep; do
+  python3 scripts/run_xschem.py --profile "$profile"
+done
 python3 scripts/run_xschem.py --profile ami06
 python3 scripts/run_xschem.py --profile ls1u
 nix-shell ~/Documents/librelane --run \

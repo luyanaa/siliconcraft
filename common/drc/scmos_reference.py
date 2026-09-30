@@ -116,9 +116,10 @@ def run():
     FEATURES = json.loads(os.environ.get("FEATURES", "{}"))
 
     rule_family = os.environ.get("RULE_FAMILY") or FEATURES.get("rule_family", "scmos")
-    if rule_family not in ("scmos", "scmos_subm"):
+    if rule_family not in ("scmos", "scmos_subm", "scmos_deep"):
         raise ValueError(f"unsupported SCMOS rule family: {rule_family!r}")
     submicron = rule_family == "scmos_subm"
+    deep = rule_family == "scmos_deep"
     stacked_vias = F("stackedVias")
 
     R = Report()
@@ -200,6 +201,12 @@ def run():
            (via, "via")]
     if F("metal3Available"):
         _og += [(metal3, "metal3"), (via2, "via2")]
+    if F("metal4Available"):
+        _og += [(metal4, "metal4"), (via3, "via3")]
+    if F("metal5Available"):
+        _og += [(metal5, "metal5"), (via4, "via4")]
+    if F("metal6Available"):
+        _og += [(metal6, "metal6"), (via5, "via5")]
     if F("elecAvailable"):
         _og += [(elec, "elec"), (ce, "ce")]
     if F("highresAvailable"):
@@ -271,7 +278,7 @@ def run():
         R.item(bad, rule_id, msg)
 
     # ================= SCMOS 1. WELL =================
-    if submicron:
+    if submicron or deep:
         wcheck(nwell, LAMBDA * 12.0, "(SCMOS_SUBM Rule 1.1) well width: %.2f um" % (LAMBDA * 12.0), "1.1")
         wcheck(pwell, LAMBDA * 12.0, "(SCMOS_SUBM Rule 1.1) well width: %.2f um" % (LAMBDA * 12.0), "1.1")
         scheck(nwell, LAMBDA * 18.0, "(SCMOS_SUBM Rule 1.2) well spacing, different potential: %.2f um" % (LAMBDA * 18.0), "1.2", app=True)
@@ -294,7 +301,7 @@ def run():
         wcheck(active, LAMBDA * 3.0, "(SCMOS Rule 2.1) active width: %.2f um" % (LAMBDA * 3.0), "2.1")
     scheck(active, LAMBDA * 3.0, "(SCMOS Rule 2.2) active spacing: %.2f um" % (LAMBDA * 3.0), "2.2")
     scheck(active, LAMBDA * 3.0, "(SCMOS Rule 2.2) active spacing: %.2f um" % (LAMBDA * 3.0), "2.2", notch=True)
-    if submicron:
+    if submicron or deep:
         scheck(nNotOhmic, LAMBDA * 6.0, "(SCMOS_SUBM Rule 2.3) source/drain active to well edge: %.2f um" % (LAMBDA * 6.0), "2.3", other=nBulk)
         scheck(pNotOhmic, LAMBDA * 6.0, "(SCMOS_SUBM Rule 2.3) source/drain active to well edge: %.2f um" % (LAMBDA * 6.0), "2.3", other=pBulk)
         echeck(pBulk, LAMBDA * 6.0, "(SCMOS_SUBM Rule 2.3) source/drain active to well edge: %.2f um" % (LAMBDA * 6.0), "2.3", other=nNotOhmic)
@@ -314,14 +321,17 @@ def run():
 
     # ================= SCMOS 3. POLY =================
     wcheck(poly, LAMBDA * 2.0, "(SCMOS Rule 3.1) poly width: %.2f um" % (LAMBDA * 2.0), "3.1")
-    if submicron:
+    if deep:
+        scheck(poly, LAMBDA * 4.0, "(SCMOS_SUBM Rule 3.2) poly spacing: %.2f um" % (LAMBDA * 4.0), "3.2")
+        scheck(poly, LAMBDA * 4.0, "(SCMOS_SUBM Rule 3.2) poly spacing: %.2f um" % (LAMBDA * 4.0), "3.2", notch=True)
+    elif submicron:
         scheck(poly, LAMBDA * 3.0, "(SCMOS_SUBM Rule 3.2) poly spacing: %.2f um" % (LAMBDA * 3.0), "3.2")
         scheck(poly, LAMBDA * 3.0, "(SCMOS_SUBM Rule 3.2) poly spacing: %.2f um" % (LAMBDA * 3.0), "3.2", notch=True)
     else:
         scheck(poly, LAMBDA * 2.0, "(SCMOS Rule 3.2) poly spacing: %.2f um" % (LAMBDA * 2.0), "3.2")
         scheck(poly, LAMBDA * 2.0, "(SCMOS Rule 3.2) poly spacing: %.2f um" % (LAMBDA * 2.0), "3.2", notch=True)
-    echeck(poly, LAMBDA * 2.0, "(SCMOS Rule 3.3) gate enclosure of active: %.2f um" % (LAMBDA * 2.0), "3.3", other=active)
-    echeck(active, LAMBDA * 3.0, "(SCMOS Rule 3.4) active enclosure of gate: %.2f um" % (LAMBDA * 3.0), "3.4", other=poly)
+    echeck(poly, LAMBDA * (2.5 if deep else 2.0), "(SCMOS Rule 3.3) gate enclosure of active: %.2f um" % (LAMBDA * (2.5 if deep else 2.0)), "3.3", other=active)
+    echeck(active, LAMBDA * (4.0 if deep else 3.0), "(SCMOS Rule 3.4) active enclosure of gate: %.2f um" % (LAMBDA * (4.0 if deep else 3.0)), "3.4", other=poly)
     scheck(poly, LAMBDA * 1.0, "(SCMOS Rule 3.5) field poly to active spacing: %.2f um" % (LAMBDA * 1.0), "3.5", other=active)
 
     # ================= SCMOS 4. SELECT =================
@@ -332,17 +342,19 @@ def run():
     sel = or_(nselect, pselect)
     scheck(sel, LAMBDA * 2.0, "(SCMOS Rule 4.2) select overlap of active: %.2f um" % (LAMBDA * 2.0), "4.2", other=active)
     echeck(sel, LAMBDA * 2.0, "(SCMOS Rule 4.2) select overlap of active: %.2f um" % (LAMBDA * 2.0), "4.2", other=active)
-    scheck(nselect, LAMBDA * 1.0, "(SCMOS Rule 4.3) n select to active contact spacing: %.2f um" % (LAMBDA * 1.0), "4.3", other=ca)
-    echeck(nselect, LAMBDA * 1.0, "(SCMOS Rule 4.3) n select to active contact spacing: %.2f um" % (LAMBDA * 1.0), "4.3", other=ca)
-    scheck(pselect, LAMBDA * 1.0, "(SCMOS Rule 4.3) p select to active contact spacing: %.2f um" % (LAMBDA * 1.0), "4.3", other=ca)
-    echeck(pselect, LAMBDA * 1.0, "(SCMOS Rule 4.3) p select to active contact spacing: %.2f um" % (LAMBDA * 1.0), "4.3", other=ca)
-    R.save_derived(butting(and_(ca, nselect), and_(ca, pselect), 1), "(SCMOS Rule 4.3) select overlap of active contact: %.2f um" % (LAMBDA * 1.0))
-    wcheck(nselect, LAMBDA * 2.0, "(SCMOS Rule 4.4) n select width: %.2f um" % (LAMBDA * 2.0), "4.4")
-    wcheck(pselect, LAMBDA * 2.0, "(SCMOS Rule 4.4) p select width: %.2f um" % (LAMBDA * 2.0), "4.4")
-    scheck(nselect, LAMBDA * 2.0, "(SCMOS Rule 4.4) n select spacing: %.2f um" % (LAMBDA * 2.0), "4.4")
-    scheck(nselect, LAMBDA * 2.0, "(SCMOS Rule 4.4) n select spacing: %.2f um" % (LAMBDA * 2.0), "4.4", notch=True)
-    scheck(pselect, LAMBDA * 2.0, "(SCMOS Rule 4.4) p select spacing: %.2f um" % (LAMBDA * 2.0), "4.4")
-    scheck(pselect, LAMBDA * 2.0, "(SCMOS Rule 4.4) p select spacing: %.2f um" % (LAMBDA * 2.0), "4.4", notch=True)
+    select_contact = 1.5 if deep else 1.0
+    select_width = 4.0 if deep else 2.0
+    scheck(nselect, LAMBDA * select_contact, "(SCMOS Rule 4.3) n select to active contact spacing: %.2f um" % (LAMBDA * select_contact), "4.3", other=ca)
+    echeck(nselect, LAMBDA * select_contact, "(SCMOS Rule 4.3) n select to active contact spacing: %.2f um" % (LAMBDA * select_contact), "4.3", other=ca)
+    scheck(pselect, LAMBDA * select_contact, "(SCMOS Rule 4.3) p select to active contact spacing: %.2f um" % (LAMBDA * select_contact), "4.3", other=ca)
+    echeck(pselect, LAMBDA * select_contact, "(SCMOS Rule 4.3) p select to active contact spacing: %.2f um" % (LAMBDA * select_contact), "4.3", other=ca)
+    R.save_derived(butting(and_(ca, nselect), and_(ca, pselect), 1), "(SCMOS Rule 4.3) select overlap of active contact: %.2f um" % (LAMBDA * select_contact))
+    wcheck(nselect, LAMBDA * select_width, "(SCMOS Rule 4.4) n select width: %.2f um" % (LAMBDA * select_width), "4.4")
+    wcheck(pselect, LAMBDA * select_width, "(SCMOS Rule 4.4) p select width: %.2f um" % (LAMBDA * select_width), "4.4")
+    scheck(nselect, LAMBDA * select_width, "(SCMOS Rule 4.4) n select spacing: %.2f um" % (LAMBDA * select_width), "4.4")
+    scheck(nselect, LAMBDA * select_width, "(SCMOS Rule 4.4) n select spacing: %.2f um" % (LAMBDA * select_width), "4.4", notch=True)
+    scheck(pselect, LAMBDA * select_width, "(SCMOS Rule 4.4) p select spacing: %.2f um" % (LAMBDA * select_width), "4.4")
+    scheck(pselect, LAMBDA * select_width, "(SCMOS Rule 4.4) p select spacing: %.2f um" % (LAMBDA * select_width), "4.4", notch=True)
     R.save_derived(and_(nselect, pselect), "(SCMOS Rule 4.4) n select and p select may not overlap")
 
     # ================= SCMOS 5B. CONTACT TO POLY =================
@@ -352,14 +364,17 @@ def run():
     R.save_derived(andnot(cp, poly), "(SCMOS Rule 5.2.b) poly enclosure of contact: %.2f um" % (LAMBDA * 1.0))
     if F("elecAvailable"):
         R.save_derived(andnot(cc, or_(poly, elec, active)), "Found a contact (cc) shape with no active/poly/poly2 overlap")
-    if submicron:
+    if deep:
+        scheck(cp, LAMBDA * 4.0, "(SCMOS_SUBM Rule 5.3) poly contact spacing: %.2f um" % (LAMBDA * 4.0), "5.3")
+        scheck(cp, LAMBDA * 4.0, "(SCMOS_SUBM Rule 5.3) poly contact spacing: %.2f um" % (LAMBDA * 4.0), "5.3", notch=True)
+    elif submicron:
         scheck(cp, LAMBDA * 3.0, "(SCMOS_SUBM Rule 5.3) poly contact spacing: %.2f um" % (LAMBDA * 3.0), "5.3")
         scheck(cp, LAMBDA * 3.0, "(SCMOS_SUBM Rule 5.3) poly contact spacing: %.2f um" % (LAMBDA * 3.0), "5.3", notch=True)
     else:
         scheck(cp, LAMBDA * 2.0, "(SCMOS Rule 5.3) poly contact spacing: %.2f um" % (LAMBDA * 2.0), "5.3")
         scheck(cp, LAMBDA * 2.0, "(SCMOS Rule 5.3) poly contact spacing: %.2f um" % (LAMBDA * 2.0), "5.3", notch=True)
     scheck(cp, LAMBDA * 2.0, "(SCMOS Rule 5.4) poly contact to gate spacing: %.2f um" % (LAMBDA * 2.0), "5.4", other=Gate)
-    if submicron:
+    if submicron and not deep:
         if TECH not in ("HP_AMOS14TB", "HP_CMOS26G", "TSMC_CMOS025"):
             scheck(cp, LAMBDA * 5.0, "(SCMOS Rule 5.5.b) poly contact to poly spacing: %.2f um" % (LAMBDA * 5.0), "5.5.b", other=poly)
     else:
@@ -374,7 +389,10 @@ def run():
     areacheck(ca, (LAMBDA * 2.0) ** 2 + (LAMBDA * 0.1) ** 2, "(SCMOS Rule 6.1) active contact size, exactly: %.2f x %.2f um" % (LAMBDA * 2.0, LAMBDA * 2.0), "6.1")
     echeck(active, LAMBDA * 1.0, "(SCMOS Rule 6.2.b) active enclosure of contact: %.2f um" % (LAMBDA * 1.0), "6.2.b", other=ca)
     R.save_derived(andnot(ca, active), "(SCMOS Rule 6.2.b) active enclosure of contact: %.2f um" % (LAMBDA * 1.0))
-    if submicron:
+    if deep:
+        scheck(ca, LAMBDA * 4.0, "(SCMOS_SUBM Rule 6.3) active contact spacing: %.2f um" % (LAMBDA * 4.0), "6.3")
+        scheck(ca, LAMBDA * 4.0, "(SCMOS_SUBM Rule 6.3) active contact spacing: %.2f um" % (LAMBDA * 4.0), "6.3", notch=True)
+    elif submicron:
         scheck(ca, LAMBDA * 3.0, "(SCMOS_SUBM Rule 6.3) active contact spacing: %.2f um" % (LAMBDA * 3.0), "6.3")
         scheck(ca, LAMBDA * 3.0, "(SCMOS_SUBM Rule 6.3) active contact spacing: %.2f um" % (LAMBDA * 3.0), "6.3", notch=True)
     else:
@@ -391,7 +409,7 @@ def run():
 
     # ================= SCMOS 7. METAL1 =================
     wcheck(metal1, LAMBDA * 3.0, "(SCMOS Rule 7.1) metal1 width: %.2f um" % (LAMBDA * 3.0), "7.1")
-    if submicron:
+    if submicron or deep:
         scheck(metal1, LAMBDA * 3.0, "(SCMOS Rule 7.2) metal1 spacing: %.2f um" % (LAMBDA * 3.0), "7.2")
         scheck(metal1, LAMBDA * 3.0, "(SCMOS Rule 7.2) metal1 spacing: %.2f um" % (LAMBDA * 3.0), "7.2", notch=True)
     else:
@@ -403,8 +421,9 @@ def run():
     R.save_derived(andnot(ca, metal1), "(SCMOS Rule 7.3) metal1 enclosure of contact: %.2f um" % (LAMBDA * 1.0))
 
     # ================= SCMOS 8. VIA =================
-    wcheck(via, LAMBDA * 2.0, "(SCMOS Rule 8.1) via size, exactly: %.2f x %.2f um" % (LAMBDA * 2.0, LAMBDA * 2.0), "8.1")
-    areacheck(via, (LAMBDA * 2.0) ** 2 + (LAMBDA * 0.1) ** 2, "(SCMOS Rule 8.1) via size, exactly: %.2f x %.2f um" % (LAMBDA * 2.0, LAMBDA * 2.0), "8.1")
+    via_size = 3.0 if deep else 2.0
+    wcheck(via, LAMBDA * via_size, "(SCMOS Rule 8.1) via size, exactly: %.2f x %.2f um" % (LAMBDA * via_size, LAMBDA * via_size), "8.1")
+    areacheck(via, (LAMBDA * via_size) ** 2 + (LAMBDA * 0.1) ** 2, "(SCMOS Rule 8.1) via size, exactly: %.2f x %.2f um" % (LAMBDA * via_size, LAMBDA * via_size), "8.1")
     scheck(via, LAMBDA * 3.0, "(SCMOS Rule 8.2) via spacing: %.2f um" % (LAMBDA * 3.0), "8.2")
     echeck(metal1, LAMBDA * 1.0, "(SCMOS Rule 8.3) metal1 enclosure of via: %.2f um" % (LAMBDA * 1.0), "8.3", other=via)
     R.save_derived(andnot(via, metal1), "(SCMOS Rule 8.3) metal1 enclosure of via: %.2f um" % (LAMBDA * 1.0))
@@ -412,7 +431,7 @@ def run():
         scheck(via, LAMBDA * 2.0, "(SCMOS Rule 8.4) via to contact spacing: %.2f um" % (LAMBDA * 2.0), "8.4", other=ca)
         scheck(via, LAMBDA * 2.0, "(SCMOS Rule 8.4) via to contact spacing: %.2f um" % (LAMBDA * 2.0), "8.4", other=cp)
         R.save_derived(and_(via, or_(ca, cp)), "(SCMOS Rule 8.4) via to contact spacing: %.2f um" % (LAMBDA * 2.0))
-    if not submicron:
+    if not (submicron or deep):
         scheck(poly, LAMBDA * 2.0, "(SCMOS Rule 8.5) via to poly edge spacing: %.2f um" % (LAMBDA * 2.0), "8.5", other=via)
         echeck(poly, LAMBDA * 2.0, "(SCMOS Rule 8.5) via to poly edge spacing: %.2f um" % (LAMBDA * 2.0), "8.5", other=via)
         R.save_derived(straddle(via, poly), "(SCMOS Rule 8.5) via to poly edge spacing: %.2f um" % (LAMBDA * 2.0))
@@ -422,7 +441,10 @@ def run():
 
     # ================= SCMOS 9. METAL2 =================
     wcheck(metal2, LAMBDA * 3.0, "(SCMOS Rule 9.1) metal2 width: %.2f um" % (LAMBDA * 3.0), "9.1")
-    if submicron:
+    if deep:
+        scheck(metal2, LAMBDA * 4.0, "(SCMOS_SUBM Rule 9.2.b) metal2 spacing: %.2f um" % (LAMBDA * 4.0), "9.2")
+        scheck(metal2, LAMBDA * 4.0, "(SCMOS_SUBM Rule 9.2.b) metal2 spacing: %.2f um" % (LAMBDA * 4.0), "9.2", notch=True)
+    elif submicron:
         scheck(metal2, LAMBDA * 3.0, "(SCMOS_SUBM Rule 9.2.b) metal2 spacing: %.2f um" % (LAMBDA * 3.0), "9.2")
         scheck(metal2, LAMBDA * 3.0, "(SCMOS_SUBM Rule 9.2.b) metal2 spacing: %.2f um" % (LAMBDA * 3.0), "9.2", notch=True)
     else:
@@ -478,13 +500,13 @@ def run():
 
     # ================= SCMOS 11-13. ELECTRODE (elec available) =================
     if F("elecAvailable"):
-        if submicron:
+        if submicron or deep:
             wcheck(CapacitorElec, LAMBDA * 7.0, "(SCMOS Rule 11.1) capacitor electrode width: %.2f um" % (LAMBDA * 7.0), "11.1")
         else:
             wcheck(CapacitorElec, LAMBDA * 3.0, "(SCMOS Rule 11.1) capacitor electrode width: %.2f um" % (LAMBDA * 3.0), "11.1")
         scheck(CapacitorElec, LAMBDA * 3.0, "(SCMOS Rule 11.2) capacitor electrode spacing: %.2f um" % (LAMBDA * 3.0), "11.2")
         scheck(CapacitorElec, LAMBDA * 3.0, "(SCMOS Rule 11.2) capacitor electrode spacing: %.2f um" % (LAMBDA * 3.0), "11.2", notch=True)
-        if submicron:
+        if submicron or deep:
             echeck(poly, LAMBDA * 5.0, "(SCMOS Rule 11.3) poly enclosure of capacitor electrode: %.2f um" % (LAMBDA * 5.0), "11.3", other=CapacitorElec)
         else:
             echeck(poly, LAMBDA * 2.0, "(SCMOS Rule 11.3) poly enclosure of capacitor electrode: %.2f um" % (LAMBDA * 2.0), "11.3", other=CapacitorElec)
@@ -496,7 +518,7 @@ def run():
         echeck(pBulk, LAMBDA * 2.0, "(SCMOS Rule 11.4) bulk enclosure of capacitor electrode: %.2f um" % (LAMBDA * 2.0), "11.4", other=CapacitorElec)
         scheck(CapacitorElec, LAMBDA * 2.0, "(SCMOS Rule 11.4) capacitor electrode to active spacing: %.2f um" % (LAMBDA * 2.0), "11.4", other=active)
         R.save_derived(and_(CapacitorElec, active), "(SCMOS Rule 11.4) capacitor electrode to active spacing: %.2f um" % (LAMBDA * 2.0))
-        if submicron:
+        if submicron or deep:
             scheck(CapacitorElec, LAMBDA * 6.0, "(SCMOS Rule 11.5) capacitor electrode to poly contact spacing: %.2f um" % (LAMBDA * 6.0), "11.5", other=cp)
         else:
             scheck(CapacitorElec, LAMBDA * 3.0, "(SCMOS Rule 11.5) capacitor electrode to poly contact spacing: %.2f um" % (LAMBDA * 3.0), "11.5", other=cp)
@@ -529,7 +551,7 @@ def run():
         # 13. electrode contact
         wcheck(ce, LAMBDA * 2.0, "(SCMOS Rule 13.1) contact size, exactly: %.2f x %.2f um" % (LAMBDA * 2.0, LAMBDA * 2.0), "13.1")
         areacheck(ce, (LAMBDA * 2.0) ** 2 + (LAMBDA * 0.1) ** 2, "(SCMOS Rule 13.1) contact size, exactly: %.2f x %.2f um" % (LAMBDA * 2.0, LAMBDA * 2.0), "13.1")
-        if submicron:
+        if submicron and not deep:
             scheck(ce, LAMBDA * 3.0, "(SCMOS Rule 13.2) contact spacing: %.2f um" % (LAMBDA * 3.0), "13.2")
             scheck(ce, LAMBDA * 3.0, "(SCMOS Rule 13.2) contact spacing: %.2f um" % (LAMBDA * 3.0), "13.2", notch=True)
         else:
@@ -545,8 +567,9 @@ def run():
 
     # ================= SCMOS 14/15. VIA2 / METAL3 =================
     if F("metal3Available"):
-        wcheck(via2, LAMBDA * 2.0, "(SCMOS Rule 14.1) via2 size, exactly: %.2f x %.2f um" % (LAMBDA * 2.0, LAMBDA * 2.0), "14.1")
-        areacheck(via2, (LAMBDA * 2.0) ** 2 + (LAMBDA * 0.1) ** 2, "(SCMOS Rule 14.1) via2 size, exactly: %.2f x %.2f um" % (LAMBDA * 2.0, LAMBDA * 2.0), "14.1")
+        via2_size = 3.0 if deep else 2.0
+        wcheck(via2, LAMBDA * via2_size, "(SCMOS Rule 14.1) via2 size, exactly: %.2f x %.2f um" % (LAMBDA * via2_size, LAMBDA * via2_size), "14.1")
+        areacheck(via2, (LAMBDA * via2_size) ** 2 + (LAMBDA * 0.1) ** 2, "(SCMOS Rule 14.1) via2 size, exactly: %.2f x %.2f um" % (LAMBDA * via2_size, LAMBDA * via2_size), "14.1")
         scheck(via2, LAMBDA * 3.0, "(SCMOS Rule 14.2) via2 spacing: %.2f um" % (LAMBDA * 3.0), "14.2")
         echeck(metal2, LAMBDA * 1.0, "(SCMOS Rule 14.3) metal2 enclosure of via2: %.2f um" % (LAMBDA * 1.0), "14.3", other=via2)
         R.save_derived(andnot(via2, metal2), "(SCMOS Rule 14.3) metal2 enclosure of via2: %.2f um" % (LAMBDA * 1.0))
@@ -555,11 +578,14 @@ def run():
             R.save_derived(and_(outside(via2, glass), outside(via, glass)), "(SCMOS Rule 14.4) via2 to via spacing: %.2f um" % (LAMBDA * 2.0))
         if F("metal4Available"):
             wcheck(metal3, LAMBDA * 3.0, "(SCMOS_SUBM Rule 15.1) metal3 width: %.2f um" % (LAMBDA * 3.0), "15.1")
-        elif submicron:
+        elif submicron or deep:
             wcheck(metal3, LAMBDA * 5.0, "(SCMOS_SUBM Rule 15.1) metal3 width: %.2f um" % (LAMBDA * 5.0), "15.1")
         else:
             wcheck(metal3, LAMBDA * 6.0, "(SCMOS Rule 15.1) metal3 width: %.2f um" % (LAMBDA * 6.0), "15.1")
-        if submicron:
+        if deep and F("metal4Available"):
+            scheck(metal3, LAMBDA * 4.0, "(SCMOS_SUBM Rule 15.2) metal3 spacing: %.2f um" % (LAMBDA * 4.0), "15.2")
+            scheck(metal3, LAMBDA * 4.0, "(SCMOS_SUBM Rule 15.2) metal3 spacing: %.2f um" % (LAMBDA * 4.0), "15.2", notch=True)
+        elif submicron:
             scheck(metal3, LAMBDA * 3.0, "(SCMOS_SUBM Rule 15.2) metal3 spacing: %.2f um" % (LAMBDA * 3.0), "15.2")
             scheck(metal3, LAMBDA * 3.0, "(SCMOS_SUBM Rule 15.2) metal3 spacing: %.2f um" % (LAMBDA * 3.0), "15.2", notch=True)
         else:
@@ -570,6 +596,54 @@ def run():
         else:
             echeck(metal3, LAMBDA * 2.0, "(SCMOS Rule 15.3) metal3 enclosure of via2: %.2f um" % (LAMBDA * 2.0), "15.3", other=via2)
         R.save_derived(andnot(via2, metal3), "(SCMOS Rule 15.3) metal3 enclosure of via2: %.2f um" % (LAMBDA * 1.0))
+    # ================= SCMOS 21/22. VIA3 / METAL4 =================
+    if F("metal4Available"):
+        via3_size = 3.0 if deep else 2.0
+        wcheck(via3, LAMBDA * via3_size, "(SCMOS Rule 21.1) via3 size, exactly: %.2f x %.2f um" % (LAMBDA * via3_size, LAMBDA * via3_size), "21.1")
+        areacheck(via3, (LAMBDA * via3_size) ** 2 + (LAMBDA * 0.1) ** 2, "(SCMOS Rule 21.1) via3 size, exactly: %.2f x %.2f um" % (LAMBDA * via3_size, LAMBDA * via3_size), "21.1")
+        scheck(via3, LAMBDA * 3.0, "(SCMOS Rule 21.2) via3 spacing: %.2f um" % (LAMBDA * 3.0), "21.2")
+        echeck(metal3, LAMBDA * 1.0, "(SCMOS Rule 21.3) metal3 enclosure of via3: %.2f um" % (LAMBDA * 1.0), "21.3", other=via3)
+        metal4_width = 3.0 if F("metal5Available") else 6.0
+        metal4_spacing = 4.0 if deep and F("metal5Available") else (3.0 if F("metal5Available") else 6.0)
+        metal4_enclosure = 1.0 if F("metal5Available") else 2.0
+        wcheck(metal4, LAMBDA * metal4_width, "(SCMOS Rule 22.1) metal4 width: %.2f um" % (LAMBDA * metal4_width), "22.1")
+        scheck(metal4, LAMBDA * metal4_spacing, "(SCMOS Rule 22.2) metal4 spacing: %.2f um" % (LAMBDA * metal4_spacing), "22.2")
+        echeck(metal4, LAMBDA * metal4_enclosure, "(SCMOS Rule 22.3) metal4 enclosure of via3: %.2f um" % (LAMBDA * metal4_enclosure), "22.3", other=via3)
+        R.save_derived(andnot(via3, metal4), "(SCMOS Rule 22.3) metal4 enclosure of via3: %.2f um" % (LAMBDA * metal4_enclosure))
+
+    # ================= SCMOS 25/26. VIA4 / METAL5 =================
+    if F("metal5Available"):
+        via4_size = 3.0 if deep else 2.0
+        wcheck(via4, LAMBDA * via4_size, "(SCMOS Rule 25.1) via4 size, exactly: %.2f x %.2f um" % (LAMBDA * via4_size, LAMBDA * via4_size), "25.1")
+        areacheck(via4, (LAMBDA * via4_size) ** 2 + (LAMBDA * 0.1) ** 2, "(SCMOS Rule 25.1) via4 size, exactly: %.2f x %.2f um" % (LAMBDA * via4_size, LAMBDA * via4_size), "25.1")
+        scheck(via4, LAMBDA * 3.0, "(SCMOS Rule 25.2) via4 spacing: %.2f um" % (LAMBDA * 3.0), "25.2")
+        echeck(metal4, LAMBDA * 1.0, "(SCMOS Rule 25.3) metal4 enclosure of via4: %.2f um" % (LAMBDA * 1.0), "25.3", other=via4)
+        if F("metal6Available"):
+            # Source deck keeps 26.1 (3λ) and adds the DEEP 26.2
+            # width check (4λ) on the 6M branch.
+            wcheck(metal5, LAMBDA * 3.0, "(SCMOS Rule 26.1) metal5 width: %.2f um" % (LAMBDA * 3.0), "26.1")
+            metal5_width = 4.0 if deep else 3.0
+            wcheck(metal5, LAMBDA * metal5_width, "(SCMOS Rule 26.2) metal5 width: %.2f um" % (LAMBDA * metal5_width), "26.2")
+            metal5_enclosure = 1.0
+        else:
+            metal5_width = 4.0
+            wcheck(metal5, LAMBDA * metal5_width, "(SCMOS Rule 26.1) metal5 width: %.2f um" % (LAMBDA * metal5_width), "26.1")
+            scheck(metal5, LAMBDA * 4.0, "(SCMOS Rule 26.2) metal5 spacing: %.2f um" % (LAMBDA * 4.0), "26.2")
+            metal5_enclosure = 2.0 if deep else 1.0
+        echeck(metal5, LAMBDA * metal5_enclosure, "(SCMOS Rule 26.3) metal5 enclosure of via4: %.2f um" % (LAMBDA * metal5_enclosure), "26.3", other=via4)
+        R.save_derived(andnot(via4, metal5), "(SCMOS Rule 26.3) metal5 enclosure of via4: %.2f um" % (LAMBDA * metal5_enclosure))
+
+    # ================= SCMOS 29/30. VIA5 / METAL6 =================
+    if F("metal6Available"):
+        via5_size = 4.0 if deep else 3.0
+        wcheck(via5, LAMBDA * via5_size, "(SCMOS Rule 29.1) via5 size, exactly: %.2f x %.2f um" % (LAMBDA * via5_size, LAMBDA * via5_size), "29.1")
+        areacheck(via5, (LAMBDA * via5_size) ** 2 + (LAMBDA * 0.1) ** 2, "(SCMOS Rule 29.1) via5 size, exactly: %.2f x %.2f um" % (LAMBDA * via5_size, LAMBDA * via5_size), "29.1")
+        scheck(via5, LAMBDA * 4.0, "(SCMOS Rule 29.2) via5 spacing: %.2f um" % (LAMBDA * 4.0), "29.2")
+        metal6_enclosure = 2.0 if deep else 1.0
+        echeck(metal6, LAMBDA * metal6_enclosure, "(SCMOS Rule 30.3) metal6 enclosure of via5: %.2f um" % (LAMBDA * metal6_enclosure), "30.3", other=via5)
+        R.save_derived(andnot(via5, metal6), "(SCMOS Rule 30.3) metal6 enclosure of via5: %.2f um" % (LAMBDA * metal6_enclosure))
+        wcheck(metal6, LAMBDA * 5.0, "(SCMOS Rule 30.1) metal6 width: %.2f um" % (LAMBDA * 5.0), "30.1")
+        scheck(metal6, LAMBDA * 5.0, "(SCMOS Rule 30.2) metal6 spacing: %.2f um" % (LAMBDA * 5.0), "30.2")
 
     # ================= SCMOS 20. SILICIDE BLOCK =================
     if F("sblockAvailable"):

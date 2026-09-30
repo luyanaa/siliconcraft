@@ -83,6 +83,7 @@ class Profile:
         aliases = {
             "scmos": self.rule_family == "scmos",
             "scmos_subm": self.rule_family == "scmos_subm",
+            "scmos_deep": self.rule_family == "scmos_deep",
             "stacked": bool(self.meta.get("stacked_vias", False)),
             "elec": self.has_feature("elecAvailable"),
             "highres": self.has_feature("highresAvailable"),

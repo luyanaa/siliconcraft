@@ -1,0 +1,305 @@
+# Source-driven collateral coverage for every materialized process profile.
+# This matrix is an availability contract, not a signoff claim.
+schema_version: 1
+kind: profile_collateral_matrix
+profile_discovery: profiles/*/layers.yaml
+policy:
+  source_rule: "Use local reports and bundled/public source files first; missing coefficients remain explicit null/blocked values."
+  xschem_symbols: "Every materialized profile must provide a symbols.yaml UI contract and devices/symbol_netlist.yaml identity contract."
+  spice_devices: "Every device identity must resolve to a simulator library or an explicit contract_only model record; contract_only is not simulation-ready."
+  extraction: "Every profile must name one primary Magic PEX, field-solver, public-R-only, or deferred route; automatic inference across processes is forbidden."
+  signoff: false
+  unknown_policy: "Unknown contact, via, junction, substrate, corner, and calibration values remain unknown; they are never guessed."
+promotion_rules:
+  general_default:
+    required:
+      - drc
+      - lvs
+      - xschem_symbol_contract
+      - xschem_ngspice_smoke
+      - simulatable_spice_models
+      - source_reference_pex
+      - runtime_pex_fixture
+    forbidden:
+      - contract_only_model
+      - topology_only_extraction
+      - field_solver_only_extraction
+      - deferred_extraction
+      - signoff_claim
+    note: "The default remains an engineering bootstrap, not a foundry signoff technology."
+defaults:
+  general:
+    profile: ami06
+    reason: "AMI06 is the integrated engineering bootstrap path with source-backed DRC/LVS, nominal SPICE, xschem/ngspice smoke, native Magic PEX, and the existing conformance gates; AMI16 and HP06 remain source-backed alternates because their process-specific device/row/corner contracts are narrower."
+    signoff: false
+  source_backed_scmos_alternates:
+    - ami16
+    - hp06
+  field_solver_default: none
+profiles:
+  ami06:
+    promotion: general_default
+    sources:
+      - NCSU_CDK_1.6.0
+      - MOSIS_N8BN_report
+      - local_model_card
+    xschem: {status: source_backed, symbols: profiles/ami06/symbols.yaml, netlist: profiles/ami06/devices/symbol_netlist.yaml, smoke: profiles/ami06/xschem_smoke.yaml}
+    spice:
+      status: simulatable_nominal
+      library: profiles/ami06/models/ami06.lib
+      sections:
+        - ami06
+      devices:
+        - ami06N
+        - ami06P
+      corners:
+        - nominal
+    extraction: {route: magic_pex, manifest: profiles/ami06/pex/manifest.yaml, profile: n8bn_reference, status: source_reference_partial, topology: true, runtime: true, rc: estimated}
+    field_solver: {status: not_required, calibrated: false}
+  ami16:
+    promotion: source_backed_alternate
+    sources:
+      - NCSU_CDK_1.6.0
+      - MOSIS_N88Z_report
+      - local_model_card
+    xschem: {status: source_backed, symbols: profiles/ami16/symbols.yaml, netlist: profiles/ami16/devices/symbol_netlist.yaml, smoke: profiles/ami16/xschem_smoke.yaml}
+    spice:
+      status: simulatable_nominal
+      library: profiles/ami16/models/ami16.lib
+      sections:
+        - ami16
+      devices:
+        - ami16N
+        - ami16P
+      corners:
+        - nominal
+    extraction: {route: magic_pex, manifest: profiles/ami16/pex/manifest.yaml, profile: n88z_reference, status: source_reference_partial, topology: true, runtime: true, rc: estimated}
+    field_solver: {status: not_required, calibrated: false}
+  ams_c35:
+    promotion: blocked
+    sources:
+      - NCSU_CDK_1.6.0
+      - ENG_182
+      - local_model_card
+    xschem: {status: source_backed, symbols: profiles/ams_c35/symbols.yaml, netlist: profiles/ams_c35/devices/symbol_netlist.yaml, smoke: profiles/ams_c35/xschem_smoke.yaml}
+    spice:
+      status: simulatable_nominal
+      library: profiles/ams_c35/models/ams_c35.lib
+      sections:
+        - ams_c35
+      devices:
+        - c35N
+        - c35P
+      corners:
+        - nominal
+    extraction: {route: field_solver, manifest: profiles/ams_c35/pex/manifest.yaml, profile: field_solver_estimated, status: source_reference_partial, topology: true, runtime: false, rc: estimated}
+    field_solver: {status: field_solver_estimated, calibrated: false, source: profiles/ams_c35/c35b4c3_stack.yaml}
+    blockers:
+      - no_open_runtime_pex_backend
+      - no_signoff_calibration
+  cnm25:
+    promotion: blocked
+    sources:
+      - CNM25_APDK
+      - cnm25.tch
+      - local_model_card
+    xschem: {status: source_backed, symbols: profiles/cnm25/symbols.yaml, netlist: profiles/cnm25/devices/symbol_netlist.yaml, smoke: profiles/cnm25/xschem_smoke.yaml}
+    spice:
+      status: simulatable_nominal
+      library: profiles/cnm25/models/cnm25.lib
+      sections:
+        - cnm25
+      devices:
+        - cnm25modN
+        - cnm25modP
+      corners:
+        - nominal
+    extraction: {route: field_solver, manifest: profiles/cnm25/pex/manifest.yaml, profile: field_solver_estimated, status: source_reference_partial, topology: true, runtime: false, rc: estimated}
+    field_solver: {status: field_solver_estimated, calibrated: false, source: profiles/cnm25/pex/cnm25_field_stack.yaml}
+    blockers:
+      - no_open_runtime_pex_backend
+      - fastcap_is_capacitance_only
+      - no_signoff_calibration
+  hp06:
+    promotion: source_backed_alternate
+    sources:
+      - NCSU_CDK_1.6.0
+      - MOSIS_N8AG_report
+      - local_model_card
+    xschem: {status: source_backed, symbols: profiles/hp06/symbols.yaml, netlist: profiles/hp06/devices/symbol_netlist.yaml, smoke: profiles/hp06/xschem_smoke.yaml}
+    spice:
+      status: simulatable_nominal
+      library: profiles/hp06/models/hp06.lib
+      sections:
+        - hp06
+      devices:
+        - hp14tbN
+        - hp14tbP
+      corners:
+        - nominal
+    extraction: {route: magic_pex, manifest: profiles/hp06/pex/manifest.yaml, profile: n8ag_reference, status: source_reference_partial, topology: true, runtime: true, rc: estimated}
+    field_solver: {status: not_required, calibrated: false}
+  ls1u:
+    promotion: blocked
+    sources:
+      - LibreSilicon
+      - HKUST_process_recipe
+      - local_characterization
+    xschem: {status: source_backed, symbols: profiles/ls1u/symbols.yaml, netlist: profiles/ls1u/devices/symbol_netlist.yaml, smoke: profiles/ls1u/xschem_smoke.yaml}
+    spice:
+      status: simulatable_partial
+      library: profiles/ls1u/models/ls1u.lib
+      sections:
+        - ls1u
+      devices:
+        - LV1UNMOS
+        - LV1UPMOS
+      corners:
+        - nominal
+    extraction: {route: magic_pex, manifest: profiles/ls1u/pex/manifest.yaml, profile: scmos_legacy, status: source_reference_partial, topology: true, runtime: native_fixture_only, rc: estimated}
+    field_solver: {status: not_required, calibrated: false}
+    blockers:
+      - no_process_corner_pack
+      - native_subcircuit_topology_not_generic_mosfet
+  openrule1um:
+    promotion: blocked
+    sources:
+      - OpenRule1um_model_contract
+      - Phenitec_model_card
+    xschem: {status: source_backed, symbols: profiles/openrule1um/symbols.yaml, netlist: profiles/openrule1um/devices/symbol_netlist.yaml, smoke: profiles/openrule1um/xschem_smoke.yaml}
+    spice:
+      status: simulatable_contract
+      library: profiles/openrule1um/models/openrule1um.lib
+      sections:
+        - openrule1um
+      devices:
+        - or1_nmos
+        - or1_pmos
+      corners:
+        - nominal
+    extraction: {route: deferred, manifest: profiles/openrule1um/pex/manifest.yaml, profile: none, status: unavailable, topology: false, runtime: false, rc: false}
+    field_solver: {status: unavailable, calibrated: false}
+    blockers:
+      - no_openrule1um_pex_deck
+      - no_active_canonical_device_bindings
+  tr1um:
+    promotion: blocked
+    sources:
+      - OpenSUSI_TR_1um
+      - IP62
+      - local_model_card
+    xschem: {status: source_backed, symbols: profiles/tr1um/symbols.yaml, netlist: profiles/tr1um/devices/symbol_netlist.yaml, smoke: profiles/tr1um/xschem_smoke.yaml}
+    spice:
+      status: simulatable_nominal
+      library: profiles/tr1um/models/tr1um.lib
+      sections:
+        - tr1um
+      devices:
+        - NMOS_mst
+        - PMOS_mst
+      corners:
+        - nominal
+    extraction: {route: magic_pex, manifest: profiles/tr1um/pex/manifest.yaml, profile: tr1um_engineering, status: source_reference_partial, topology: true, runtime: true, rc: estimated}
+    field_solver: {status: not_required, calibrated: false}
+    blockers:
+      - engineering_only_rc
+      - no_foundry_corner_pack
+  tsmc018_deep:
+    promotion: blocked
+    sources:
+      - NCSU_CDK_1.6.0
+      - TSMC_T28M_evidence
+      - TSMC018_field_stack
+    xschem: {status: source_backed, symbols: profiles/tsmc018_deep/symbols.yaml, netlist: profiles/tsmc018_deep/devices/symbol_netlist.yaml, smoke: profiles/tsmc018_deep/xschem_smoke.yaml}
+    spice:
+      status: simulatable_nominal
+      library: profiles/tsmc018_deep/models/tsmc018_deep.lib
+      sections:
+        - tsmc018_deep
+      devices:
+        - TSMC18dN
+        - TSMC18dP
+      corners:
+        - nominal
+    extraction: {route: field_solver, manifest: profiles/tsmc018_deep/pex/manifest.yaml, profile: field_solver_estimated, status: source_reference_partial, topology: true, runtime: false, rc: estimated}
+    field_solver: {status: field_solver_estimated, calibrated: false, source: profiles/tsmc018_deep/pex/t018_field_stack.yaml}
+    blockers:
+      - closest_stack_not_exact_T28M
+      - no_contact_via_calibration
+      - no_substrate_network
+      - no_signoff_calibration
+  tsmc025_deep:
+    promotion: blocked
+    sources:
+      - NCSU_CDK_1.6.0
+      - TSMC_N94S_report
+      - local_model_card
+    xschem: {status: source_backed, symbols: profiles/tsmc025_deep/symbols.yaml, netlist: profiles/tsmc025_deep/devices/symbol_netlist.yaml, smoke: profiles/tsmc025_deep/xschem_smoke.yaml}
+    spice:
+      status: simulatable_nominal
+      library: profiles/tsmc025_deep/models/tsmc025_deep.lib
+      sections:
+        - tsmc025_deep
+      devices:
+        - tsmc25dN
+        - tsmc25dP
+      corners:
+        - nominal
+    extraction: {route: deferred, manifest: profiles/tsmc025_deep/pex/manifest.yaml, profile: none, status: unavailable, topology: false, runtime: false, rc: false}
+    field_solver: {status: unavailable, calibrated: false}
+    blockers:
+      - no_run_matched_beol_stack
+      - no_contact_via_calibration
+      - no_field_solver_fit
+  xh018:
+    promotion: blocked
+    sources:
+      - X_FAB_public_datasheet
+      - local_process_contract
+    xschem: {status: contract_only, symbols: profiles/xh018/symbols.yaml, netlist: profiles/xh018/devices/symbol_netlist.yaml, smoke: unavailable}
+    spice:
+      status: contract_only
+      library: null
+      sections: []
+      devices:
+        - xh018N
+        - xh018P
+        - xh018Nhv
+        - xh018Phv
+        - xh018Niso
+        - xh018Piso
+        - xh018Nldmos
+        - xh018Pldmos
+      corners: []
+    extraction: {route: public_r_only, manifest: profiles/xh018/pex/manifest.yaml, profile: public_r_only, status: public_typical_r_only, topology: false, runtime: python_contract, rc: public_typical_r_only}
+    field_solver: {status: field_solver_estimated, calibrated: false, source: profiles/xh018/pex/xh018_beol_public_fit.yaml}
+    blockers:
+      - no_public_spice_cards
+      - unknown_contact_via_resistance
+      - active_distributed_substrate_required
+  xh035:
+    promotion: blocked
+    sources:
+      - X_FAB_public_datasheet
+      - local_process_contract
+    xschem: {status: contract_only, symbols: profiles/xh035/symbols.yaml, netlist: profiles/xh035/devices/symbol_netlist.yaml, smoke: unavailable}
+    spice:
+      status: contract_only
+      library: null
+      sections: []
+      devices:
+        - xh035N
+        - xh035P
+        - xh035Nhv
+        - xh035Phv
+        - xh035Niso
+        - xh035Piso
+        - xh035Nldmos
+        - xh035Pldmos
+      corners: []
+    extraction: {route: public_r_only, manifest: profiles/xh035/pex/manifest.yaml, profile: public_r_only, status: public_typical_r_only, topology: false, runtime: python_contract, rc: public_typical_r_only}
+    field_solver: {status: field_solver_estimated, calibrated: false, source: profiles/xh035/pex/xh035_beol_public_fit.yaml}
+    blockers:
+      - no_public_spice_cards
+      - unknown_contact_via_resistance
+      - active_distributed_substrate_required

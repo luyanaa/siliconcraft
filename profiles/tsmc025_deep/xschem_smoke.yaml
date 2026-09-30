@@ -1,0 +1,7 @@
+# Core MOS smoke; this validates the public TSMC025 DEEP model cards only.
+expected_netlist:
+  - "m1 d in 0 0 tsmc25dN"
+  - "v1 in 0 2.5"
+  - "v2 d 0 2.5"
+probe: "@m1[id]"
+min_current: 0

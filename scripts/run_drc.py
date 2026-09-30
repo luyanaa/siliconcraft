@@ -59,6 +59,12 @@ def load_profile(profile_dir: Path):
         gds = lyr.get("gds") or []
         if gds:
             layermap[lyr["name"]] = [int(gds[0]["layer"]), int(gds[0]["datatype"])]
+    # The MOSIS stream map names the optional isolation layer DEEP_N_WELL,
+    # while the shared Diva-derived layer contract uses lower-case
+    # deep_nwell.  Preserve the physical spelling and provide the semantic
+    # alias to both DRC and LVS runners.
+    if "DEEP_N_WELL" in layermap:
+        layermap.setdefault("deep_nwell", layermap["DEEP_N_WELL"])
     features = dict(meta.get("features") or {})
     features["rule_family"] = process.rule_family
     features.setdefault("stackedVias", bool(meta.get("stacked_vias", False)))

@@ -152,11 +152,21 @@ foundry signoff data.
 | HP 0.35 µm | (planned hp10) | N88W | A | A | C | A | **A−** |
 | TSMC 0.35 µm | (planned tsmc035) | N88Y | A | A | B | A | **A−** |
 | TSMC 0.25 µm | (planned tsmc025) | N94S | A | A | C | C | **B+** |
-| TSMC 0.18 µm | (planned tsmc018) | T28M | A | A | B | A | **A−** |
+| TSMC 0.18 µm | tsmc018_deep | T28M / closest official 6M stack | A | B | B | A | **B+** |
 | AMI CWL 1.0 µm | (planned amcwl) | N87R | A | A | C | A | **A−** |
 | Orbit 2.0 µm | (planned orbit) | N91W | A | A | C | A | **A−** |
 | LS1u | ls1u | academic/empirical | B | C | C | C | **C** (documented limit) |
 | OpenRule1um | openrule1um | measured primitive contract | B | C | C | C | **C** |
+
+The `tsmc018_deep` and `tsmc025_deep` profile directories now carry
+source-backed reference DRC/LVS and public MOS model contracts. TSMC018 also
+has an external field-solver stack contract from the archived T-018-MM-SP-001
+evidence, but it is not a run-qualified QRC deck: contact/via, substrate, and
+exact T28M stack deviations remain blocked. TSMC025 has no run-matched public
+BEOL fit, so its PEX and field-solver routes remain deferred. Neither DEEP
+profile is included in the Magic PEX ladder. The non-TSMC search/audit is
+maintained in
+[`schema/scmos_legacy_pex_audit.yaml`](../schema/scmos_legacy_pex_audit.yaml).
 
 ## Findings
 
@@ -232,8 +242,12 @@ retrieve.
    official TSMC035 cross-section as its first-hand thickness.
 4. Build TSMC025 from N94S with a derived inverter-chain benchmark; field stack
    derived from paper ranges, cross-checked against the N94S C table.
-5. Build TSMC018 from T28M using `docs/mosis_evidence/t28m_lo_epi-params.txt`;
-   field stack from `T-018-MM-SP-001` Table 10.1.
-6. For each planned profile, add a field stack with explicit `official` /
-   `derived` labeling and its assumption chain; keep `pex_runtime=false` (no
-   Magic backend yet) exactly as cnm25/ams_c35.
+5. `tsmc018_deep` now carries the T28M source-backed DEEP DRC/LVS/model
+   contract and the closest official 6M field-stack sweep contract; exact
+   run-matched contact/via/substrate/calibration terms remain blocked.
+6. `tsmc025_deep` has the source-backed DRC/LVS/model contract, but its
+   run-matched BEOL/contact/via evidence is still absent, so PEX and field
+   solver remain deferred.
+7. For each future profile, add a field stack with explicit `official` /
+   `derived` labeling and its assumption chain; keep `pex_runtime=false`
+   until a native backend is actually paired and tested.

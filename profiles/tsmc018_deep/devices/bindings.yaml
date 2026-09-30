@@ -1,0 +1,60 @@
+# Process-specific bindings for TSMC CMOS018/DEEP.
+schema_version: 1
+canonical_source: "../../../common/devices/canonical/mos.yaml"
+bindings:
+  nmos_core:
+    canonical_variant: nmos_core
+    layout:
+      gate_types: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      substrate_node: Gnd!
+    simulation:
+      representation: primitive
+      name: tsmc18dN
+      prefix: m
+      model_library: "../models/tsmc018_deep.lib"
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+    lvs:
+      extracted_class: tsmc18dN
+      netgen_class: tsmc18dN
+      permutable:
+        -
+          - d
+          - s
+  pmos_core:
+    canonical_variant: pmos_core
+    layout:
+      gate_types: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      substrate_node: Vdd!
+    simulation:
+      representation: primitive
+      name: tsmc18dP
+      prefix: m
+      model_library: "../models/tsmc018_deep.lib"
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+    lvs:
+      extracted_class: tsmc18dP
+      netgen_class: tsmc18dP
+      permutable:
+        -
+          - d
+          - s

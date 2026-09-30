@@ -1,0 +1,7 @@
+# Core MOS smoke; this validates the public TSMC018 DEEP model cards only.
+expected_netlist:
+  - "m1 d in 0 0 TSMC18dN"
+  - "v1 in 0 1.8"
+  - "v2 d 0 1.8"
+probe: "@m1[id]"
+min_current: 0

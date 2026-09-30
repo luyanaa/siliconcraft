@@ -1,0 +1,47 @@
+# XH018 xschem netlist identities.  Model libraries are intentionally null:
+# these are LVS/netlist contracts until an official card is installed.
+schema_version: 1
+symbols:
+  nmos4:
+    device_binding: nmos_core
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m nf=@nf"
+    template: {name: M1, w: "1u", l: "0.18u", m: "1", nf: "1"}
+  pmos4:
+    device_binding: pmos_core
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m nf=@nf"
+    template: {name: M1, w: "2u", l: "0.18u", m: "1", nf: "1"}
+  nmos_hv:
+    device_binding: nmos_hv
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m nf=@nf"
+    template: {name: M1, w: "2u", l: "0.5u", m: "1", nf: "1"}
+  pmos_hv:
+    device_binding: pmos_hv
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m nf=@nf"
+    template: {name: M1, w: "4u", l: "0.5u", m: "1", nf: "1"}
+  nmos_isolated:
+    device_binding: nmos_isolated
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m nf=@nf"
+    template: {name: M1, w: "1u", l: "0.18u", m: "1", nf: "1"}
+  pmos_isolated:
+    device_binding: pmos_isolated
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m nf=@nf"
+    template: {name: M1, w: "2u", l: "0.18u", m: "1", nf: "1"}
+  nldmos:
+    device_binding: nldmos
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m nf=@nf"
+    template: {name: M1, w: "2u", l: "1u", m: "1", nf: "1"}
+  pldmos:
+    device_binding: pldmos
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m nf=@nf"
+    template: {name: M1, w: "4u", l: "1u", m: "1", nf: "1"}
+  vdc:
+    spiceprefix: v
+    format: "@spiceprefix@name @pinlist @value"
+    template: {name: V1, value: "1.8"}
+  gnd:
+    spiceprefix: ""
+    format: "*.alias @lab"
+    template: {name: l1, lab: "0"}
+  lab_pin:
+    format: "*.alias @lab"
+    template: {name: p1, lab: xxx}

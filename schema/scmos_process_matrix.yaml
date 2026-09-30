@@ -5,6 +5,7 @@ schema_version: 1
 rule_families:
   - scmos
   - scmos_subm
+  - scmos_deep
 profiles:
   - name: ami16
     source_process: AMI_ABN
@@ -65,6 +66,36 @@ profiles:
     model_prefix: tsmc20
     rule_family: scmos_subm
     deep_n_well_layer: DEEP_N_WELL
+  - name: tsmc025_deep
+    source_process: TSMC_CMOS025_DEEP
+    techfile: tsmc_03d.tf
+    mosis_code: SCN5M_DEEP
+    lambda_um: 0.12
+    grid_um: 0.06
+    min_channel_um: 0.24
+    min_width_um: 0.36
+    model_prefix: tsmc25d
+    rule_family: scmos_deep
+    deep_n_well_layer: DEEP_N_WELL
+    stacked_vias: true
+    drc_authority: reference
+    pex_status: deferred
+    note: "NCSU CDK source-backed SCMOS_DEEP 0.25um variant; DRC/LVS reference coverage only; TSMC PEX intentionally deferred"
+  - name: tsmc018_deep
+    source_process: TSMC_CMOS018_DEEP
+    techfile: tsmc_02d.tf
+    mosis_code: SCN6M_DEEP
+    lambda_um: 0.09
+    grid_um: 0.045
+    min_channel_um: 0.18
+    min_width_um: 0.27
+    model_prefix: tsmc18d
+    rule_family: scmos_deep
+    deep_n_well_layer: DEEP_N_WELL
+    stacked_vias: true
+    drc_authority: reference
+    pex_status: deferred
+    note: "NCSU CDK source-backed SCMOS_DEEP 0.18um variant; DRC/LVS reference coverage only; TSMC PEX intentionally deferred"
   - name: cnm25
     source_process: CNM25
     mosis_code: null
@@ -113,16 +144,22 @@ profiles:
     model_prefix: xh018
     rule_family: scmos_subm
     note: "X-FAB public basic-rule/HVCMOS contract; provisional logical map, not signoff"
+deep_rule_boundary:
+  status: explicit_source_backed_only
+  supported_profiles:
+    - tsmc025_deep
+    - tsmc018_deep
+  source_contract:
+    - "NCSU CDK globalData.il process metadata"
+    - "NCSU CDK tsmc_03d.tf / tsmc_02d.tf feature flags"
+    - "NCSU CDK techfile/divaDRC.rul DEEP branches"
+    - "NCSU CDK publicModel tsmc25dN/P and tsmc18dN/P"
+  do_not_infer:
+    - "A generic 130nm SCMOS_DEEP profile from node size alone"
+    - "TSMC PEX coefficients from a model card or lambda value"
+    - "Foundry signoff DRC/LVS from the shared reference deck"
 forbidden:
-  process_names:
-    - TSMC_CMOS025_DEEP
-    - TSMC_CMOS018_DEEP
-  mosis_codes:
-    - SCN5M_DEEP
-    - SCN6M_DEEP
-  techfiles:
-    - tsmc_03d.tf
-    - tsmc_02d.tf
-  lambda_um:
-    - 0.12
-    - 0.09
+  process_names: []
+  mosis_codes: []
+  techfiles: []
+  lambda_um: []

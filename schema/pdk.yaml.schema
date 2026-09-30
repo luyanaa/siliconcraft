@@ -23,8 +23,8 @@
         "min_width_um": { "type": "number" },
         "well_type": { "enum": ["n", "p", "e"], "description": "n = n-well, p = p-well, e = epitaxial/twin-well" },
         "rule_family": {
-          "enum": ["scmos", "scmos_subm", "native"],
-          "description": "rule family independent of the process profile; native is for non-SCMOS profiles"
+          "enum": ["scmos", "scmos_subm", "scmos_deep", "native"],
+          "description": "rule family independent of the process profile; scmos_deep is reserved for source-backed NCSU SCMOS DEEP variants; native is for non-SCMOS profiles"
         },
         "hvcmos_rule_source": { "type": "string", "description": "explicit provenance/limitation for profile-specific HV rules" },
         "mask_map_status": { "type": "string", "description": "foundry, provisional, or unavailable logical layer mapping" },

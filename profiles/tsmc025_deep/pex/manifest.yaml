@@ -1,0 +1,17 @@
+# TSMC025/DEEP PEX is deferred until a run-matched BEOL/contact/via source is
+# available.  The public model and DEEP DRC/LVS contracts do not supply it.
+schema_version: 2
+profile: tsmc025_deep
+default: none
+status: deferred
+signoff: false
+reason: no_run_matched_beol_contact_via_or_substrate_extraction_contract
+profiles:
+  none:
+    generated: false
+    status: unavailable
+    description: "No PEX or field-solver profile is enabled for TSMC025/DEEP."
+    magic_directives: []
+selection:
+  automatic: forbidden
+  explicit_required: true

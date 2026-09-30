@@ -1,0 +1,7 @@
+# Minimal AMI16 primitive MOS ngspice smoke.
+expected_netlist:
+  - "m1 d in 0 0 ami16N"
+  - "v1 in 0 5"
+  - "v2 d 0 5"
+probe: "@m1[id]"
+min_current: 0

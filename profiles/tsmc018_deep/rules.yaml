@@ -1,0 +1,50 @@
+# Source contract for TSMC CMOS018/DEEP.
+# The shared reference deck is selected intentionally; no generated
+# authoritative deck or signoff claim is made for this profile.
+schema_version: 1
+profile: tsmc018_deep
+engine: scmos_reference
+authority: reference_oracle
+source:
+  process: TSMC_CMOS018_DEEP
+  techfile: tsmc_02d.tf
+  drc: techfile/divaDRC.rul
+  source_revision: "NCSU CDK 1.6.0"
+  coverage: "SCMOS core rules plus source-backed DEEP geometry branches"
+  signoff: false
+pex:
+  status: deferred
+  reason: "TSMC PEX is intentionally outside this profile port"
+rules:
+  grid:
+    x: 0.045
+    y: 0.045
+  deep_overrides:
+    - {id: "1.1", value_lambda: 12.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "1.2", value_lambda: 18.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "2.3", value_lambda: 6.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "3.2", value_lambda: 4.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "3.3", value_lambda: 2.5, source: "divaDRC.rul DEEP branch"}
+    - {id: "3.4", value_lambda: 4.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "4.3", value_lambda: 1.5, source: "divaDRC.rul DEEP branch"}
+    - {id: "4.4", value_lambda: 4.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "5.3", value_lambda: 4.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "6.3", value_lambda: 4.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "7.2", value_lambda: 3.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "8.1", value_lambda: 3.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "9.2", value_lambda: 4.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "11.1", value_lambda: 7.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "11.3", value_lambda: 5.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "11.5", value_lambda: 6.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "13.2", value_lambda: 2.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "14.1", value_lambda: 3.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "15.1", value_lambda: 3.0, condition: metal4, source: "divaDRC.rul DEEP branch"}
+    - {id: "15.2", value_lambda: 4.0, condition: metal4, source: "divaDRC.rul DEEP branch"}
+    - {id: "21.1", value_lambda: 3.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "22.2", value_lambda: 4.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "25.1", value_lambda: 3.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "26.1", value_lambda: 3.0, condition: metal6, source: "divaDRC.rul DEEP branch"}
+    - {id: "26.2", value_lambda: 4.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "26.3", value_lambda: 1.0, condition: metal6, source: "divaDRC.rul DEEP branch"}
+    - {id: "29.1", value_lambda: 4.0, source: "divaDRC.rul DEEP branch"}
+    - {id: "30.3", value_lambda: 2.0, source: "divaDRC.rul DEEP branch"}

@@ -40,10 +40,11 @@ simulation width is `w * nf * m`.
 ### SCMOS rule families and target profiles
 
 The normalized SCMOS contract separates the rule family from the process
-profile. `meta.rule_family` is one of `scmos` or `scmos_subm`; non-SCMOS
-profiles use `native`. `SCMOS_DEEP`, `deep_rules`, and `submicron_rules` are
-not normalized assets. The shared DRC/PCell engines implement only the
-standard-vs-SUBM split.
+profile. `meta.rule_family` is one of `scmos`, `scmos_subm`, or the explicit
+source-backed `scmos_deep`; non-SCMOS profiles use `native`. `scmos_deep` is
+reserved for the NCSU CDK `SCN5M_DEEP`/`SCN6M_DEEP` contracts and their
+source-backed rule overlays. It is not a generic small-lambda switch.
+See [`docs/scmos_deep.md`](docs/scmos_deep.md) for the DRC/LVS and PEX boundary.
 
 ### XH035/XH018 authority and HVCMOS boundary
 
@@ -108,11 +109,12 @@ cross-check only. The XH 300/100-series profile maps remain
 tapeout.
 
 `schema/scmos_process_matrix.yaml` records the supported NCSU target mapping:
-TSMC 0.35 4M/2P and 4M options, `tsmc03` (`SCN5M_SUBM`, lambda 0.15), and
-`tsmc02` (`SCN6M_SUBM`, lambda 0.10). The matrix also records
-`DEEP_N_WELL` as a layer capability. The upstream CDK DEEP techfiles remain
-provenance-only and are explicitly forbidden by the matrix; this policy does
-not remove unrelated `DEEP` controls in LS1u/OpenRule1um reference decks.
+TSMC 0.35 4M/2P and 4M options, `tsmc03` (`SCN5M_SUBM`, lambda 0.15),
+`tsmc02` (`SCN6M_SUBM`, lambda 0.10), plus the explicit DEEP profiles
+`tsmc025_deep` (`SCN5M_DEEP`, lambda 0.12) and `tsmc018_deep`
+(`SCN6M_DEEP`, lambda 0.09). The DEEP profiles have shared reference
+DRC/LVS coverage and deferred TSMC PEX; they are not foundry signoff PDKs.
+No 130 nm or other DEEP profile is inferred from node size or lambda.
 
 ### Historical SCMOS reference matrix
 
@@ -137,6 +139,12 @@ calibrated model, signoff DRC/LVS, or signoff PEX claim. In particular:
 - No exact GMOS10QA Magic target was found; `SCN4M_SUBM.20.tech27` is retained
   only as a TSMC35-labeled 4M/SUBM backend grammar reference.
 
+Non-TSMC PEX source discovery and promotion blockers are tracked in
+[`schema/scmos_legacy_pex_audit.yaml`](schema/scmos_legacy_pex_audit.yaml).
+Internet SCMOS rules and Magic technology files provide geometry/extraction
+grammar; active coefficients remain paired to local MOSIS reports and model
+cards. TSMC DEEP PEX is intentionally deferred.
+
 ### SCMOS 7.2 device extensions
 
 [`docs/scmos72_device_extensions.md`](docs/scmos72_device_extensions.md) plus the
@@ -151,6 +159,29 @@ the Magic AMI 1.5 µm 20.x set applies only under an explicit
 
 The 2001a and 2002a Magic archives are separate from the bundled `scmos.tech`;
 release, target label, and conditional source context are preserved.
+
+### All-profile collateral coverage
+
+[`schema/profile_collateral_matrix.yaml`](schema/profile_collateral_matrix.yaml)
+is the coverage contract for every materialized profile. Each profile now has
+an xschem UI symbol set plus explicit device netlist identities. Simulatable
+profiles have a named ngspice library/section; XH018/XH035 deliberately expose
+contract-only identities because no public simulator cards were found. Each
+profile also names its primary Magic PEX, external field-solver, public-R-only,
+or deferred route; missing contact/via, substrate, corner, and calibration
+terms remain blocked.
+
+The general engineering default is `ami06`: it is the integrated bootstrap
+path combining source-backed DRC/LVS, nominal SPICE, xschem/ngspice smoke,
+native Magic PEX, and the existing conformance gates. AMI16 and HP06 are
+source-backed SCMOS alternate candidates, but their process-specific
+device/row/corner contracts remain narrower. `field_solver_default` remains
+`none`; field-solver reconstructions are external research RC inputs and never
+become signoff defaults automatically.
+
+The matrix contracts are checked by
+`scripts/test_profile_collateral_matrix.py` and
+`scripts/test_field_solver_contracts.py`.
 
 ### SPICE/PEX stdcell preparation
 
@@ -234,14 +265,16 @@ not disabled.
 - CNM25 (IMB-CNM academic 2.5 µm, 2-poly/2-metal) has a conservative
   fixed-height candidate contract in addition to its two DRC abstractions:
   the classic-SCMOS deck (lambda=1.5 µm, native 2.5 µm contact cut) and the
-  native APDK deck. LVS uses the shared SCMOS engine; PEX remains topology
-  only, with the prepared FastCap/FastHenry flow
-  (`scripts/run_cnm25_em.py`) not emitting RC coefficients.
+  native APDK deck. LVS uses the shared SCMOS engine; Magic PEX is unavailable.
+  Its prepared FastCap/FastHenry flow (`scripts/run_cnm25_em.py`) is an
+  external field-solver reconstruction and emits sweep manifests, not
+  calibrated RC coefficients.
 - AMS C35 (0.35 µm mixed-signal, TSMC-licensed base) has a rule-derived
   fixed-height candidate contract. Its ENG-183 exceptions (VIA 0.5 µm,
   select/active 0.45 µm, N+/P+ enclosure 0.25 µm, stacked vias), generated
-  xschem/ngspice MOS symbols, and analog PCells remain process-specific; PEX
-  is topology-only and the licensed kit is the tapeout authority.
+  xschem/ngspice MOS symbols, and analog PCells remain process-specific.
+  Magic PEX is unavailable; the ENG-182/stack-based field-solver route is
+  estimated only, and the licensed kit is the tapeout authority.
 - TR-1um is a Tokai-Rika 1um/OpenSUSI IP62 port using standard SCMOS lambda
   (`lambda=0.5um`, not SUBM) plus explicit native AP/AN/WN/HVCMOS overrides.
   Its native KLayout DRC/LVS and PCell sources are preserved under
@@ -266,10 +299,11 @@ not disabled.
 
 ## Current SCMOS behavior
 
-The active AMI06, HP06, AMI16, CNM25, AMS C35, and TR-1um PEX/DRC contracts
-retain their source-driven process-specific coefficients. AMI06/HP06/AMI16
-carry the `pearlriver-scmos.tech` Magic carrier; CNM25 and AMS C35 are
-DRC/LVS-only profiles (no Magic backend yet), while TR-1um uses its copied
+The active AMI06, HP06, AMI16, CNM25, AMS C35, and TR-1um DRC/PEX
+contracts retain their source-driven, process-specific limits and coefficients
+where declared. AMI06/HP06/AMI16 carry the `pearlriver-scmos.tech` Magic
+carrier; CNM25 and AMS C35 are DRC/LVS-first profiles with external
+field-solver contracts but no Magic backend, while TR-1um uses its copied
 native `TR-1um.tech` Magic carrier. Native decks live under
 `profiles/<name>/reference/` where provided. Each manifest also declares a
 matched legacy SCMOS backend where applicable for geometry/connectivity

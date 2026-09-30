@@ -122,10 +122,10 @@ BASE_LAYERS = {
 
 # techfile feature flag -> layers it gates on
 GATED_LAYERS = {
-    "metal3Available": ["metal3"],
-    "metal4Available": ["metal4"],
-    "metal5Available": ["metal5"],
-    "metal6Available": ["metal6"],
+    "metal3Available": ["metal3", "via2"],
+    "metal4Available": ["metal4", "via3"],
+    "metal5Available": ["metal5", "via4"],
+    "metal6Available": ["metal6", "via5"],
     "elecAvailable": ["elec"],
     "highresAvailable": ["highres"],
     "metalcapAvailable": ["metalcap"],
@@ -137,7 +137,7 @@ GATED_LAYERS = {
     "npnAvailable": ["pbase", "cactive"],
 }
 
-# MOSIS SCN4M/5M/6M layer maps retain this optional capability in SUBM.
+# MOSIS SCN4M/5M/6M layer maps retain this optional capability in SUBM and DEEP.
 DEEP_N_WELL_MOSIS_PREFIXES = ("SCN4M", "SCN5M", "SCN6M")
 
 
@@ -211,10 +211,7 @@ def _num(v):
 
 def rule_family_for(techdata: dict, process: str) -> str:
     if techdata.get("deepRules"):
-        raise ValueError(
-            f"{process}: SCMOS_DEEP is not a supported normalized rule family; "
-            "select the corresponding SCMOS_SUBM process entry"
-        )
+        return "scmos_deep"
     return "scmos_subm" if techdata.get("submicronRules") else "scmos"
 
 
@@ -270,7 +267,7 @@ def build_profile(name: str, process: str, td: dict, tf: dict, stream: dict, cif
             "cif": ["CDNW"],
             "role": "well",
             "available": True,
-            "note": "MOSIS SCN4M/5M/6M SUBM layer capability; not a DEEP rule family",
+            "note": "MOSIS SCN4M/5M/6M layer capability shared by SUBM and DEEP variants",
         })
     return {"meta": meta, "layers": layers}
 

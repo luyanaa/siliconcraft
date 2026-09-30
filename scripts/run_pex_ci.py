@@ -37,6 +37,8 @@ def capability_profiles(capability: str) -> tuple[str, ...]:
 PEX_PROFILES = capability_profiles("pex_runtime")
 STATIC_GATES = (
     "test_process_ir.py",
+    "test_profile_collateral_matrix.py",
+    "test_field_solver_contracts.py",
     "test_magic_pex.py",
     "test_ls1u_pex.py",
     "test_ls1u_devices.py",

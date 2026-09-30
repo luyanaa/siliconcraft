@@ -1,0 +1,8 @@
+# TSMC CMOS018/DEEP device table.
+# The shared reference extractor recognizes the core MOS4 pair; optional
+# resistor/capacitor semantics remain outside this initial DRC/LVS port.
+schema_version: 1
+devices:
+  mos4:
+    - { name: nmos4, channel: nChannel, diff: nDiff, bulk_net: substrate, model_suffix: nmos }
+    - { name: pmos4, channel: pChannel, diff: pDiff, bulk_net: nBulk, model_suffix: pmos }

@@ -1,0 +1,23 @@
+# Source-backed CNM25 APDK field-solver stack for research sweeps.
+# This is a geometry/capacitance input contract, not calibrated QRC.
+schema_version: 1
+profile: cnm25
+status: source_reference_partial
+calibrated: false
+source:
+  document: docs/cnm25_em_flow.md
+  source_stack: glade/cnm25.tch
+  section: "Cross section from glade/cnm25.tch"
+  field_solver: FastCap
+metals:
+  - {name: metal1, gds: "7/0", z_bottom_um: 1.0, thickness_um: 1.0, sheet_r_ohm_sq: null}
+  - {name: via1, gds: "10/0", z_bottom_um: 2.0, thickness_um: 0.8, sheet_r_ohm_sq: null}
+  - {name: metal2, gds: "9/0", z_bottom_um: 2.8, thickness_um: 1.1, sheet_r_ohm_sq: null}
+dielectrics:
+  - {name: field_oxide, thickness_um: 1.06, eps_rel: 3.9}
+  - {name: inter_metal_oxide, thickness_um: 1.3, eps_rel: 3.9}
+missing:
+  - "metal and diffusion sheet-resistance calibration"
+  - "contact and via resistance"
+  - "substrate coupling network"
+  - "corner calibration against CNM25 structures"

@@ -76,6 +76,12 @@ symbols:
     pins:
       - {name: PLUS, dir: inout, x1: -12.5, y1: -2.5, x2: -7.5, y2: 2.5}
       - {name: MINUS, dir: inout, x1: 7.5, y1: -2.5, x2: 12.5, y2: 2.5}
+  vdc:
+    kind: src
+    type: vsource
+    pins:
+      - {name: p, dir: inout, x1: -2.5, y1: -32.5, x2: 2.5, y2: -27.5}
+      - {name: m, dir: inout, x1: -2.5, y1: 27.5, x2: 2.5, y2: 32.5}
   gnd:
     kind: gnd
     type: label

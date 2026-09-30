@@ -1,0 +1,37 @@
+# profiles/hp06/symbols.yaml — normalized xschem UI definitions.
+# UI geometry only; device identity and netlist formatting live in
+# devices/symbol_netlist.yaml.
+symbols:
+  nmos4:
+    kind: fet
+    type: nmos
+    pins:
+      - {name: d, dir: inout, x1: 17.5, y1: -32.5, x2: 22.5, y2: -27.5}
+      - {name: g, dir: in, x1: -22.5, y1: -2.5, x2: -17.5, y2: 2.5}
+      - {name: s, dir: inout, x1: 17.5, y1: 27.5, x2: 22.5, y2: 32.5}
+      - {name: b, dir: in, x1: 17.5, y1: -2.5, x2: 22.5, y2: 2.5}
+  pmos4:
+    kind: fet
+    type: pmos
+    pins:
+      - {name: d, dir: inout, x1: 17.5, y1: -32.5, x2: 22.5, y2: -27.5}
+      - {name: g, dir: in, x1: -22.5, y1: -2.5, x2: -17.5, y2: 2.5}
+      - {name: s, dir: inout, x1: 17.5, y1: 27.5, x2: 22.5, y2: 32.5}
+      - {name: b, dir: in, x1: 17.5, y1: -2.5, x2: 22.5, y2: 2.5}
+  vdc:
+    kind: src
+    type: vsource
+    pins:
+      - {name: p, dir: inout, x1: -2.5, y1: -32.5, x2: 2.5, y2: -27.5}
+      - {name: m, dir: inout, x1: -2.5, y1: 27.5, x2: 2.5, y2: 32.5}
+  gnd:
+    kind: gnd
+    type: label
+    global: true
+    pins:
+      - {name: p, dir: inout, x1: -2.5, y1: -2.5, x2: 2.5, y2: 2.5}
+  lab_pin:
+    kind: lab_pin
+    type: label
+    pins:
+      - {name: p, dir: in, x1: -1.25, y1: -1.25, x2: 1.25, y2: 1.25}

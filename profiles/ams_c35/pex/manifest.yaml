@@ -13,6 +13,16 @@ default: none
 flow:
   backend: none
   source_driven: true
+  capacitance:
+    status: field_solver_estimated
+    calibrated: false
+    solver_candidates:
+      - FastCap
+      - FasterCap
+      - Palace
+    source: profiles/ams_c35/c35b4c3_stack.yaml
+    output: research_rc_table
+    consumer: OpenRCX_or_custom_import
   original_process: C35B4C3
   ordinary_pex_level: "R + C_ground + C_coupling (no inductance); DSPF/SPEF output"
   contact_policy: "no extraction backend claimed; ENG-182 coefficient inventory in docs/ams_c35_pex_field.md (CONT 30/60 ohm, VIA1/2 1.2 ohm reported; metal Rsh M1 0.08/M2 0.06/M3 0.05/M4 0.05 ohm/sq; n+/p+ diffusion 70/129 ohm/sq)"
@@ -48,3 +58,18 @@ profiles:
     status: source_reference_partial
     description: "ENG-182 Rev.6 nominal stack (c35b4c3_stack.yaml): t + eps_r per layer (Note 24), thin-M4 (no polyimide), substrate rho 14/19/24 ohm-cm + XJNW 3.5 um + n-well slab 286 S/m, FIB/SEM sidewall angles, Weff; sigma_eff = 1/(Rsh*t); ENG-188 spirals SP020S180D/SP026S200D are the calibration targets."
     magic_directives: []
+  field_solver_estimated:
+    generated: false
+    extractor: field_solver_reconstruction
+    maturity: field_solver_estimated
+    calibrated: false
+    beol_fit: ../c35b4c3_stack.yaml
+    canonical_patterns:
+      - single_wire_over_plane
+      - parallel_wires
+      - adjacent_metal
+      - crossing_metal
+      - min_width_spacing
+      - scaled_width_spacing_2x
+      - scaled_width_spacing_4x
+    output: {format: research_rc_table, consumer: OpenRCX_or_custom_import}

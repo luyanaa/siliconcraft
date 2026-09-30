@@ -1,0 +1,15 @@
+# NCSU CDK source-backed reference decks for TSMC CMOS025/DEEP.
+# No private/foundry runset is included.  Missing `file` intentionally selects
+# the shared KLayout reference DRC/LVS implementations.
+drc:
+  available: true
+  format: klayout-pya
+  authority: reference_oracle
+  source: common/drc/scmos_reference.py
+  notes: "SCMOS_DEEP branches are selected by RULE_FAMILY=scmos_deep"
+lvs:
+  available: true
+  format: klayout-pya
+  authority: reference_oracle
+  source: common/lvs/scmos_reference_lvs.py
+  notes: "Core MOS4 extraction only; TSMC PEX is deferred"
