@@ -254,18 +254,25 @@ def run():
                          f"{net_of(minus)} {model} area={a:.6g} pj={pj:.6g}")
 
     # ---- NPN (hardcoded Generic_NPN model, as in divaEXT)
-    if "npnTran" in D and not D["npnTran"].is_empty():
-        qno = 0
-        for qpoly in D["npnTran"].merge().each():
-            qpoly = pya.Polygon(qpoly)
-            qno += 1
-            c = comp_at(qpoly.bbox().center(), "npnCollector")
-            e = comp_at(qpoly.bbox().center(), "npnEmitter")
-            b = comp_at(qpoly.bbox().center(), "npnBaseTap")
-            if c is None or e is None or b is None:
-                warnings.append("npn: terminal net not found")
-                continue
-            add("npn", f"q{qno} {net_of(c)} {net_of(b)} {net_of(e)} Generic_NPN")
+    def npn_terminal(region, layer_name):
+        terminal = D.get(layer_name)
+        if terminal is None or terminal.is_empty():
+            return None
+        for polygon in (terminal & region).merge().each():
+            component = comp_at(pya.Polygon(polygon).bbox().center(), layer_name)
+            if component is not None:
+                return component
+        return None
+
+    region = D.get("npnTran")
+    if region is not None and not region.is_empty():
+        c = npn_terminal(region, "npnCollector")
+        e = npn_terminal(region, "npnEmitter")
+        b = npn_terminal(region, "npnBaseTap")
+        if c is None or e is None or b is None:
+            warnings.append("npn: terminal net not found")
+        else:
+            add("npn", f"q1 {net_of(c)} {net_of(b)} {net_of(e)} Generic_NPN")
 
     emit_spice(devices, counts, N.net_names, TECH, PREFIX,
                "scmos_reference_lvs.py (divaEXT.rul port)", N.net_count)

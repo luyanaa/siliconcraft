@@ -1,0 +1,332 @@
+# Modular process capability architecture
+
+This is the architecture boundary for extending the SCMOS geometry/device IR to
+analog, RF, HV, power, opto, MEMS, ESD, and reliability.  It deliberately does
+not define a monolithic `SCMOS_BCD` process.  A BCD offering is a composition of
+capabilities with process-specific collateral.
+
+## 1. Composition model
+
+`SCMOS_CORE` remains the process-independent geometry and topology layer:
+
+- normalized FEOL/BEOL layers, wells, implants, contacts, vias, and metals;
+- lambda-scalable width/spacing/enclosure/overlap checks where the source rule
+  actually scales;
+- ordinary MOS, diode, resistor, and capacitor recognition;
+- topology-level LVS and RC extraction.
+
+Capabilities attach beside the core rather than subclassing it:
+
+```text
+SCMOS_CORE
+├── SUBM / DEEP
+├── ANALOG
+├── RF
+├── HV
+├── ISOLATION
+├── BIPOLAR
+├── POWER
+├── OPTO
+├── MEMS
+├── ESD
+├── PASSIVE
+└── RELIABILITY / THERMAL
+```
+
+A process profile declares capability state (`supported`, `partial`, `blocked`,
+or `unavailable`) and owns the collateral for each state:
+
+```yaml
+process: example_xh035
+capabilities:
+  hv: {state: supported}
+  isolation: {state: partial, modes: [deep_nwell]}
+  bipolar: {state: supported}
+  power: {state: partial}
+  opto: {state: supported}
+  mems: {state: unavailable}
+```
+
+This is a target contract.  Existing flat `meta.features` flags remain the
+compatibility input until profiles are migrated; they must not be silently
+interpreted as a richer capability declaration.
+
+`devices.yaml` remains a device table, not a capability table.  A device entry
+must identify its recognition, terminals, LVS class, simulation model, and
+extraction level.  A capability may expose zero or many devices.
+
+## 2. Extraction levels and device origin
+
+Every special or parasitic device should declare two orthogonal properties:
+
+```yaml
+device:
+  class: special
+  type: diode
+  origin: parasitic       # intentional | parasitic
+  extraction:
+    level: lumped         # none | lumped | distributed | field_solver
+```
+
+`origin` controls promotion policy.  A parasitic junction or BJT may be
+ignored, warned, extracted, or promoted to an intentional device without
+changing its geometric recognition.  `extraction.level` controls the backend
+and output contract:
+
+- `none`: geometry/ERC only;
+- `lumped`: scalar or compact SPICE parameters;
+- `distributed`: network extraction such as substrate RC or RLCG;
+- `field_solver`: mesh and solver results, with provenance and convergence
+  metadata.
+
+The common recognition output should be a device graph.  RCX, parasitic-device,
+substrate, EM, thermal, optical, and mechanical extractors consume that graph;
+none of them should re-parse foundry GDS independently.
+
+## 3. MEMS capability (`SCMOS_MEMS`)
+
+SCMOS MEMS option layers are a mask-level entry point, not a complete MEMS
+process.  The minimum normalized recognition vocabulary is:
+
+```text
+MEMS_OPEN
+MEMS_ETCH_STOP
+MEMS_ANCHOR
+MEMS_STRUCTURAL
+MEMS_SACRIFICIAL
+MEMS_CAVITY
+MEMS_BACKSIDE       optional
+MEMS_ELECTRODE      usually poly or metal
+```
+
+MEMS requires a process stack in addition to lambda geometry:
+
+```yaml
+mems:
+  layers:
+    structural: ...
+    sacrificial: ...
+    anchor: ...
+    cavity: ...
+  process:
+    release_direction: top | bottom | both
+    etch_depth_um: ...
+    sidewall_angle_deg: ...
+    undercut_um: ...
+  material:
+    silicon:
+      thickness_um: ...
+      density_kg_m3: ...
+      young_modulus_pa: ...
+      poisson_ratio: ...
+      residual_stress_pa: ...
+```
+
+Values are mandatory before mechanical simulation; no generic SCMOS defaults
+are valid.  The flow is separate from PEX:
+
+```text
+GDS / PCell
+  ├─ DRC
+  ├─ topological LVS
+  └─ process-stack reconstruction
+       └─ 3-D geometry → mesh → multiphysics
+            └─ reduced-order model → SPICE / Verilog-A
+```
+
+Call this extraction `MEX` (mechanical extraction).  Its result schema should
+carry mass, stiffness, resonant modes, Q/damping assumptions, electrode
+capacitance, `dC/dx`, pull-in voltage, thermal resistance, and thermal
+expansion, each with units and provenance.  Gmsh/Elmer are backends, not part
+of the SCMOS geometry contract.  Palace remains an RF/EM backend.
+
+Current repository state: MEMS layers are not enabled in a materialized profile;
+therefore no MEMS rules, process stack, MEX, or model are claimed.
+
+## 4. Opto capability (`SCMOS_OPTO`)
+
+Photodiodes are intentional semiconductor devices, not ordinary diode aliases.
+The minimum layout vocabulary is:
+
+```text
+PHOTO_DIODE
+OPTICAL_WINDOW
+PHOTO_GUARD
+PHOTO_ACTIVE
+SALICIDE_BLOCK       optional
+```
+
+A device contract must identify the junction topology independently of the
+physical option names:
+
+```yaml
+photodiode:
+  junction: pplus_nwell
+  terminals: [anode, cathode]
+  geometry:
+    area: extracted
+    perimeter: extracted
+  electrical:
+    dark_current: empirical_or_model
+    junction_capacitance: model
+    breakdown_voltage: model
+    series_resistance: model
+  optical:
+    active_area: extracted
+    optical_window: required
+    responsivity_vs_wavelength: model_or_table
+    quantum_efficiency: model_or_table
+  noise:
+    shot_noise: derived
+    dark_noise: model_or_measurement
+```
+
+The first usable implementation should be electrical photodiode extraction plus
+an empirical responsivity parameter.  Full optical generation and carrier
+transport are optional escalations:
+
+```text
+GDS / PCell → junction geometry
+                 ├─ optical model → generation profile
+                 └─ DEVSIM electrical transport
+                         └─ responsivity / Cj / Idark / bandwidth
+                              └─ compact model
+```
+
+Meep-to-DEVSIM coupling belongs in the opto backend contract and must not be
+required by ordinary LVS.  No photodiode capability is currently materialized
+in this repository; XH profile HVCMOS support must not be interpreted as
+photodiode support without explicit layers, models, and optical collateral.
+
+## 5. RF capability
+
+RF is a horizontal capability, not a process node.  At minimum it needs
+separate recognition and model identity for:
+
+```text
+RF_NMOS / RF_PMOS
+RF_HV_NMOS / RF_HV_PMOS
+VARACTOR
+RF_MIM
+MOM
+INDUCTOR
+TRANSFORMER
+TL_MICROSTRIP / TL_CPW / TL_GCPW / TL_DIFF
+RF_KEEP_OUT / RF_NO_FILL / RF_NO_QRC
+```
+
+RF MOS geometry must preserve topology that DC MOS extraction can collapse:
+
+```yaml
+rf:
+  enabled: true
+  gate_contact: single | double | distributed
+  body_contact: {type: ..., distance_um: ...}
+  source_drain: {shared_diffusion: true}
+  nqs: true
+  model: rf_model_name
+```
+
+Equal total width does not imply equal RF behavior: finger count, gate
+contact topology, body-contact distance, shared diffusion, and layout symmetry
+affect `Rg`, `Rb`, access resistance, capacitance, and NQS behavior.
+
+RF passives require absolute, stack-dependent geometry and models.  An
+inductor/transformer contract should include turns, width, spacing, diameter,
+metal stack, underpass, shield, center tap, and model representation
+(lumped/S-parameter/vector-fit).  A transmission line produces frequency-
+dependent `R(f), L(f), C(f), G(f)` rather than only RC.
+
+Extraction escalation:
+
+```text
+RCX → substrate RC → quasistatic RL/K → full-wave EM
+       ├─ FastHenry / electrostatic backend
+       └─ Palace or openEMS backend
+                         └─ S-parameters → vector fit / compact model
+```
+
+Via and contact arrays need an RF model contract (`R`, `L`, `C`, array/current
+crowding policy); `R/N` is only a DC fallback.  RF no-fill/keep-out markers are
+recognition inputs and must survive into signoff metadata.
+
+No RF models or EM stack should be inferred from ordinary SCMOS lambda rules.
+The existing RF work is profile-specific and remains separate from this
+SCMOS extension status table until collateral exists.
+
+## 6. Parasitic and special devices
+
+Use one `SPECIAL_DEVICE` contract for intentional and derived devices.  Examples:
+
+```text
+DIODE / PARASITIC_DIODE
+BJT / PARASITIC_BJT
+SCHOTTKY / ZENER
+LDMOS / DMOS / RESURF
+VARACTOR / RF_MIM / MOM
+INDUCTOR / TRANSFORMER / TLINE
+PHOTODIODE / PIN / APD / SPAD
+ESD_DIODE / SCR
+```
+
+Recognition should be an intermediate derived layer, not necessarily a foundry
+GDS layer:
+
+```text
+foundry layers → canonical layer IR → DEVICE_RECOG → device graph
+```
+
+The recognition namespace can be typed as:
+
+```text
+MOS, RF_MOS, BJT, PARASITIC_BJT, DIODE, PARASITIC_DIODE,
+LDMOS, VARACTOR, MIM, MOM, INDUCTOR, TRANSFORMER, TLINE,
+PHOTODIODE, MEMS, ESD
+```
+
+This lets latch-up, ESD, and substrate analysis promote a parasitic BJT without
+pretending it is an intentional symbol.  The device graph must retain origin,
+recognition source, terminal semantics, model provenance, and extraction level.
+
+## 7. Lambda boundary and BCD composition
+
+Lambda abstraction is appropriate for normalized CMOS geometry, much of the
+metal/via stack, and basic wells.  It becomes insufficient or only a geometry
+pre-check for:
+
+| Boundary | Required contract |
+| --- | --- |
+| thick oxide | capability plus absolute rule and model |
+| LDMOS drift / RESURF | device-specific geometry and model |
+| deep/triple well, DTI, SOI/BOX | isolation topology and absolute process data |
+| photodiode/window/APD/SPAD | junction, optical, electrical, and noise models |
+| MEMS release | process stack, materials, etch and undercut |
+| RF inductor/T-line | stack-dependent EM geometry and frequency model |
+| thermal/reliability/ESD | current, temperature, field, and failure criteria |
+
+Therefore:
+
+- HVCMOS is primarily HV + isolation, with optional power/passive/device
+  capabilities.
+- BCD is a composition of HV + isolation + bipolar + power + passive +
+  reliability; it is not a universal lambda rule family.
+- XH-like sensor/HV processes may compose HV + bipolar + opto + passive without
+  becoming BCD.
+- SOI BCD additionally requires explicit BOX/DTI/isolation collateral.
+
+`λ_FEOL` and `λ_BEOL` remain useful for geometry normalization.  They must not
+be used to synthesize process stacks, voltage ratings, optical data, RF models,
+or mechanical material properties.
+
+## 8. Implementation order
+
+1. Keep the current SCMOS option status contract and migrate flat feature flags
+   into capability records without changing existing profiles.
+2. Add typed recognition/device-graph fields: `origin`, `extraction.level`,
+   recognition source, and provenance.
+3. Add capability-specific collateral validators before adding new device rows.
+4. Implement one electrical photodiode contract and one MEMS mask-level/MEX
+   contract only when source collateral exists.
+5. Add RF MOS/passive and substrate extraction contracts, then backend adapters.
+6. Compose BCD profiles from validated capability records; never add a
+   `SCMOS_BCD` geometry singleton.

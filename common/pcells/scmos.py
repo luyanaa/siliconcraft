@@ -97,7 +97,7 @@ class Profile:
             "ccd": self.has_feature("ccdAvailable"),
             "npn": self.has_feature("npnAvailable"),
             "hv": self.has_feature("hvAvailable"),
-            "metalcap": self.has_feature("metalcapAvailable"),
+            "scnpc": self.has_feature("scnpcAvailable"),
             "mems": self.has_feature("memsAvailable"),
         }
         value = aliases.get(name, False)

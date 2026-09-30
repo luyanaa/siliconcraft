@@ -156,6 +156,17 @@ undeclared option, no official λ rules and **none implemented by default**;
 the Magic AMI 1.5 µm 20.x set applies only under an explicit
 `hvcmosLambdaOverride` opt-in enforced by `common/process_ir.py`), and MEMS
 (declared option, no rules, process-specific µm guidelines only).
+The forward architecture for these options and future HV, RF, OPTO, MEMS,
+parasitic-device, and special-device contracts is documented in
+[`docs/process_capability_architecture.md`](docs/process_capability_architecture.md).
+It keeps SCMOS geometry independent from process stacks, optical/mechanical
+models, EM escalation, and reliability collateral; `SCMOS_BCD` is intentionally
+not a universal geometry profile.
+
+The KLayout-backed extension LVS regression is
+`scripts/test_scmos_extension_lvs.py`; it exercises AMI16 authority/reference
+`Generic_NPN` extraction and the HP06 linear-capacitor terminal path.
+
 
 The 2001a and 2002a Magic archives are separate from the bundled `scmos.tech`;
 release, target label, and conditional source context are preserved.

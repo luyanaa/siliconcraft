@@ -389,7 +389,7 @@ option_rule_families:
     sources: [mosis_scmos_7_2, bundled_magic_source]
     rule_summary: "16.1 contact 2x2; 16.2 emitter select overlap of contact 3; 16.3 pbase overlap of emitter select 2; 16.4 emitter/base select spacing 4; 16.5 pbase overlap of base select 2; 16.6 base select overlap of contact 2; 16.7 nwell overlap of pbase 6; 16.8 pbase to collector active 4; 16.9 collector active overlap of contact 2; 16.10 nwell overlap of collector active 3; 16.11 select overlap of collector active 2."
     native_evidence: "Magic DRC 16.x (16.3 checked at 4 due to 2-lambda emitter-select CIF expansion); SCNA20(ORB) `device bjt npn emit,emc/a pbase,pbc/a nwell`; CDK Generic_NPN."
-    siliconcraft: "LVS implemented (npnTran -> Generic_NPN); rules.yaml 16.x MISSING (gap)."
+    siliconcraft: "LVS implemented (npnTran -> Generic_NPN); rules.yaml 16.x present for AMI16 with derived-layer region checks; NPN model cards remain source-reference only."
     caveats:
       - "Magic extension rules for pbase resistors (width 2, spacing 2, rev 8.2.4) are NOT official SCMOS; keep source label."
       - "Collector width checked via `width col,clc/a 6` instead of an explicit 16.9 check."
@@ -405,7 +405,7 @@ option_rule_families:
     sources: [mosis_scmos_7_2, bundled_magic_source]
     rule_summary: "17.1 width 10 [SUBM 12]; 17.2 spacing 9 [SUBM 18]; 17.3 external active 5 [SUBM 6]; 17.4 active overlap 5 (CMOS34: 3) [SUBM 6]; 18.1 width 3; 18.2 poly extension of active 1/2; 18.3 active overlap of poly 3; 18.4 poly contact to active 2; 18.5 active contact to poly 4/6."
     native_evidence: "Magic DRC 17.x/18.x (HP 1.2um linear-cap process); SCN12LC(HP) `fet wcap ndiff,ndc 1 wcap GND! 300 0` and SCNA20(ORB) `device capacitor None wcap ndiff,ndc 300 0`."
-    siliconcraft: "devices.yaml lcCap (ami06, cwell-gated); rules.yaml 17.x/18.x MISSING (gap)."
+    siliconcraft: "devices.yaml lcCap (HP06, cwell-gated); rules.yaml 17.x/18.x present for HP06 with SUBM values; capacitance coefficients remain profile-owned."
     caveats:
       - "CMOS34 vs CMOS14 dual values: 17.4 (3/5), 18.2 (1/2), 18.5 (4/6); small values CMOS34-only."
       - "Magic comments 18.5/18.6 as conservative."
@@ -436,7 +436,7 @@ option_rule_families:
     sources: [mosis_scmos_7_2, southampton_scmos_8_0]
     rule_summary: "20.1 SB width 4; 20.2 SB spacing 4; 20.3 SB to contact 2 (no contacts inside SB); 20.4 external active 2; 20.5 external poly 2; 20.6 resistor = poly in SB, contacts outside well over field; 20.7 poly width 5; 20.8 resistor spacing in one SB 7; 20.9 SB overlap of poly 2."
     native_evidence: "Undeclared option with full rule section. Bundled Magic techfile has rnfet/rpfet (poly gate without silicide) and poly_resist stripes but no CSB DRC; 2002a SCN3MLC/SCN3MLC_SUBM decks carry a silicide_block method."
-    siliconcraft: "devices.yaml polySRes (ami06, sblock-gated); rules.yaml 20.x MISSING (gap)."
+    siliconcraft: "devices.yaml polySRes (HP06, sblock-gated); rules.yaml 20.x present as lambda-only geometry checks; sheet resistance and foundry signoff remain separate."
     caveats:
       - "IIT HTML variant renumbers 20.6-20.9 to 20.11-20.14 and adds ESD rules 20.6-20.10; use PDF numbering as authority."
       - "SCMOS 8.0 extends SILICIDE_BLOCK to TSMC 4M/5M/6M (rule section 20)."

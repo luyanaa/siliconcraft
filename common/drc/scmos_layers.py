@@ -319,15 +319,22 @@ def derive(L, F, WELL, TECH, LAMBDA, DBU_, UNIVERSE):
     if F("sblockAvailable"):
         sGateWidthCheck = sized(sized(and_(Gate, sblock), -2.9), 2.9)
     if F("npnAvailable"):
-        npnCollector = and_(nwell, and_(nselect, cactive))
+        npnCollectorActive = and_(nwell, cactive)
+        npnCollector = andnot(npnCollectorActive, pbase)
+        npnCollectorSelect = and_(nselect, npnCollector)
         npnCollectorContact = and_(ca, npnCollector)
         npnBaseImplant = and_(nwell, pbase)
-        npnEmitter = and_(nselect, npnBaseImplant)
+        npnEmitterSelect = and_(nselect, npnBaseImplant)
+        npnEmitter = npnEmitterSelect
         npnBase = andnot(npnBaseImplant, npnEmitter)
         npnBaseTap = and_(npnBase, pselect)
         npnBaseContact = and_(or_(cc, ca), npnBaseTap)
         npnEmitterContact = and_(or_(cc, ca), npnEmitter)
-        npnTran = inside(nwell, or_(npnCollector, npnBase, npnEmitter))
+        npnTran = (
+            and_(nwell, or_(npnCollector, npnBase, npnEmitter))
+            if not npnBaseImplant.is_empty() and not npnEmitter.is_empty()
+            else pya.Region()
+        )
     if F("ccdAvailable"):
         ccdDiff = and_(active, ccd)
         ccdContact = and_(ca, ccdDiff)
@@ -338,9 +345,9 @@ def derive(L, F, WELL, TECH, LAMBDA, DBU_, UNIVERSE):
 
     # resistors
     if F("sblockAvailable"):
+        sblockPoly = and_(sblock, poly)
         fieldPoly = andnot(fieldPoly, or_(sblock, L("res_id")))
-        polySRes = butting(and_(sblock, poly), fieldPoly, 2)
-        polyRes = butting(andnot(and_(L("res_id"), poly), polySRes), fieldPoly, 2)
+        polySRes = butting(sblockPoly, fieldPoly, 2)
         poly = andnot(poly, or_(sblock, L("res_id")))
     else:
         fieldPoly = andnot(fieldPoly, L("res_id"))

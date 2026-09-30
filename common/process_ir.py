@@ -291,6 +291,11 @@ class ProcessIR:
     @property
     def devices(self) -> dict[str, Any]:
         return self.devices_doc.get("devices") or {}
+    @property
+    def scmos_extensions(self) -> dict[str, dict[str, Any]]:
+        from common.scmos_extensions import extension_statuses
+
+        return extension_statuses(self)
 
     @property
     def pcells(self) -> dict[str, Any]:

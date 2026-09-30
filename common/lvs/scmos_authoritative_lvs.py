@@ -278,22 +278,28 @@ def run():
                          f"{net_of(minus)} {model} area={a:.6g} pj={pj:.6g}")
 
     # ---- NPN (hardcoded Generic_NPN model, as in divaEXT)
+    def npn_terminal(region, layer_name):
+        terminal = D.get(layer_name)
+        if terminal is None or terminal.is_empty():
+            return None
+        for polygon in (terminal & region).merge().each():
+            component = comp_at(pya.Polygon(polygon).bbox().center(), layer_name)
+            if component is not None:
+                return component
+        return None
+
     for entry in kinds.get("npn", []):
         key = entry["name"]
         region = D.get(entry["region"])
         if region is None or region.is_empty():
             continue
-        qno = 0
-        for qpoly in region.merge().each():
-            qpoly = pya.Polygon(qpoly)
-            qno += 1
-            c = comp_at(qpoly.bbox().center(), entry["collector"])
-            e = comp_at(qpoly.bbox().center(), entry["emitter"])
-            b = comp_at(qpoly.bbox().center(), entry["base"])
-            if c is None or e is None or b is None:
-                warnings.append(f"{key}: terminal net not found")
-                continue
-            add("npn", f"q{qno} {net_of(c)} {net_of(b)} {net_of(e)} Generic_NPN")
+        c = npn_terminal(region, entry["collector"])
+        e = npn_terminal(region, entry["emitter"])
+        b = npn_terminal(region, entry["base"])
+        if c is None or e is None or b is None:
+            warnings.append(f"{key}: terminal net not found")
+            continue
+        add("npn", f"q1 {net_of(c)} {net_of(b)} {net_of(e)} Generic_NPN")
 
     emit_spice(devices, counts, N.net_names, TECH, PREFIX,
                "scmos_authoritative_lvs.py (devices.yaml)", N.net_count)

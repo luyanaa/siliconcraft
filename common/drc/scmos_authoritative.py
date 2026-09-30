@@ -123,6 +123,8 @@ def _cond_one(term, F, TECH, RULE_FAMILY):
         v = F("voltageAwareSpacing")
     elif name == "metalcap":
         v = F("metalcapAvailable")
+    elif name in {"scnpc", "scnpcAvailable"}:
+        v = F("scnpcAvailable")
     elif name == "mems":
         v = F("memsAvailable")
     elif name == "pselectFromActive":

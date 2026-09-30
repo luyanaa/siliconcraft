@@ -52,6 +52,10 @@ rules:
     - { id: "15.1", layer: metal3, value_um: 1.8, condition: "metal3,not-metal4,scmos", source: "divaDRC.rul", note: "SCMOS" }
     - { id: "27.1", layer: highres, value_um: 1.2, condition: "highres,elec", source: "divaDRC.rul", note: "SCMOS" }
     - { id: "27.7", layer: elecHighres, value_um: 1.5, condition: "highres,elec", source: "divaDRC.rul", note: "SCMOS" }
+    - { id: "17.1", layer: cwell, value_um: 3.6, condition: "cwell", source: "MOSIS SCMOS 7.2 Table 17", note: "LC cap-well width (12 lambda SUBM)" }
+    - { id: "18.1", layer: lcCap, value_um: 0.9, condition: "cwell", source: "MOSIS SCMOS 7.2 Table 18", note: "linear-capacitor width (3 lambda)" }
+    - { id: "20.1", layer: sblock, value_um: 1.2, condition: "sblock", source: "MOSIS SCMOS 7.2 Table 20", note: "silicide-block width (4 lambda)" }
+    - { id: "20.7", layer: polySRes, value_um: 1.5, condition: "sblock", source: "MOSIS SCMOS 7.2 Table 20", note: "unsilicided-poly resistor width (5 lambda)" }
 
   spacing:
     - { id: "1.2", layer: nwell, value_um: 5.4, condition: "scmos_subm", app: true, source: "divaDRC.rul", note: "SCMOS" }
@@ -141,6 +145,22 @@ rules:
     - { id: "27.4", layer: highres, layer2: active, value_um: 0.6, condition: "highres,elec", source: "divaDRC.rul", note: "SCMOS" }
     - { id: "27.5", layer: highres, layer2: fieldElec, value_um: 0.6, condition: "highres,elec", source: "divaDRC.rul", note: "SCMOS" }
     - { id: "27.8", layer: elecHighres, value_um: 2.1, condition: "highres,elec", source: "divaDRC.rul", note: "SCMOS" }
+    - { id: "17.2", layer: cwell, value_um: 5.4, condition: "cwell", source: "MOSIS SCMOS 7.2 Table 17", note: "LC cap-well spacing (18 lambda SUBM)" }
+    - { id: "17.2", layer: cwell, layer2: nwell, value_um: 5.4, condition: "cwell", source: "MOSIS SCMOS 7.2 Table 17", note: "LC cap-well to N-well spacing (18 lambda SUBM)" }
+    - { id: "17.3", layer: cwell, layer2: nActive, value_um: 1.8, condition: "cwell", source: "MOSIS SCMOS 7.2 Table 17", note: "LC cap-well to external active spacing (6 lambda SUBM)" }
+    - { id: "17.3", layer: cwell, layer2: pOhmic, value_um: 0.9, condition: "cwell", source: "MOSIS SCMOS 7.2 Table 17", note: "LC cap-well to substrate diffusion spacing (3 lambda)" }
+    - { id: "18.5", layer: lcCap, layer2: cp, value_um: 0.6, condition: "cwell", source: "MOSIS SCMOS 7.2 Table 18", note: "linear-capacitor to poly contact spacing (2 lambda)" }
+    - { id: "18.6", layer: lcCap, layer2: ca, value_um: 1.2, condition: "cwell", source: "MOSIS SCMOS 7.2 Table 18", note: "linear-capacitor to active contact spacing (4 lambda)" }
+    - { id: "20.2", layer: sblock, value_um: 1.2, condition: "sblock", source: "MOSIS SCMOS 7.2 Table 20", note: "silicide-block spacing (4 lambda)" }
+    - { id: "20.3", layer: sblock, layer2: ca, value_um: 0.6, condition: "sblock", source: "MOSIS SCMOS 7.2 Table 20", note: "silicide-block to active contact spacing (2 lambda)" }
+    - { id: "20.3", layer: sblock, layer2: cp, value_um: 0.6, condition: "sblock", source: "MOSIS SCMOS 7.2 Table 20", note: "silicide-block to poly contact spacing (2 lambda)" }
+    - { id: "20.4", layer: sblock, layer2: active, value_um: 0.6, condition: "sblock", source: "MOSIS SCMOS 7.2 Table 20", note: "silicide-block to active spacing (2 lambda)" }
+    - { id: "20.5", layer: sblock, layer2: poly, value_um: 0.6, condition: "sblock", source: "MOSIS SCMOS 7.2 Table 20", note: "silicide-block to unrelated poly spacing (2 lambda)" }
+    - { id: "20.6", layer: polySRes, layer2: nwell, value_um: 0.6, condition: "sblock", source: "MOSIS SCMOS 7.2 Table 20", note: "unsilicided-poly resistor outside well (2 lambda)" }
+    - { id: "20.6", layer: polySRes, layer2: active, value_um: 0.6, condition: "sblock", source: "MOSIS SCMOS 7.2 Table 20", note: "unsilicided-poly resistor over field (2 lambda)" }
+    - { id: "20.6", layer: sblock, layer2: ca, value_um: 0.6, condition: "sblock", source: "MOSIS SCMOS 7.2 Table 20", note: "contacts remain outside silicide block (2 lambda)" }
+    - { id: "20.6", layer: sblock, layer2: cp, value_um: 0.6, condition: "sblock", source: "MOSIS SCMOS 7.2 Table 20", note: "contacts remain outside silicide block (2 lambda)" }
+    - { id: "20.8", layer: polySRes, value_um: 2.1, condition: "sblock", source: "MOSIS SCMOS 7.2 Table 20", note: "same-block resistor spacing (7 lambda)" }
 
   enclosure:
     - { id: "2.3", layer: pBulk, layer2: nNotOhmic, value_um: 1.8, condition: "scmos_subm", source: "divaDRC.rul", note: "SCMOS" }
@@ -181,6 +201,9 @@ rules:
     - { id: "15.3", layer: metal3, layer2: via2, value_um: 0.6, condition: "metal3,not-metal4", source: "divaDRC.rul", note: "SCMOS" }
     - { id: "15.3", layer: metal3, layer2: via2, value_um: 0.3, condition: "metal3,metal4", source: "divaDRC.rul", note: "SCMOS" }
     - { id: "27.9", layer: highres, layer2: elecHighres, value_um: 0.6, condition: "highres,elec", source: "divaDRC.rul", note: "SCMOS" }
+    - { id: "18.3", layer: poly, layer2: lcCap, value_um: 0.3, condition: "cwell", source: "MOSIS SCMOS 7.2 Table 18", note: "poly extension around linear capacitor (1 lambda)" }
+    - { id: "18.4", layer: lcDiff, layer2: lcCap, value_um: 0.9, condition: "cwell", source: "MOSIS SCMOS 7.2 Table 18", note: "active overlap of linear capacitor (3 lambda)" }
+    - { id: "20.9", layer: sblock, layer2: sblockPoly, value_um: 0.6, condition: "sblock", source: "MOSIS SCMOS 7.2 Table 20", note: "silicide-block overlap of poly (2 lambda)" }
 
   area:
     - { id: "5.1", layer: cp, value_um: 0.3609, source: "divaDRC.rul", note: "SCMOS" }
@@ -191,6 +214,7 @@ rules:
 
   overlap:
     - { id: "12.5", layer: TransistorElec, layer2: poly, value_um: 0.6, condition: "elec", source: "divaDRC.rul", note: "SCMOS" }
+    - { id: "17.4", layer: cwell, layer2: active, value_um: 1.8, condition: "cwell", source: "MOSIS SCMOS 7.2 Table 17", note: "active overlap of LC cap-well (6 lambda SUBM)" }
 
   extension: []
   notch: []

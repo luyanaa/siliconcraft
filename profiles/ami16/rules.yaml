@@ -52,6 +52,9 @@ rules:
     - { id: "15.1", layer: metal3, value_um: 4.8, condition: "metal3,not-metal4,scmos", source: "divaDRC.rul", note: "SCMOS" }
     - { id: "27.1", layer: highres, value_um: 3.2, condition: "highres,elec", source: "divaDRC.rul", note: "SCMOS" }
     - { id: "27.7", layer: elecHighres, value_um: 4, condition: "highres,elec", source: "divaDRC.rul", note: "SCMOS" }
+    - { id: "16.1", layer: npnCollectorContact, value_um: 1.6, condition: "npn", source: "MOSIS SCMOS 7.2 Table 16", note: "NPN contact width (2 lambda)" }
+    - { id: "16.1", layer: npnEmitterContact, value_um: 1.6, condition: "npn", source: "MOSIS SCMOS 7.2 Table 16", note: "NPN contact width (2 lambda)" }
+    - { id: "16.1", layer: npnBaseContact, value_um: 1.6, condition: "npn", source: "MOSIS SCMOS 7.2 Table 16", note: "NPN contact width (2 lambda)" }
 
   spacing:
     - { id: "1.2", layer: nwell, value_um: 14.4, condition: "scmos_subm", app: true, source: "divaDRC.rul", note: "SCMOS" }
@@ -141,6 +144,8 @@ rules:
     - { id: "27.4", layer: highres, layer2: active, value_um: 1.6, condition: "highres,elec", source: "divaDRC.rul", note: "SCMOS" }
     - { id: "27.5", layer: highres, layer2: fieldElec, value_um: 1.6, condition: "highres,elec", source: "divaDRC.rul", note: "SCMOS" }
     - { id: "27.8", layer: elecHighres, value_um: 5.6, condition: "highres,elec", source: "divaDRC.rul", note: "SCMOS" }
+    - { id: "16.4", layer: npnBaseTap, layer2: npnEmitterSelect, value_um: 3.2, condition: "npn", source: "MOSIS SCMOS 7.2 Table 16", note: "NPN base/emitter select spacing (4 lambda)" }
+    - { id: "16.8", layer: pbase, layer2: npnCollectorActive, value_um: 3.2, condition: "npn", source: "MOSIS SCMOS 7.2 Table 16", note: "NPN base/collector active spacing (4 lambda)" }
 
   enclosure:
     - { id: "2.3", layer: pBulk, layer2: nNotOhmic, value_um: 4.8, condition: "scmos_subm", source: "divaDRC.rul", note: "SCMOS" }
@@ -181,6 +186,11 @@ rules:
     - { id: "15.3", layer: metal3, layer2: via2, value_um: 1.6, condition: "metal3,not-metal4", source: "divaDRC.rul", note: "SCMOS" }
     - { id: "15.3", layer: metal3, layer2: via2, value_um: 0.8, condition: "metal3,metal4", source: "divaDRC.rul", note: "SCMOS" }
     - { id: "27.9", layer: highres, layer2: elecHighres, value_um: 1.6, condition: "highres,elec", source: "divaDRC.rul", note: "SCMOS" }
+    - { id: "16.3", layer: pbase, layer2: npnEmitterSelect, value_um: 1.6, condition: "npn", source: "MOSIS SCMOS 7.2 Table 16", note: "P-base enclosure of emitter select (2 lambda)" }
+    - { id: "16.5", layer: pbase, layer2: npnBaseTap, value_um: 1.6, condition: "npn", source: "MOSIS SCMOS 7.2 Table 16", note: "P-base enclosure of base select (2 lambda)" }
+    - { id: "16.7", layer: nwell, layer2: pbase, value_um: 4.8, condition: "npn", source: "MOSIS SCMOS 7.2 Table 16", note: "N-well enclosure of P-base (6 lambda)" }
+    - { id: "16.9", layer: npnCollector, layer2: npnCollectorContact, value_um: 1.6, condition: "npn", source: "MOSIS SCMOS 7.2 Table 16", note: "Collector-active enclosure of contact (2 lambda)" }
+    - { id: "16.10", layer: nwell, layer2: npnCollectorActive, value_um: 2.4, condition: "npn", source: "MOSIS SCMOS 7.2 Table 16", note: "N-well enclosure of collector active (3 lambda)" }
 
   area:
     - { id: "5.1", layer: cp, value_um: 2.5664, source: "divaDRC.rul", note: "SCMOS" }
@@ -191,6 +201,9 @@ rules:
 
   overlap:
     - { id: "12.5", layer: TransistorElec, layer2: poly, value_um: 1.6, condition: "elec", source: "divaDRC.rul", note: "SCMOS" }
+    - { id: "16.2", layer: npnEmitterSelect, layer2: npnEmitterContact, value_um: 2.4, condition: "npn", source: "MOSIS SCMOS 7.2 Table 16", note: "Emitter select overlap of contact (3 lambda)" }
+    - { id: "16.6", layer: npnBaseTap, layer2: npnBaseContact, value_um: 1.6, condition: "npn", source: "MOSIS SCMOS 7.2 Table 16", note: "Base select overlap of contact (2 lambda)" }
+    - { id: "16.11", layer: npnCollectorSelect, layer2: npnCollectorActive, value_um: 1.6, condition: "npn", source: "MOSIS SCMOS 7.2 Table 16", note: "Collector active overlap of select (2 lambda)" }
 
   extension: []
   notch: []

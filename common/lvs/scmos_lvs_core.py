@@ -35,7 +35,8 @@ DEFAULT_CAP_AREACAP = {"elec_poly": 1000.0, "poly_polycap": 700.0,
 
 CONDUCTORS = ["nDiff", "pDiff", "nOhmic", "pOhmic", "nBulk", "isoPwell",
               "poly", "elec", "metal1", "metal2", "metal3", "metal4",
-              "metal5", "metal6"]
+              "metal5", "metal6", "npnCollector", "npnEmitter",
+              "npnBaseTap", "lcDiff"]
 CUTS = ["cc", "via", "via2", "via3", "via4", "via5"]
 
 
@@ -147,7 +148,12 @@ class Nets:
 def build_nets(D, L, F, WELL, layout, top, DBU):
     """Build SCMOS connectivity from derived layers; returns a Nets object."""
     comps = []  # (layer name, Polygon)
+    special_npn = {"npnCollector", "npnEmitter", "npnBaseTap"}
     for name in CONDUCTORS:
+        if name in special_npn:
+            recognition = D.get("npnTran")
+            if recognition is None or recognition.is_empty():
+                continue
         region = D.get(name)
         if region is None or region.is_empty():
             continue
