@@ -58,9 +58,9 @@ rules:
       select.channel_enclosure.p: {value_um: 0.4, source: "native channel select"}
       select.contact_enclosure.n: {value_um: 0.8, source: "native contact select"}
       select.contact_enclosure.p: {value_um: 0.8, source: "native contact select"}
-      gate.extension: {value_um: 1.2, source: "native GC extension"}
+      gate.extension: {value_um: 1.25, source: "native GC extension 1.2um plus 0.05um grid guard for generated stdcells"}
       metal1.contact_enclosure: {value_um: 0.8, source: "native M1.CO"}
-      nwell.active_enclosure: {value_um: 7.0, source: "native WN.AA"}
+      nwell.active_enclosure: {value_um: 7.05, source: "native WN.AA enclosure 7.0um plus 0.05um grid guard for generated stdcells"}
       nwell.min_width: {value_um: 8.0, source: "native WN.W1"}
       via12.cut_size: {value_um: 1.4, source: "native V1.W1"}
       via12.cut_spacing: {value_um: 1.5, source: "native V1.S1"}

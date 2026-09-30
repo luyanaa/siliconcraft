@@ -1,0 +1,21 @@
+v {xschem version=3.4.7 file_version=1.2
+* Siliconcraft test helper symbol.
+}
+G {}
+K {type=label
+global=true
+format="*.alias @lab"
+template="name=l1 lab=0"
+}
+V {}
+S {}
+E {}
+
+L 4 0 0 0 10 {}
+L 4 -10 10 10 10 {}
+L 4 -5 15 5 15 {}
+L 4 -1.5 19 1.5 19 {}
+
+B 5 -2.5 -2.5 2.5 2.5 {name=p dir=inout goto=0}
+T {P} 3.0 0.0 0 0 0.15 0.15 {}
+T {@name} -10 -40 0 1 0.2 0.2 {}

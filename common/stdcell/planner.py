@@ -305,6 +305,23 @@ def _footprint(process: StdcellProcess, device: MosInstance, nf: int, width_per_
             + process.metal_spacing_um("M1")
             - length / 2.0,
         )
+    routing_contract = process.stdcell_contract.get("routing") or {}
+    configured_spacing = routing_contract.get("device_contact_gate_spacing_um")
+    if configured_spacing is not None:
+        try:
+            configured_spacing = float(configured_spacing)
+        except (TypeError, ValueError) as exc:
+            raise PlannerError(
+                f"{process.profile_name}: routing.device_contact_gate_spacing_um must be numeric"
+            ) from exc
+        if configured_spacing < tech.active_contact_gate_spacing:
+            raise PlannerError(
+                f"{process.profile_name}: configured contact-gate spacing "
+                f"{configured_spacing:g} is below the native minimum "
+                f"{tech.active_contact_gate_spacing:g}"
+            )
+        contact_gate_spacing = process.snap(configured_spacing)
+
     contact_bay_width = 2 * contact_gate_spacing + tech.contact_size
     poly_edge = contact_gate_spacing + tech.contact_size + tech.active_contact_enc
     active_width = 2 * poly_edge + nf * length + (nf - 1) * contact_bay_width
@@ -1423,8 +1440,47 @@ def _route(
     graph_usage: dict[tuple[RoutingNode, RoutingNode, str], int] = {}
     graph_routes: dict[str, tuple[dict[str, Any], ...]] = {}
     occupied_nodes: set[RoutingNode] = set()
-    route_order = [node for node in internal if node not in p_only] + [
-        node for node in internal if node in p_only
+    routing_contract = process.stdcell_contract.get("routing") or {}
+    output_offset = routing_contract.get("output_pin_offset_um", 0.0)
+    try:
+        output_offset = float(output_offset)
+    except (TypeError, ValueError) as exc:
+        raise PlannerError(
+            f"{process.profile_name}: routing.output_pin_offset_um must be numeric"
+        ) from exc
+    if output_offset < 0:
+        raise PlannerError(
+            f"{process.profile_name}: routing.output_pin_offset_um must be non-negative"
+        )
+
+    def output_route_x(point_x: float) -> float:
+        if not output_offset:
+            return _ceil_grid(process, point_x)
+        gate_reference = min(
+            (
+                abs(point_x - gate_x)
+                for gate_positions in gate_xs.values()
+                for gate_x in gate_positions
+            ),
+            default=0.0,
+        )
+        nearest_gate = next(
+            (
+                gate_x
+                for gate_positions in gate_xs.values()
+                for gate_x in gate_positions
+                if abs(point_x - gate_x) == gate_reference
+            ),
+            point_x,
+        )
+        direction = -1.0 if point_x <= nearest_gate else 1.0
+        return _ceil_grid(process, point_x + direction * output_offset)
+
+    manual_outputs = {
+        node for node in circuit.outputs if node in internal and output_offset
+    }
+    route_order = [node for node in internal if node not in p_only and node not in manual_outputs] + [
+        node for node in internal if node in p_only and node not in manual_outputs
     ]
     internal_segment_start = len(segments)
     internal_via_start = len(via_blockages)
@@ -1451,7 +1507,7 @@ def _route(
             str, tuple[tuple[RoutingNode, ...], tuple[RoutingNode, ...]]
         ] = {}
         for node in internal:
-            if len(net_points[node]) < 2:
+            if node in manual_outputs or len(net_points[node]) < 2:
                 continue
             trunk = RoutingNode(
                 min(point[0] for point in net_points[node]),
@@ -1509,6 +1565,57 @@ def _route(
         graph_routes = {
             net: tuple(route_edges_by_net.get(net, ())) for net in internal
         }
+    for node in manual_outputs:
+        points = net_points[node]
+        route_x = output_route_x(max(points, key=lambda point: (point[0], -point[1]))[0])
+        route_edges: list[dict[str, Any]] = []
+        y_values = sorted({point[1] for point in points})
+        for point_x, point_y in points:
+            if point_x == route_x:
+                continue
+            _add_segment(
+                segments,
+                "M1",
+                (point_x, point_y),
+                (route_x, point_y),
+                node,
+                "graph_route",
+            )
+            route_edges.append(
+                {
+                    "kind": "wire",
+                    "layer": "M1",
+                    "to_layer": "M1",
+                    "x0": point_x,
+                    "y0": point_y,
+                    "x1": route_x,
+                    "y1": point_y,
+                    "cost": abs(point_x - route_x),
+                }
+            )
+        if len(y_values) > 1:
+            _add_segment(
+                segments,
+                "M1",
+                (route_x, y_values[0]),
+                (route_x, y_values[-1]),
+                node,
+                "graph_route",
+            )
+            route_edges.append(
+                {
+                    "kind": "wire",
+                    "layer": "M1",
+                    "to_layer": "M1",
+                    "x0": route_x,
+                    "y0": y_values[0],
+                    "x1": route_x,
+                    "y1": y_values[-1],
+                    "cost": y_values[-1] - y_values[0],
+                }
+            )
+        graph_routes[node] = tuple(route_edges)
+
 
     if architecture == "two_metal_classic":
         feedthrough_layer = "M2"
@@ -1543,11 +1650,20 @@ def _route(
         if not points:
             raise PlannerError(f"{circuit.name}: output {output_name} has no diffusion terminal")
         point_x, point_y = max(points, key=lambda point: (point[0], -point[1]))
-        x = _ceil_grid(process, point_x)
+        x = output_route_x(point_x)
+        if point_x != x:
+            _add_segment(
+                segments,
+                "M1",
+                (point_x, point_y),
+                (x, point_y),
+                output_name,
+                "pin_route",
+            )
         _add_segment(
             segments,
             "M1",
-            (point_x, point_y),
+            (x, point_y),
             (x, gate_center_y),
             output_name,
             "pin_route",

@@ -5,6 +5,7 @@ schema_version: 1
 symbols:
   nmos4:
     device_binding: nmos_core
+    spiceprefix: x
     format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
     template:
       name: M1
@@ -17,6 +18,7 @@ symbols:
       ps: "0"
   pmos4:
     device_binding: pmos_core
+    spiceprefix: x
     format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
     template:
       name: M1

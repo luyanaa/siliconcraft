@@ -35,6 +35,9 @@ stdcell:
   routing:
     metal_layers: [metal1, metal2]
     via_layers: [via]
+    device_contact_gate_spacing_um: 1.0
+    # Keep the output M1 trunk clear of the native M1/V1 input landing.
+    output_pin_offset_um: 3.65
   pin_contract:
     signal_pin_access: candidate_only
     power_pins: [VDD, VSS]
@@ -46,3 +49,6 @@ stdcell:
     lef: candidate_only
     liberty: unavailable
     signoff: blocked
+  verification:
+    drc_deck: reference
+    lvs_deck: reference

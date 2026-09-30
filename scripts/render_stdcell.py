@@ -186,13 +186,28 @@ def main() -> int:
         if physical_name not in layer_cache:
             layer_cache[physical_name] = layout.layer(profile.layer_info(physical_name))
         return layer_cache[physical_name]
+    def gds_stream(logical):
+        key = str(logical).upper()
+        physical_name = physical.get(key, str(logical).lower())
+        info = profile.layer_info(physical_name)
+        return int(info.layer), int(info.datatype)
+
 
     rows = candidate["geometry"].get("rows", {})
     if not rows:
         raise RuntimeError("candidate manifest has no row-level geometry")
-    for row in rows.values():
+    for polarity, row in rows.items():
         for shape_group in ("active", "select", "wells", "gates", "contacts"):
             for shape in row.get(shape_group, ()):
+                if (
+                    shape_group == "select"
+                    and gds_stream(shape["layer"])
+                    == gds_stream(process.stdcell_layer("active", polarity))
+                ):
+                    # Some native decks alias select to active on the same
+                    # GDS stream.  Emit that stream once, not as duplicate
+                    # polygons that trigger overlap/spacing markers.
+                    continue
                 if (
                     str(shape["layer"]).upper() == "PSELECT"
                     and not bool(

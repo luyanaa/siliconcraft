@@ -1326,5 +1326,15 @@
     "repository": "OpenSUSI/TR-1um",
     "source_root": "flow/pdk_root/TR-1um/libs.ref/TR-1um_stdcell"
   },
+  "vendored_smoke_fixture": {
+    "gds": "common/tests/gds/tr1um_inv_x1.gds",
+    "gds_sha256": "24e9df2ffbcd4b38572203525d591b2c1c6466a27e53e7af7bee0f6aa8521bf3",
+    "lvs_adapter": "common/tests/spice/tr1um_inv_x1_lvs.spice",
+    "source_spice": "common/tests/spice/tr1um_inv_x1.spice",
+    "source_spice_sha256": "54f14a2a5f88f8fc077a72d524ff2116992117c9d0a76a8230e25b504dca0f50",
+    "source_commit": "d83eb77fcbe8c587809dd9f4532f9464c5501ab2",
+    "repository": "OpenSUSI/TR-1um",
+    "license": "Apache-2.0"
+  },
   "status": "generated_pending_qualification"
 }

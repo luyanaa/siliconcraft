@@ -5,6 +5,7 @@ materializes a standard-cell transistor row as one active/select/well/poly/
 contact shape plan so shared diffusion is a row property, not a bridge between
 independent MOS instances.
 """
+from __future__ import annotations
 
 from dataclasses import dataclass
 import math

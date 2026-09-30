@@ -18,6 +18,10 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from common.process_ir import load_process
 
 
 def tool(argument: str | None, environment: str, name: str) -> str:
@@ -30,6 +34,19 @@ def tool(argument: str | None, environment: str, name: str) -> str:
 def run(command: list[str], env: dict[str, str] | None = None) -> None:
     print("+", " ".join(command))
     subprocess.run(command, cwd=ROOT, env=env, check=True)
+
+
+def profile_deck(profile: str, kind: str, requested: str | None) -> str:
+    if requested and requested != "auto":
+        return requested
+    configured = (
+        (load_process(profile, ROOT).cells_doc.get("stdcell") or {})
+        .get("verification", {})
+        .get(f"{kind}_deck")
+    )
+    if configured:
+        return str(configured)
+    return "authoritative"
 
 
 def run_gate(args: argparse.Namespace) -> int:
@@ -45,6 +62,8 @@ def run_gate(args: argparse.Namespace) -> int:
     source = args.input if args.input.is_absolute() else ROOT / args.input
     schematic = args.schematic if args.schematic.is_absolute() else ROOT / args.schematic
     top_cell = args.top_cell or f"{args.cell}_c0"
+    drc_deck = profile_deck(args.profile, "drc", args.drc_deck)
+    lvs_deck = profile_deck(args.profile, "lvs", args.lvs_deck)
 
     gen_command = [
         sys.executable,
@@ -92,7 +111,7 @@ def run_gate(args: argparse.Namespace) -> int:
             "--profile",
             args.profile,
             "--deck",
-            "authoritative",
+            drc_deck,
             "--layout",
             str(layout),
             "--out",
@@ -116,7 +135,7 @@ def run_gate(args: argparse.Namespace) -> int:
         "--schematic",
         str(schematic),
         "--deck",
-        "authoritative",
+        lvs_deck,
         "--top-cell",
         top_cell,
         "--workdir",
@@ -178,6 +197,18 @@ def main(defaults: dict[str, object] | None = None) -> int:
     parser.add_argument("--candidate", type=int, default=defaults.get("candidate", 0))
     parser.add_argument("--beam-width", type=int)
     parser.add_argument("--top-cell", default=defaults.get("top_cell"))
+    parser.add_argument(
+        "--drc-deck",
+        choices=("auto", "reference", "authoritative"),
+        default=defaults.get("drc_deck"),
+        help="DRC deck; auto uses the profile stdcell verification contract",
+    )
+    parser.add_argument(
+        "--lvs-deck",
+        choices=("auto", "reference", "authoritative"),
+        default=defaults.get("lvs_deck"),
+        help="LVS deck; auto uses the profile stdcell verification contract",
+    )
     parser.add_argument("--circuit", default=defaults.get("circuit"),
                         help="optional Netgen circuit/subckt name for LVS")
     parser.add_argument("--klayout")

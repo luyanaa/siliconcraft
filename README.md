@@ -249,7 +249,16 @@ not disabled.
   references only. The native deck recognizes bipolar-well material but does
   not expose a standalone BJT extractor or model, so the BJT contract remains
   reference-only.
+  The checked-in TR source-reference smoke fixture is
+  `common/tests/gds/tr1um_inv_x1.gds` with
+  `common/tests/spice/tr1um_inv_x1.spice`; its native DRC, native LVS adapter,
+  and engineering Magic PEX are runnable without the external OpenSUSI
+  checkout. The native stdcell gate selects the reference DRC/LVS decks from
+  `profiles/tr1um/cells.yaml`; Liberty remains unavailable, so this is not a
+  signoff library.
 - LS1u is a subcircuit/topology reference with partial model evidence.
+  Its checked-in `ls1u_mos_pair` GDS/SPICE fixture passes the native
+  reference DRC/LVS decks; model/PEX evidence remains provisional.
 - OpenRule1um's 45-cell GDS/38-symbol catalog is reference-only; LEF, Liberty,
   and PEX are unavailable/deferred.
 
@@ -323,6 +332,12 @@ Rule-family and ProcessIR contracts:
 python3 scripts/test_process_ir.py
 python3 scripts/test_scmos_rule_families.py
 ```
+OpenRule1um portable legality/efficiency contract:
+
+```bash
+python3 scripts/test_openrule1um_portable.py
+```
+
 
 Historical SCMOS matrix contract:
 
@@ -383,8 +398,32 @@ nix-shell -p magic-vlsi ngspice python3 --run \
   "python3 scripts/run_pex_ci.py"
 ```
 
-The native gate covers AMI06, HP06, AMI16, and LS1u extraction/model smokes,
-legacy SCMOS backend checks, and normal-vs-`scmosWR` well-routing checks.
+The native gate covers AMI06, HP06, AMI16, TR-1um source-reference PEX,
+and LS1u extraction/model smokes, plus legacy SCMOS backend checks and
+normal-vs-`scmosWR` well-routing checks for profiles with a compatible
+legacy backend.
+TR-1um source-reference DRC/LVS/PEX and native stdcell candidate smoke:
+
+```bash
+nix develop ~/Documents/librelane --command bash -lc '
+  python3 scripts/run_drc.py --profile tr1um --deck reference \
+    --layout common/tests/gds/tr1um_inv_x1.gds --top-cell INV_X1 \
+    --out /tmp/tr1um.drc.lyrdb --summary /tmp/tr1um.drc.json && \
+  python3 scripts/run_lvs.py --profile tr1um --deck reference \
+    --layout common/tests/gds/tr1um_inv_x1.gds \
+    --schematic common/tests/spice/tr1um_inv_x1_lvs.spice --top-cell INV_X1 \
+    --workdir /tmp/tr1um.lvs && \
+  python3 scripts/run_magic_pex_smoke.py --profile tr1um && \
+  python3 scripts/run_stdcell_gate.py --profile tr1um \
+    --architecture two_metal_classic --cell inv \
+    --input common/tests/spice/stdcell/tr1um_inv.spice \
+    --schematic common/tests/spice/stdcell/tr1um_inv_lvs.spice \
+    --workdir /tmp/tr1um.stdcell --pex --lef'
+```
+
+`run_stdcell_gate.py` defaults to the profile's `verification` deck contract;
+AMI06-style profiles continue to default to authoritative decks.
+
 
 xschem UI/netlist binding and ngspice smoke:
 
@@ -395,6 +434,15 @@ nix-shell -p xschem ngspice python3 --run \
 
 The same gate can be run for `ls1u`; its subcircuit binding keeps simulator
 parameters in `devices/symbol_netlist.yaml`, separate from symbol geometry.
+CNM25 uses the checked-in connected inverter fixture and a positive
+`-i(v2)` supply-current probe because its subcircuit instances do not expose
+ngspice primitive `@instance[id]` vectors:
+
+```bash
+nix-shell -p xschem ngspice python3 --run \
+  "python3 scripts/run_xschem.py --profile cnm25"
+```
+
 
 AMS C35 xschem and KLayout analog-PCell smoke:
 

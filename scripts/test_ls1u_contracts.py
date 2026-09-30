@@ -107,8 +107,15 @@ def _check_deck_syntax() -> None:
                 )
                 assert proc.returncode == 0, proc.stderr
     setup = (REFERENCE / "klayout" / "ls1u.setup.tcl").read_text()
-    assert "equate class {-circuit1 nfet} {-circuit2 LV1UNMOS}" in setup
-    assert "equate class {-circuit1 pfet} {-circuit2 LV1UPMOS}" in setup
+    assert "equate class {-circuit1 n} {-circuit2 LV1UNMOS}" in setup
+    assert "equate class {-circuit1 p} {-circuit2 LV1UPMOS}" in setup
+    lvs_script = ET.parse(REFERENCE / "klayout" / "ls1u.lylvs").getroot().findtext("text")
+    assert lvs_script
+    assert "reader = RBA::NetlistSpiceReader::new" in lvs_script
+    assert "target_netlist(TARGET_FILE, write_spice(" in lvs_script
+    manifest = yamlish.load((REFERENCE / "manifest.yaml").read_text())
+    args = manifest["lvs"]["args"]
+    assert "report=$LVS_REPORT" in args
 
 
 def _check_fake_drc_and_lvs() -> None:
@@ -124,7 +131,7 @@ def _check_fake_drc_and_lvs() -> None:
         layout = work / "empty.gds"
         schematic = work / "empty.spice"
         layout.write_bytes(b"")
-        schematic.write_text("* fake schematic\\n")
+        schematic.write_text(".SUBCKT empty\n.ENDS empty\n")
 
         drc_report = work / "drc.lyrdb"
         drc_summary = run_drc.run_deck(

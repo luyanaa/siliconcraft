@@ -154,7 +154,7 @@ def main():
             f".lib '{model}' {args.profile}\n"
             + "\n".join(devices)
             + "\n.control\nop\n"
-            f"print v(d) i(v2) {probe}\n"
+            f"print {probe}\n"
             ".endc\n.end\n"
         )
         log = Path(tmp) / "ngspice.log"

@@ -101,7 +101,8 @@ def check_lambda_contract() -> None:
     require(float(ami06_meta["lambda_um"]) == 0.3, "explicit profile lambda was overridden")
 
     with tempfile.TemporaryDirectory(prefix="openrule1um-default-") as tmp:
-        profile = Path(tmp)
+        profile = Path(tmp) / "openrule1um"
+        profile.mkdir()
         profile_layers = LAYERS.read_text().replace("  lambda_um: 0.5\n", "")
         (profile / "layers.yaml").write_text(profile_layers)
         default_meta, _, _ = run_drc.load_profile(profile)

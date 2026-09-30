@@ -109,7 +109,7 @@ def run_ngspice(
     return log
 
 
-def default_config(profile: str) -> dict[str, str]:
+def default_config(profile: str) -> dict[str, object]:
     process = load_process(profile, ROOT)
     manifest_path = process.profile_dir / "pex" / "manifest.yaml"
     if not manifest_path.exists():
@@ -136,7 +136,12 @@ def default_config(profile: str) -> dict[str, str]:
             pmos = models["pmos"]
     except (KeyError, TypeError, ProcessIRError) as exc:
         raise SystemExit(f"manifest topology is incomplete: {manifest_path}") from exc
+    smoke = manifest.get("runtime_smoke") or {}
+    layout = ROOT / str(smoke["layout"]) if smoke.get("layout") else DEFAULT_LAYOUT
     return {
+        "layout": layout,
+        "top_cell": smoke.get("top_cell"),
+        "require_parasitics": bool(smoke.get("require_parasitics", False)),
         "style": str(style),
         "nmos_model": str(nmos),
         "pmos_model": str(pmos),
@@ -148,7 +153,7 @@ def default_config(profile: str) -> dict[str, str]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--profile", required=True)
-    ap.add_argument("--layout", type=Path, default=DEFAULT_LAYOUT)
+    ap.add_argument("--layout", type=Path, default=None)
     ap.add_argument("--tech", type=Path)
     ap.add_argument("--models", type=Path)
     ap.add_argument("--style")
@@ -162,26 +167,29 @@ def main() -> int:
     args = ap.parse_args()
 
     config = default_config(args.profile)
+    layout = args.layout or config["layout"]
+    top_cell = args.top_cell or config["top_cell"]
+    require_parasitics = args.require_parasitics or bool(config["require_parasitics"])
     tech = args.tech or ROOT / f"profiles/{args.profile}/pex/{config['technology_profile']}.tech"
     models = args.models or ROOT / f"profiles/{args.profile}/models/{args.profile}.lib"
     style = args.style or config["style"]
     model_section = args.model_section or config["model_section"]
     expected_models = {args.nmos_model or config["nmos_model"], args.pmos_model or config["pmos_model"]}
 
-    for path in (args.layout, tech, models):
-        if not path.exists():
+    for path in (layout, tech, models):
+        if not Path(path).exists():
             raise SystemExit(f"missing experiment input: {path}")
     with tempfile.TemporaryDirectory(prefix=f"{args.profile}-magic-") as temp:
         workdir = Path(temp)
         output = workdir / f"{args.profile}_extracted.spice"
         extracted, magic_log = run_magic(
             args.magic,
-            args.layout.resolve(),
-            tech.resolve(),
+            Path(layout).resolve(),
+            Path(tech).resolve(),
             output,
             workdir,
             style,
-            top_cell=args.top_cell,
+            top_cell=top_cell,
         )
         devices = parse_mosfet_lines(extracted)
         parasitic_caps = [
@@ -192,7 +200,7 @@ def main() -> int:
             raise RuntimeError(
                 f"expected {sorted(expected_models)}, found {sorted(models_found)}"
             )
-        if args.require_parasitics and not parasitic_caps:
+        if require_parasitics and not parasitic_caps:
             raise RuntimeError("source-reference extraction produced no parasitic capacitors")
         ngspice_log = run_ngspice(
             args.ngspice,

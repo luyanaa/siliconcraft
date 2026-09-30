@@ -1,0 +1,22 @@
+v {xschem version=3.4.7 file_version=1.2
+* Siliconcraft test helper symbol.
+}
+G {}
+K {type=vsource
+spiceprefix=v
+format="@spiceprefix@name @pinlist @value"
+template="name=V1 value=3.3"
+}
+V {}
+S {}
+E {}
+
+A 4 0 0 30 0 360 {}
+L 4 -30 0 -15 0 {}
+L 4 15 0 30 0 {}
+
+B 5 -2.5 -32.5 2.5 -27.5 {name=p dir=inout}
+B 5 -2.5 27.5 2.5 32.5 {name=m dir=inout}
+T {P} 3.0 -30.0 0 0 0.15 0.15 {}
+T {M} 3.0 30.0 0 0 0.15 0.15 {}
+T {@name} -10 -40 0 1 0.2 0.2 {}

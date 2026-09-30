@@ -32,6 +32,10 @@ source_technology:
   file: ../reference/magic/TR-1um.tech
   gds_input_map: ../reference/magic/cifin-tr1um.gen
   note: "Copied native TR-1um Magic technology and CIF input map; generated extract section replaces the source extract section."
+runtime_smoke:
+  layout: common/tests/gds/tr1um_inv_x1.gds
+  top_cell: INV_X1
+  require_parasitics: true
 technology:
   description: "Tokai-Rika TR-1um IP62 engineering PEX"
 topology:

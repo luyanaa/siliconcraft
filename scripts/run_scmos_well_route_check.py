@@ -24,10 +24,19 @@ from common.pex.runtime import run_magic_extract  # noqa: E402
 from common.process_ir import load_process, profile_names  # noqa: E402
 
 DEFAULT_LAYOUT = ROOT / "common/tests/gds/ami06_drc_test.gds"
+
+
+def supports_legacy_backend(profile: str) -> bool:
+    process = load_process(profile, ROOT)
+    source = process.pex_doc.get("source_technology") or {}
+    return (
+        process.capabilities.pex_runtime
+        and isinstance(source.get("legacy_backend"), dict)
+    )
+
+
 DEFAULT_PROFILES = tuple(
-    profile
-    for profile in profile_names(ROOT)
-    if load_process(profile, ROOT).capabilities.pex_runtime
+    profile for profile in profile_names(ROOT) if supports_legacy_backend(profile)
 )
 
 

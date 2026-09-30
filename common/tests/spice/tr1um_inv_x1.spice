@@ -1,0 +1,9 @@
+** sch_path: /home/uchida/work/design/TR1nm/sch/INV_X1.sch
+.subckt INV_X1 A Y VDD GND
+*.ipin A
+*.opin Y
+XM1 Y A GND GND NMOS w=3.4u l=1u
+XM2 Y A VDD VDD PMOS w=10.2u l=1u
+.ends
+***.GLOBAL VDD
+***.GLOBAL GND

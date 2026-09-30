@@ -1,6 +1,6 @@
 # profiles/cnm25/xschem_smoke.yaml — minimal CDL smoke for the CNM25 symbols.
-# The probe watches the drain current of a minimum-size NMOS inverter driver.
-# Four-terminal subcircuit instances (d g s b), APDK CDL convention:
+# The probe watches the supply current of the minimum-size inverter.
+# CNM25 subcircuit instances do not expose an ngspice @instance[id] vector.
 # x<name> <d> <g> <s> <b> cnm25modN w=.. l=.. m=.. ad=.. as=.. pd=.. ps=..
 expected_netlist:
   - "x1 in 0 0 0 cnm25modN"
@@ -8,5 +8,5 @@ expected_netlist:
   - "v1 in 0 0"
   - "v2 vdd 0 5"
   - "v3 out 0 5"
-probe: "@x1[id]"
+probe: "-i(v2)"
 min_current: 0

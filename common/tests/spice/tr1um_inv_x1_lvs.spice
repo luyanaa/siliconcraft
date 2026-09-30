@@ -1,0 +1,7 @@
+* Native KLayout LVS adapter for the vendored OpenSUSI INV_X1 source cell.
+* The source SPICE uses XM subcircuits; the native deck extracts primitive
+* NMOS/PMOS devices, so this adapter preserves the same topology and widths.
+.SUBCKT INV_X1 A Y VDD GND
+M1 Y A GND GND NMOS L=1u W=3.4u
+M2 Y A VDD VDD PMOS L=1u W=10.2u
+.ENDS INV_X1

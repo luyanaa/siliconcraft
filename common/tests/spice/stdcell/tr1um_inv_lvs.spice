@@ -1,6 +1,7 @@
 * Native-class LVS fixture for the rendered tr1um inv_c0 candidate.
-* Simulation/xschem uses tr1um_inv.spice and primitive *_mst cards instead.
+* Widths mirror the native extractor's active-row geometry; simulation/xschem
+* uses tr1um_inv.spice and primitive *_mst cards instead.
 .subckt inv_c0 A Y VDD VSS
-M0 Y A VSS VSS NMOS L=1u W=4.2u
-M1 Y A VDD VDD PMOS L=1u W=11u
+M0 Y A VSS VSS NMOS L=1u W=3.4u
+M1 Y A VDD VDD PMOS L=1u W=10.2u
 .ends inv_c0

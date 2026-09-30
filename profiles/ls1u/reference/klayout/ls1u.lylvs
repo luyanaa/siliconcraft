@@ -33,10 +33,14 @@ end
 
 if $schematic
 #reference netlist
-   schematic($schematic)
+   reader = RBA::NetlistSpiceReader::new
+   schematic($schematic, reader)
 else
    schematic(RBA::CellView::active.filename.sub(/\.(oas|gds|oas.gz|gds.gz)$/, ".sp"))
 end
+
+writer = RBA::NetlistSpiceWriter::new
+writer.use_net_names = true
 
 # true: use net names instead of numbers
 # false: use numbers for nets
@@ -47,12 +51,10 @@ spice_with_net_names = true
 spice_with_comments = true
 
 if $target_netlist
-  target_netlist($target_netlist)
+  TARGET_FILE = $target_netlist
 else
-   # target_netlist("netlist.cir", write_spice(spice_with_net_names, spice_with_comments), "The netlist comment goes here.")
-   target_netlist(File.join(File.dirname(RBA::CellView::active.filename), source.cell_name+"_extracted.cir"), write_spice(spice_with_net_names, spice_with_comments),  "Extracted by KLayout on : #{Time.now.strftime("%d/%m/%Y %H:%M")}")
+  TARGET_FILE = File.join(File.dirname(RBA::CellView::active.filename), source.cell_name+"_extracted.cir")
 end
-
 # Hierarchical mode
 deep
 # Use 4 CPU cores
@@ -149,6 +151,7 @@ align
 #netlist.purge
 #netlist.purge_nets
 netlist.simplify
+target_netlist(TARGET_FILE, write_spice(spice_with_net_names, spice_with_comments), "Created by KLayout")
 
 # Tolerances for the devices extracted parameters
 #  tolerance(device_class_name, parameter_name [, :absolute =&gt; absolute_tolerance] [, :relative =&gt; relative_tolerance])

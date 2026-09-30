@@ -60,12 +60,13 @@ lvs:
     - "-rd"
     - "input=$LAYOUT"
     - "-rd"
-    - "report=$REPORT"
+    - "report=$LVS_REPORT"
     - "-rd"
     - "schematic=$SCHEMATIC"
     - "-rd"
     - "target_netlist=$EXTRACTED"
   netgen_setup: klayout/ls1u.setup.tcl
+  netgen_circuit: auto
   scope: "provisional NMOS/PMOS extraction and three-metal connectivity"
   note: "OpenRAM Netgen setup is adapted for LV1UNMOS/LV1UPMOS; no signoff claim."
 

@@ -1,6 +1,6 @@
-* Canonical topology target for common/tests/magic/ls1u_mos_pair.gds.
-* The Magic smoke runner independently consumes W/L from ext2spice output.
-.include "../../../profiles/ls1u/models/ls1u.lib"
-Xn ndrain ngate nsource vss LV1UNMOS W=2u L=2u
-Xp pdrain pgate psource vdd LV1UPMOS W=2u L=2u
-.end
+* Canonical topology and extracted-device geometry target for common/tests/magic/ls1u_mos_pair.gds.
+* The native LS1u LVS deck emits primitive n/p device classes for Netgen.
+.SUBCKT ls1u_mos_pair ngate pgate nsource ndrain psource pdrain vdd vss
+M0 ndrain ngate nsource vss LV1UNMOS L=4u W=10u
+M1 pdrain pgate psource vdd LV1UPMOS L=4u W=10u
+.ENDS ls1u_mos_pair
