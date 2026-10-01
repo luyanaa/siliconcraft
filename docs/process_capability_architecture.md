@@ -36,6 +36,16 @@ SCMOS_CORE
 A process profile declares capability state (`supported`, `partial`, `blocked`,
 or `unavailable`) and owns the collateral for each state:
 
+The Python ProcessIR keeps the two contracts separate:
+
+- `physical_capabilities` describes what the process physically provides.  It
+  is projected from legacy `meta.features` until a profile supplies explicit
+  `meta.physical_capabilities`.
+- `collateral_capabilities` describes tool and collateral readiness: DRC, LVS,
+  models, xschem, PCell, and PEX topology/runtime/RC contracts.  CI gates use
+  this object; it is not evidence that the process physically contains a
+  feature.
+
 ```yaml
 process: example_xh035
 capabilities:
@@ -48,8 +58,16 @@ capabilities:
 ```
 
 This is a target contract.  Existing flat `meta.features` flags remain the
-compatibility input until profiles are migrated; they must not be silently
-interpreted as a richer capability declaration.
+compatibility input for the physical projection until profiles are migrated.
+They are not silently treated as a complete stateful capability declaration;
+explicit `meta.physical_capabilities` values take precedence.
+
+Derived-layer and device-recognition expressions use the backend-neutral
+`common.recognition` AST.  The AST supports boolean composition, geometric
+relations, growth/shrink, holes, and an explicit backend callback for
+connectivity.  KLayout compilation is a boundary adapter; no KLayout types
+are part of ProcessIR.
+
 
 `devices.yaml` remains a device table, not a capability table.  A device entry
 must identify its recognition, terminals, LVS class, simulation model, and
@@ -254,6 +272,11 @@ No RF models or EM stack should be inferred from ordinary SCMOS lambda rules.
 The existing RF work is profile-specific and remains separate from this
 SCMOS extension status table until collateral exists.
 
+The conservative L0 RF workbench receives frequency and die limits through
+`common.rf.policy.PROJECT_RF_POLICY` or an explicit caller policy.  Its report
+records the selected policy; those limits are analysis-envelope choices, not
+process capability claims.
+
 ## 6. Parasitic and special devices
 
 Use one `SPECIAL_DEVICE` contract for intentional and derived devices.  Examples:
@@ -320,13 +343,22 @@ or mechanical material properties.
 
 ## 8. Implementation order
 
-1. Keep the current SCMOS option status contract and migrate flat feature flags
-   into capability records without changing existing profiles.
-2. Add typed recognition/device-graph fields: `origin`, `extraction.level`,
-   recognition source, and provenance.
-3. Add capability-specific collateral validators before adding new device rows.
-4. Implement one electrical photodiode contract and one MEMS mask-level/MEX
-   contract only when source collateral exists.
-5. Add RF MOS/passive and substrate extraction contracts, then backend adapters.
-6. Compose BCD profiles from validated capability records; never add a
-   `SCMOS_BCD` geometry singleton.
+1. Keep legacy `meta.features` as compatibility input, but expose physical
+   capability projections separately from `collateral_capabilities` in
+   `ProcessIR`; explicit `meta.physical_capabilities` values override inferred
+   projections.
+2. Use the backend-neutral `common.recognition` AST for derived layers and
+   device recognition.  Compile it through explicit backend adapters; never
+   infer electrical connectivity from geometric interaction.
+3. Expand the canonical catalog with structural diode, resistor, capacitor,
+   BJT, tap, RF-passive, ESD, and fuse families.  Profiles add bindings only
+   when recognition, model, LVS, and extraction collateral exists.
+4. Keep MOS voltage, oxide, threshold, channel, gate-stack, and isolation
+   attributes orthogonal.  Preserve `well_type` and `isolation_domain` only as
+   compatibility fallbacks while topology records become authoritative.
+5. Use `stack_v2` for ordered semiconductor/conductor/dielectric/via data.
+   Missing cross-section, material, or model evidence remains unavailable; no
+   lambda default may fill it.
+6. Keep RF frequency/die limits in an explicit analysis policy, not in
+   `ProcessIR` or physical capability claims.  Add RF/ESD/power/special-device
+   collateral validators only alongside source evidence.

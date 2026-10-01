@@ -1,0 +1,485 @@
+# Process-independent canonical non-MOS device family contracts.
+#
+# These are structural vocabularies only.  Profiles must provide recognition,
+# model, LVS, and extraction bindings before a family is usable in a flow.
+schema_version: 1
+family: device_families
+families:
+  diode2:
+    device:
+      id: diode2
+      kind: diode2
+      terminals: [p, n]
+      terminal_order: [p, n]
+      terminal_semantics:
+        p: "positive or anode terminal"
+        n: "negative or cathode terminal"
+      geometry:
+        required: [area]
+        optional: [perimeter, w, l]
+        parameter_units:
+          area: um2
+          perimeter: um
+          w: um
+          l: um
+      attributes:
+        polarity: profile_defined
+        junction_type: profile_defined
+        origin: [intentional, parasitic]
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: two_terminal
+      symmetry_groups: []
+      parasitics:
+        junction_area_cap: model_or_pex
+        junction_sidewall_cap: model_or_pex
+    variants:
+      default:
+        topology: two_terminal
+  schottky2:
+    device:
+      id: schottky2
+      kind: schottky2
+      terminals: [anode, cathode]
+      terminal_order: [anode, cathode]
+      terminal_semantics:
+        anode: "metal-semiconductor anode"
+        cathode: "semiconductor cathode"
+      geometry:
+        required: [area]
+        optional: [perimeter, w, l]
+        parameter_units:
+          area: um2
+          perimeter: um
+          w: um
+          l: um
+      attributes:
+        barrier: profile_defined
+        contact_metal: profile_defined
+        origin: [intentional, parasitic]
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: two_terminal
+      symmetry_groups: []
+      parasitics:
+        junction_area_cap: model_or_pex
+        series_resistance: model_or_pex
+    variants:
+      default:
+        topology: two_terminal
+  resistor2:
+    device:
+      id: resistor2
+      kind: resistor2
+      terminals: [p, n]
+      terminal_order: [p, n]
+      geometry:
+        required: [w, l]
+        optional: [segments, contacts]
+        parameter_units:
+          w: um
+          l: um
+          segments: count
+          contacts: count
+      attributes:
+        material: profile_defined
+        sheet_resistance: profile_defined
+        orientation: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: two_terminal
+      symmetry_groups:
+        - [p, n]
+      parasitics:
+        resistance: model_or_pex
+        terminal_contact_r: pex
+    variants:
+      default:
+        topology: two_terminal
+  resistor4:
+    device:
+      id: resistor4
+      kind: resistor4
+      terminals: [p_force, n_force, p_sense, n_sense]
+      terminal_order: [p_force, n_force, p_sense, n_sense]
+      terminal_semantics:
+        p_force: "positive force/current terminal"
+        n_force: "negative force/current terminal"
+        p_sense: "positive Kelvin sense terminal"
+        n_sense: "negative Kelvin sense terminal"
+      geometry:
+        required: [w, l]
+        optional: [segments, contacts]
+        parameter_units:
+          w: um
+          l: um
+          segments: count
+          contacts: count
+      attributes:
+        material: profile_defined
+        sheet_resistance: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: kelvin_four_terminal
+      symmetry_groups: []
+      parasitics:
+        resistance: model_or_pex
+        terminal_contact_r: pex
+    variants:
+      default:
+        topology: kelvin_four_terminal
+  capacitor2:
+    device:
+      id: capacitor2
+      kind: capacitor2
+      terminals: [top, bottom]
+      terminal_order: [top, bottom]
+      geometry:
+        required: [area]
+        optional: [w, l, perimeter]
+        parameter_units:
+          area: um2
+          w: um
+          l: um
+          perimeter: um
+      attributes:
+        dielectric: profile_defined
+        capacitor_type: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: two_terminal
+      symmetry_groups:
+        - [top, bottom]
+      parasitics:
+        capacitance: model_or_pex
+        series_resistance: model_or_pex
+    variants:
+      default:
+        topology: two_terminal
+  capacitor3:
+    device:
+      id: capacitor3
+      kind: capacitor3
+      terminals: [top, bottom, shield]
+      terminal_order: [top, bottom, shield]
+      terminal_semantics:
+        shield: "optional electrostatic shield or substrate terminal"
+      geometry:
+        required: [area]
+        optional: [w, l, perimeter]
+        parameter_units:
+          area: um2
+          w: um
+          l: um
+          perimeter: um
+      attributes:
+        dielectric: profile_defined
+        capacitor_type: profile_defined
+        shield_role: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: shielded_three_terminal
+      symmetry_groups: []
+      parasitics:
+        capacitance: model_or_pex
+        shield_coupling: model_or_pex
+    variants:
+      default:
+        topology: shielded_three_terminal
+  bjt3:
+    device:
+      id: bjt3
+      kind: bjt3
+      terminals: [c, b, e]
+      terminal_order: [c, b, e]
+      geometry:
+        required: [emitter_area]
+        optional: [collector_area, perimeter, w, l]
+        parameter_units:
+          emitter_area: um2
+          collector_area: um2
+          perimeter: um
+          w: um
+          l: um
+      attributes:
+        polarity: profile_defined
+        junction_type: profile_defined
+        origin: [intentional, parasitic]
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: bipolar_three_terminal
+      symmetry_groups: []
+      parasitics:
+        junction_area_cap: model_or_pex
+        substrate_coupling: model_or_pex
+    variants:
+      default:
+        topology: bipolar_three_terminal
+  hbt3:
+    device:
+      id: hbt3
+      kind: hbt3
+      terminals: [c, b, e]
+      terminal_order: [c, b, e]
+      geometry:
+        required: [emitter_area]
+        optional: [collector_area, perimeter]
+        parameter_units:
+          emitter_area: um2
+          collector_area: um2
+          perimeter: um
+      attributes:
+        polarity: profile_defined
+        heterojunction: profile_defined
+        material_system: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: heterojunction_bipolar_three_terminal
+      symmetry_groups: []
+      parasitics:
+        junction_area_cap: model_or_pex
+        substrate_coupling: model_or_pex
+    variants:
+      default:
+        topology: heterojunction_bipolar_three_terminal
+  varactor2:
+    device:
+      id: varactor2
+      kind: varactor2
+      terminals: [anode, cathode]
+      terminal_order: [anode, cathode]
+      geometry:
+        required: [area]
+        optional: [perimeter, w, l]
+        parameter_units:
+          area: um2
+          perimeter: um
+          w: um
+          l: um
+      attributes:
+        varactor_type: profile_defined
+        tuning_mechanism: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: voltage_tunable_two_terminal
+      symmetry_groups: []
+      parasitics:
+        capacitance: model_or_pex
+        series_resistance: model_or_pex
+    variants:
+      default:
+        topology: voltage_tunable_two_terminal
+  varactor3:
+    device:
+      id: varactor3
+      kind: varactor3
+      terminals: [anode, cathode, body]
+      terminal_order: [anode, cathode, body]
+      geometry:
+        required: [area]
+        optional: [perimeter, w, l]
+        parameter_units:
+          area: um2
+          perimeter: um
+          w: um
+          l: um
+      attributes:
+        varactor_type: profile_defined
+        body_role: profile_defined
+        tuning_mechanism: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: body_tied_voltage_tunable_three_terminal
+      symmetry_groups: []
+      parasitics:
+        capacitance: model_or_pex
+        body_coupling: model_or_pex
+    variants:
+      default:
+        topology: body_tied_voltage_tunable_three_terminal
+  tap2:
+    device:
+      id: tap2
+      kind: tap2
+      terminals: [tap, bulk]
+      terminal_order: [tap, bulk]
+      geometry:
+        required: [area]
+        optional: [perimeter, contacts]
+        parameter_units:
+          area: um2
+          perimeter: um
+          contacts: count
+      attributes:
+        tap_type: profile_defined
+        well_type: profile_defined
+        isolation: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: well_or_substrate_tap
+      symmetry_groups: []
+      parasitics:
+        contact_resistance: pex
+        junction_capacitance: model_or_pex
+    variants:
+      default:
+        topology: well_or_substrate_tap
+  inductor2:
+    device:
+      id: inductor2
+      kind: inductor2
+      terminals: [p, n]
+      terminal_order: [p, n]
+      geometry:
+        required: [length]
+        optional: [turns, width, spacing, area]
+        parameter_units:
+          length: um
+          turns: count
+          width: um
+          spacing: um
+          area: um2
+      attributes:
+        conductor: profile_defined
+        substrate_stack: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: two_terminal
+      symmetry_groups:
+        - [p, n]
+      parasitics:
+        inductance: field_solver_or_model
+        substrate_coupling: field_solver_or_model
+    variants:
+      default:
+        topology: two_terminal
+  inductor3:
+    device:
+      id: inductor3
+      kind: inductor3
+      terminals: [p, n, shield]
+      terminal_order: [p, n, shield]
+      geometry:
+        required: [length]
+        optional: [turns, width, spacing, area]
+        parameter_units:
+          length: um
+          turns: count
+          width: um
+          spacing: um
+          area: um2
+      attributes:
+        conductor: profile_defined
+        shield_role: profile_defined
+        substrate_stack: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: shielded_three_terminal
+      symmetry_groups: []
+      parasitics:
+        inductance: field_solver_or_model
+        substrate_coupling: field_solver_or_model
+    variants:
+      default:
+        topology: shielded_three_terminal
+  esd_device:
+    device:
+      id: esd_device
+      kind: esd_device
+      terminals: [pad, reference]
+      terminal_order: [pad, reference]
+      geometry:
+        required: [area]
+        optional: [perimeter, contacts]
+        parameter_units:
+          area: um2
+          perimeter: um
+          contacts: count
+      attributes:
+        protection_mechanism: profile_defined
+        trigger_mode: profile_defined
+        origin: intentional
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: protection_two_terminal
+      symmetry_groups: []
+      parasitics:
+        snapback: model_or_characterization
+        capacitance: model_or_pex
+    variants:
+      default:
+        topology: protection_two_terminal
+  fuse2:
+    device:
+      id: fuse2
+      kind: fuse2
+      terminals: [p, n]
+      terminal_order: [p, n]
+      geometry:
+        required: [w, l]
+        optional: [segments, neck_width]
+        parameter_units:
+          w: um
+          l: um
+          segments: count
+          neck_width: um
+      attributes:
+        material: profile_defined
+        programming_mode: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: two_terminal_one_time
+      symmetry_groups: []
+      parasitics:
+        resistance: model_or_pex
+        failure_criterion: characterization
+    variants:
+      default:
+        topology: two_terminal_one_time
+  rf_mos4:
+    device:
+      id: rf_mos4
+      kind: rf_mos4
+      terminals: [d, g, s, b]
+      terminal_order: [d, g, s, b]
+      geometry:
+        required: [w, l]
+        optional: [nf, m, body_contact_distance, shared_diffusion]
+        parameter_units:
+          w: um
+          l: um
+          nf: count
+          m: count
+          body_contact_distance: um
+      attributes:
+        polarity: profile_defined
+        rf_model: profile_defined
+        substrate_stack: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: symmetric
+      symmetry_groups:
+        - [d, s]
+      parasitics:
+        gate_resistance: model_or_field_solver
+        substrate_coupling: model_or_field_solver
+        access_resistance: model_or_pex
+    variants:
+      default:
+        topology: symmetric
+  power_device:
+    device:
+      id: power_device
+      kind: power_device
+      terminals: [d, g, s, b]
+      terminal_order: [d, g, s, b]
+      geometry:
+        required: [w, l]
+        optional: [drift_length, nf, m, ballast_resistance]
+        parameter_units:
+          w: um
+          l: um
+          drift_length: um
+          nf: count
+          m: count
+          ballast_resistance: ohm
+      attributes:
+        polarity: profile_defined
+        voltage_class: profile_defined
+        drift_topology: profile_defined
+        breakdown_rating: profile_defined
+        thermal_contract: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      topology: asymmetric_power
+      symmetry_groups: []
+      parasitics:
+        drift_resistance: model_or_pex
+        thermal: model_or_characterization
+        breakdown: model_or_characterization
+    variants:
+      default:
+        topology: asymmetric_power

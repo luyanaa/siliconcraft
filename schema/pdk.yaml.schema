@@ -35,6 +35,37 @@
           "description": "per-process feature flags (metal3Available, elecAvailable, ...)",
           "additionalProperties": { "type": "boolean" }
         },
+        "physical_capabilities": {
+          "type": "object",
+          "description": "physical process capability declarations; separate from tool/collateral readiness",
+          "properties": {
+            "isolation": {
+              "type": "object",
+              "properties": {
+                "state": { "enum": ["supported", "partial", "blocked", "unavailable"] },
+                "authority": { "type": "string" },
+                "topology": { "type": "string" },
+                "modes": { "type": "array", "items": { "type": "string" } },
+                "domains": { "type": "array", "items": { "type": "string" } },
+                "legacy_well_type": { "enum": ["n", "p", "e"] },
+                "deep_nwell": { "type": "boolean" },
+                "twin_well": { "type": "boolean" }
+              },
+              "additionalProperties": true
+            },
+            "bipolar": { "$ref": "#/$defs/physical_capability" },
+            "rf": { "$ref": "#/$defs/physical_capability" },
+            "power": { "$ref": "#/$defs/physical_capability" },
+            "esd": { "$ref": "#/$defs/physical_capability" },
+            "opto": { "$ref": "#/$defs/physical_capability" },
+            "mems": { "$ref": "#/$defs/physical_capability" },
+            "special_devices": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": true
+        },
         "license": { "type": "string" },
         "sources": { "type": "array", "items": { "type": "string" } }
       }
@@ -73,6 +104,11 @@
           "note": { "type": "string" }
         }
       }
+    },
+    "derived_layers": {
+      "type": "object",
+      "description": "backend-neutral derived-layer recognition expressions",
+      "additionalProperties": { "$ref": "#/$defs/recognition_expr" }
     },
     "stackup": {
       "type": "object",
@@ -113,6 +149,52 @@
           }
         }
       }
+    },
+    "stack_v2": {
+      "type": "object",
+      "description": "cross-section contract for physical, electrical, and extraction stack data",
+      "required": ["version", "layers"],
+      "properties": {
+        "version": { "enum": [2] },
+        "layers": {
+          "type": "array",
+          "description": "ordered physical cross-section from substrate to passivation",
+          "items": { "$ref": "#/$defs/stack_layer" }
+        },
+        "semiconductors": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/stack_semiconductor" }
+        },
+        "conductors": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/stack_conductor" }
+        },
+        "dielectrics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/stack_dielectric" }
+        },
+        "vias": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/stack_via" }
+        },
+        "substrate": { "$ref": "#/$defs/stack_substrate" },
+        "interfaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["lower", "upper"],
+            "properties": {
+              "lower": { "type": "string" },
+              "upper": { "type": "string" },
+              "interface_type": { "type": "string" },
+              "note": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "provenance": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
     },
     "rules": {
       "type": "object",
@@ -185,12 +267,54 @@
         "required": ["name", "terminals"],
         "properties": {
           "name": { "type": "string" },
-          "kind": { "enum": ["mos4", "mos", "resistor", "capacitor", "diode", "bjt", "soi_mos"] },
+          "kind": {
+            "enum": [
+              "mos4", "mos", "soi_mos", "asymmetric_mos4", "rf_mos4",
+              "power_device",
+              "resistor", "resistor2", "resistor4",
+              "capacitor", "capacitor2", "capacitor3",
+              "diode", "diode2", "schottky2",
+              "bjt", "bjt3", "hbt3",
+              "varactor2", "varactor3",
+              "tap2", "inductor2", "inductor3",
+              "esd_device", "fuse2"
+            ]
+          },
           "terminals": { "type": "array", "items": { "type": "string" } },
+          "canonical_family": { "type": "string" },
+          "origin": { "enum": ["intentional", "parasitic"] },
+          "extraction": {
+            "type": "object",
+            "description": "device extraction contract and escalation boundary",
+            "properties": {
+              "level": { "enum": ["none", "lumped", "distributed", "field_solver"] },
+              "escalation": {
+                "type": "array",
+                "items": { "enum": ["geometry", "lumped", "distributed", "field_solver"] }
+              },
+              "provenance": { "type": "string" },
+              "model": { "type": "string" }
+            },
+            "additionalProperties": true
+          },
+          "analysis": {
+            "type": "object",
+            "description": "optional RF, power, ESD, or special-device analysis contract",
+            "properties": {
+              "representation": {
+                "enum": ["compact", "lumped", "s_parameters", "vector_fit", "field_solver"]
+              },
+              "frequency_dependent": { "type": "boolean" },
+              "requires_stack_v2": { "type": "boolean" },
+              "source": { "type": "string" }
+            },
+            "additionalProperties": true
+          },
+          "attributes": { "type": "object", "additionalProperties": true },
           "recognition": {
             "type": "object",
             "description": "layer names used to recognize the device, e.g. {gate: poly, diff: nactive, bulk: pwell}",
-            "additionalProperties": { "type": "string" }
+            "additionalProperties": { "$ref": "#/$defs/recognition_expr" }
           },
           "model": { "type": "string", "description": "SPICE model name (prefix + suffix)" },
           "params": { "type": "array", "items": { "type": "string" } }
@@ -252,6 +376,181 @@
     }
   },
   "$defs": {
+    "physical_capability": {
+      "anyOf": [
+        { "type": "boolean" },
+        {
+          "type": "object",
+          "properties": {
+            "state": { "enum": ["supported", "partial", "blocked", "unavailable"] },
+            "authority": { "type": "string" },
+            "modes": { "type": "array", "items": { "type": "string" } },
+            "devices": { "type": "array", "items": { "type": "string" } },
+            "extraction_levels": {
+              "type": "array",
+              "items": { "enum": ["none", "lumped", "distributed", "field_solver"] }
+            },
+            "source": { "type": "string" }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "stack_layer": {
+      "type": "object",
+      "required": ["name", "kind"],
+      "properties": {
+        "name": { "type": "string" },
+        "kind": {
+          "enum": ["semiconductor", "conductor", "dielectric", "via", "substrate", "passivation", "other"]
+        },
+        "material": { "type": "string" },
+        "thickness_um": { "type": "number", "minimum": 0 },
+        "z_bottom_um": { "type": "number" },
+        "z_top_um": { "type": "number" },
+        "electrical_role": { "type": "string" },
+        "provenance": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "stack_semiconductor": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "material": { "type": "string" },
+        "thickness_um": { "type": "number", "minimum": 0 },
+        "doping": { "type": "string" },
+        "resistivity_ohm_cm": { "type": "number", "exclusiveMinimum": 0 },
+        "eps_rel": { "type": "number", "exclusiveMinimum": 0 },
+        "mobility_cm2_v_s": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "stack_conductor": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "material": { "type": "string" },
+        "thickness_um": { "type": "number", "minimum": 0 },
+        "sheet_r_ohm_sq": { "type": "number", "minimum": 0 },
+        "resistivity_ohm_cm": { "type": "number", "exclusiveMinimum": 0 },
+        "role": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "stack_dielectric": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "material": { "type": "string" },
+        "thickness_um": { "type": "number", "minimum": 0 },
+        "eps_rel": { "type": "number", "exclusiveMinimum": 0 },
+        "loss_tangent": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "stack_via": {
+      "type": "object",
+      "required": ["name", "from", "to"],
+      "properties": {
+        "name": { "type": "string" },
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "material": { "type": "string" },
+        "resistance_ohm": { "type": "number", "minimum": 0 },
+        "contact_area_um2": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "stack_substrate": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["bulk", "soi", "sige", "compound", "other"] },
+        "material": { "type": "string" },
+        "doping": { "type": "string" },
+        "rho_ohm_cm": { "type": "number", "exclusiveMinimum": 0 },
+        "eps_rel": { "type": "number", "exclusiveMinimum": 0 },
+        "box_thickness_um": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "recognition_expr": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 1,
+          "properties": {
+            "layer": { "type": "string" },
+            "and": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/recognition_expr" }
+            },
+            "or": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/recognition_expr" }
+            },
+            "not": { "$ref": "#/$defs/recognition_expr" },
+            "holes": { "$ref": "#/$defs/recognition_expr" },
+            "interact": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "$ref": "#/$defs/recognition_expr" }
+            },
+            "enclose": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "$ref": "#/$defs/recognition_expr" }
+            },
+            "inside": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "$ref": "#/$defs/recognition_expr" }
+            },
+            "touch": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "$ref": "#/$defs/recognition_expr" }
+            },
+            "overlap": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "$ref": "#/$defs/recognition_expr" }
+            },
+            "connected_to": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "$ref": "#/$defs/recognition_expr" }
+            },
+            "grow": { "$ref": "#/$defs/recognition_distance" },
+            "shrink": { "$ref": "#/$defs/recognition_distance" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "recognition_distance": {
+      "type": "object",
+      "required": ["expr", "distance_um"],
+      "properties": {
+        "expr": { "$ref": "#/$defs/recognition_expr" },
+        "distance_um": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
     "rule": {
       "type": "object",
       "required": ["id", "layer", "value_um"],
@@ -301,8 +600,8 @@
         "id": { "type": "string" },
         "layer": { "type": "string" },
         "layer2": { "type": "string" },
-        "class1": { "enum": ["lv", "hv"] },
-        "class2": { "enum": ["lv", "hv"] },
+        "class1": { "type": "string", "minLength": 1, "description": "profile-defined voltage class identifier" },
+        "class2": { "type": "string", "minLength": 1, "description": "profile-defined voltage class identifier" },
         "potential": { "enum": ["any", "same", "different"] },
         "value_um": { "type": "number" },
         "authority": {

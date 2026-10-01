@@ -17,6 +17,7 @@ from common.rf.workbench import (  # noqa: E402
     parse_spice_value,
     validate_rf_request,
 )
+from common.rf.policy import RFAnalysisPolicy  # noqa: E402
 
 
 def main() -> int:
@@ -53,6 +54,7 @@ X1 A B C subckt
         critical_nets=["NET"],
     )
     assert report["status"] == "source_reference_lumped_rc"
+    assert report["analysis_policy"]["name"] == "project_l0_default"
     assert report["signoff"] is False
     assert report["counts"]["resistors"] == 2
     assert report["counts"]["capacitors"] == 1
@@ -67,6 +69,15 @@ X1 A B C subckt
         1.0e9,
         3.0e9,
     )
+    expanded_policy = RFAnalysisPolicy(
+        name="expanded_study",
+        min_frequency_hz=500.0e6,
+        max_frequency_hz=5.0e9,
+        max_die_um=10000.0,
+    )
+    assert validate_rf_request(
+        [500.0e6, 5.0e9], 10000.0, 10000.0, expanded_policy
+    ) == (500.0e6, 5.0e9)
     for frequencies, width, height in (
         ([0.9e9], 5000.0, 5000.0),
         ([3.1e9], 5000.0, 5000.0),

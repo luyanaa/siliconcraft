@@ -30,7 +30,7 @@ def supports_legacy_backend(profile: str) -> bool:
     process = load_process(profile, ROOT)
     source = process.pex_doc.get("source_technology") or {}
     return (
-        process.capabilities.pex_runtime
+        process.collateral_capabilities.pex_runtime
         and isinstance(source.get("legacy_backend"), dict)
     )
 

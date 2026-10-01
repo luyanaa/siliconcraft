@@ -50,11 +50,11 @@ def main() -> int:
         if xschem["status"] == "source_backed":
             assert xschem.get("smoke") not in (None, "unavailable")
             assert (ROOT / xschem["smoke"]).exists()
-            assert process.capabilities.xschem, f"{name}: xschem capability not materialized"
+            assert process.collateral_capabilities.xschem, f"{name}: xschem capability not materialized"
         else:
             assert xschem["status"] == "contract_only"
             assert xschem.get("smoke") == "unavailable"
-            assert not process.capabilities.xschem
+            assert not process.collateral_capabilities.xschem
 
         spice = entry["spice"]
         if spice["status"].startswith("simulatable"):

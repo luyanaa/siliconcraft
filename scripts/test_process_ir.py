@@ -31,10 +31,51 @@ def main() -> int:
         assert "deep_rules" not in process.meta
         assert "submicron_rules" not in process.meta
         assert process.layers, f"{name}: no normalized layers"
-        if process.capabilities.pex_runtime:
-            assert process.capabilities.pex_topology
+        assert process.physical_capabilities.enabled("cmos")
+        assert process.physical_capabilities.legacy_features == {
+            str(key): bool(value)
+            for key, value in process.meta.get("features", {}).items()
+            if isinstance(value, bool)
+        }
+        canonical_families = {
+            "diode2",
+            "resistor2",
+            "resistor4",
+            "capacitor2",
+            "capacitor3",
+            "bjt3",
+            "tap2",
+            "rf_mos4",
+            "power_device",
+        }
+        assert canonical_families <= set(process.canonical_doc["families"])
+        for family_name in canonical_families:
+            family_device = process.canonical_doc["families"][family_name]["device"]
+            assert family_device["terminals"] == family_device["terminal_order"]
+        if "mos4" in process.canonical_doc["families"]:
+            assert {
+                "voltage_class",
+                "oxide_class",
+                "threshold_class",
+                "channel_class",
+                "gate_stack",
+                "isolation",
+            } <= set(process.canonical_doc["families"]["mos4"]["device"]["attributes"])
+        if process.device_bindings:
+            nmos = next(
+                binding
+                for binding_name, binding in process.device_bindings.items()
+                if "nmos" in binding_name.lower()
+            )
+            assert nmos.voltage_class
+            assert nmos.isolation_topology == nmos.isolation_domain
+        isolation = process.physical_capabilities.get("isolation")
+        assert isolation["legacy_well_type"] == process.meta["well_type"]
+        assert process.has_physical_capability("isolation")
+        if process.collateral_capabilities.pex_runtime:
+            assert process.collateral_capabilities.pex_topology
             assert process.pex_doc.get("topology", {}).get("magic_device_class") == "mosfet"
-        if process.capabilities.xschem:
+        if process.collateral_capabilities.xschem:
             assert process.symbols
             assert process.xschem_smoke_doc
 
@@ -104,12 +145,12 @@ def main() -> int:
         assert deep.meta["mosis_code"] == mosis
         assert deep.meta["lambda_um"] == lam
         assert deep.meta["grid_um"] == grid
-        assert deep.capabilities.drc
-        assert deep.capabilities.lvs
-        assert deep.capabilities.model
-        assert deep.capabilities.pex_topology is (name == "tsmc018_deep")
-        assert not deep.capabilities.pex_runtime
-        assert deep.capabilities.pex_rc is False
+        assert deep.collateral_capabilities.drc
+        assert deep.collateral_capabilities.lvs
+        assert deep.collateral_capabilities.model
+        assert deep.collateral_capabilities.pex_topology is (name == "tsmc018_deep")
+        assert not deep.collateral_capabilities.pex_runtime
+        assert deep.collateral_capabilities.pex_rc is False
         assert deep.meta["features"]["metal4Available"] is True
         assert deep.meta["features"]["metal5Available"] is True
     assert processes["tsmc025_deep"].meta["features"]["metal6Available"] is False

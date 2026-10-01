@@ -14,10 +14,7 @@ import math
 import re
 from typing import Any, Iterable
 
-
-MAX_DIE_UM = 5000.0
-MIN_RF_HZ = 1.0e9
-MAX_RF_HZ = 3.0e9
+from .policy import PROJECT_RF_POLICY, RFAnalysisPolicy
 
 _SPICE_VALUE = re.compile(
     r"^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)"
@@ -123,23 +120,35 @@ def parse_lumped_elements(
 
 
 def validate_rf_request(
-    frequencies_hz: Iterable[float], die_width_um: float, die_height_um: float
+    frequencies_hz: Iterable[float],
+    die_width_um: float,
+    die_height_um: float,
+    policy: RFAnalysisPolicy = PROJECT_RF_POLICY,
 ) -> tuple[float, ...]:
-    """Validate and normalize the locked project RF/die envelope."""
+    """Validate and normalize a request against an explicit analysis policy."""
 
     frequencies = tuple(sorted({float(value) for value in frequencies_hz}))
     if not frequencies:
         raise ValueError("at least one RF frequency is required")
     if any(
-        not math.isfinite(value) or value < MIN_RF_HZ or value > MAX_RF_HZ
+        not math.isfinite(value)
+        or value < policy.min_frequency_hz
+        or value > policy.max_frequency_hz
         for value in frequencies
     ):
-        raise ValueError("RF frequency must stay within the inclusive 1–3 GHz envelope")
+        raise ValueError(
+            "RF frequency must stay within the inclusive "
+            f"{policy.min_frequency_hz:g}–{policy.max_frequency_hz:g} Hz "
+            f"envelope ({policy.name})"
+        )
     for name, value in (("die width", die_width_um), ("die height", die_height_um)):
         if not math.isfinite(float(value)) or float(value) <= 0.0:
             raise ValueError(f"{name} must be positive")
-        if float(value) > MAX_DIE_UM:
-            raise ValueError(f"{name} exceeds the 5 mm MPW envelope")
+        if float(value) > policy.max_die_um:
+            raise ValueError(
+                f"{name} exceeds the {policy.max_die_um:g} um analysis envelope "
+                f"({policy.name})"
+            )
     return frequencies
 
 
@@ -186,10 +195,13 @@ def build_report(
     die_width_um: float,
     die_height_um: float,
     critical_nets: Iterable[str] = (),
+    policy: RFAnalysisPolicy = PROJECT_RF_POLICY,
 ) -> dict[str, Any]:
     """Build a JSON-safe L0 report from a Magic PEX netlist."""
 
-    frequencies = validate_rf_request(frequencies_hz, die_width_um, die_height_um)
+    frequencies = validate_rf_request(
+        frequencies_hz, die_width_um, die_height_um, policy
+    )
     requested_nets = tuple(dict.fromkeys(str(net) for net in critical_nets if str(net)))
     if requested_nets:
         net_set = set(requested_nets)
@@ -251,6 +263,7 @@ def build_report(
         "signoff": False,
         "profile": profile,
         "pex_profile": pex_profile,
+        "analysis_policy": policy.as_dict(),
         "source": {
             "backend": flow.get("backend"),
             "process": flow.get("original_process"),

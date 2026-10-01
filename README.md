@@ -12,11 +12,13 @@ monolithic process YAML.
 
 ## ProcessIR and canonical contracts
 
-- `common/devices/canonical/mos.yaml` defines the process-independent
-  `mos4` family (`nmos_core`/`pmos_core`, symmetric HV, and isolated variants)
-  plus the separate asymmetric `asymmetric_mos4` family for `nldmos`/`pldmos`.
-  Voltage class, gate stack, isolation domain, topology, and terminal semantics
-  are canonical attributes; LDMOS D/S terminals are never LVS-permutable.
+- `common/devices/canonical/mos.yaml` defines the process-independent MOS
+  families.  MOS voltage, oxide, threshold, channel, gate-stack, and isolation
+  attributes are separate profile-defined fields; `isolation_domain` remains a
+  legacy fallback and LDMOS D/S terminals are never LVS-permutable.
+- `common/devices/canonical/families.yaml` defines structural diode,
+  Schottky, resistor, capacitor, BJT/HBT, varactor, tap, inductor, ESD, and
+  fuse families.  These families do not claim profile recognition or models.
 - `profiles/*/devices/bindings.yaml` binds canonical devices to layout,
   simulator, and LVS identities. `common/devices/netlist.py` exposes the
   validated typed contract.
@@ -28,10 +30,15 @@ monolithic process YAML.
 - PEX topology device identity comes from canonical bindings; PEX manifests
   retain extraction coefficients and explicitly declare model-vs-PEX parasitic
   ownership.
+- `common/recognition.py` parses backend-neutral derived-layer expressions
+  and compiles them only through explicit backend adapters. `stack_v2` is the
+  optional cross-section contract for semiconductor, conductor, dielectric,
+  and via data; absent source data stays unavailable.
 
-- CI selects profiles from `ProcessCapabilities` (`pex_runtime`, `pcells`,
-  and related contracts), not from a hard-coded process tuple. New profiles
-  enter a gate only when their fragments provide the required capability.
+- CI selects profiles from `collateral_capabilities` (tool readiness such as
+  `pex_runtime`, `pcells`, and related contracts), while physical process
+  capability projections live in `physical_capabilities`. New profiles enter a
+  gate only when their fragments provide the required contract.
 
 The MOS PCell uses `nf` for physical gate fingers and `m` for electrical
 multiplicity. `m` does not change one-instance layout geometry; effective

@@ -57,9 +57,9 @@ def assert_pex_contract(name: str, process, spec: dict) -> None:
     selected = manifest.get("profiles", {}).get(pex["profile"])
     assert isinstance(selected, dict), f"{name}: missing PEX profile {pex['profile']!r}"
     assert selected.get("status") == pex.get("selected_profile_status", pex["status"])
-    assert process.capabilities.pex_topology is pex["topology"]
-    assert process.capabilities.pex_runtime is pex["runtime"]
-    assert process.capabilities.pex_rc == pex["rc"]
+    assert process.collateral_capabilities.pex_topology is pex["topology"]
+    assert process.collateral_capabilities.pex_runtime is pex["runtime"]
+    assert process.collateral_capabilities.pex_rc == pex["rc"]
 
     ownership = process.parasitic_ownership
     for key, value in (

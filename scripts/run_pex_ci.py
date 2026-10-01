@@ -30,7 +30,7 @@ def capability_profiles(capability: str) -> tuple[str, ...]:
     return tuple(
         profile
         for profile in profile_names(ROOT)
-        if bool(getattr(load_process(profile, ROOT).capabilities, capability, False))
+        if bool(getattr(load_process(profile, ROOT).collateral_capabilities, capability, False))
     )
 
 

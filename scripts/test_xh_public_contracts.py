@@ -38,7 +38,7 @@ SCHEMAS = (
 def check_profile(name: str) -> None:
     profile = ROOT / "profiles" / name
     process = load_process(name, ROOT)
-    assert process.capabilities.pex_rc == "public_typical_r_only"
+    assert process.collateral_capabilities.pex_rc == "public_typical_r_only"
     assert process.parasitic_ownership["metal_interconnect_rc"] == "public_typical_r_only"
     assert process.parasitic_ownership["metal_sheet_resistance"] == "public_typical"
     assert process.parasitic_ownership["interconnect_capacitance"] == "estimated"

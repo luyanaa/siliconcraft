@@ -51,9 +51,13 @@ families:
         polarity:
           - n
           - p
-        voltage_class: optional
-        gate_stack: optional
-        isolation_domain: optional
+        voltage_class: profile_defined
+        oxide_class: profile_defined
+        threshold_class: profile_defined
+        channel_class: profile_defined
+        gate_stack: profile_defined
+        isolation: profile_defined
+        isolation_domain: legacy_optional
         topology: symmetric
         silicided: optional
       semantics:
@@ -157,9 +161,13 @@ families:
         polarity:
           - n
           - p
-        voltage_class: required
-        gate_stack: required
-        isolation_domain: required
+        voltage_class: profile_defined
+        oxide_class: profile_defined
+        threshold_class: profile_defined
+        channel_class: profile_defined
+        gate_stack: profile_defined
+        isolation: profile_defined
+        isolation_domain: legacy_optional
         topology: asymmetric_drift
       symmetry_groups: []
       parasitics:

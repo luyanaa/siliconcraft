@@ -32,6 +32,7 @@ from common.rf.workbench import (  # noqa: E402
     parse_lumped_elements,
     validate_rf_request,
 )
+from common.rf.policy import PROJECT_RF_POLICY, RFAnalysisPolicy  # noqa: E402
 from common.process_ir import load_process  # noqa: E402
 
 DEFAULT_LAYOUT = ROOT / "common/tests/gds/ami06_drc_test.gds"
@@ -85,6 +86,26 @@ def frequencies_from_args(args: argparse.Namespace) -> list[float]:
         raise SystemExit("--points must be at least 2")
     step = (args.stop_ghz - args.start_ghz) / (args.points - 1)
     return [(args.start_ghz + index * step) * 1.0e9 for index in range(args.points)]
+def analysis_policy_from_args(args: argparse.Namespace) -> RFAnalysisPolicy:
+    values = (
+        args.min_frequency_hz,
+        args.max_frequency_hz,
+        args.max_die_um,
+    )
+    defaults = (
+        PROJECT_RF_POLICY.min_frequency_hz,
+        PROJECT_RF_POLICY.max_frequency_hz,
+        PROJECT_RF_POLICY.max_die_um,
+    )
+    if values == defaults:
+        return PROJECT_RF_POLICY
+    return RFAnalysisPolicy(
+        name="cli_override",
+        min_frequency_hz=args.min_frequency_hz,
+        max_frequency_hz=args.max_frequency_hz,
+        max_die_um=args.max_die_um,
+    )
+
 
 
 def main() -> int:
@@ -98,8 +119,27 @@ def main() -> int:
     parser.add_argument("--start-ghz", type=float)
     parser.add_argument("--stop-ghz", type=float)
     parser.add_argument("--points", type=int, default=3)
-    parser.add_argument("--die-width-um", type=float, default=5000.0)
-    parser.add_argument("--die-height-um", type=float, default=5000.0)
+    parser.add_argument(
+        "--min-frequency-hz",
+        type=float,
+        default=PROJECT_RF_POLICY.min_frequency_hz,
+    )
+    parser.add_argument(
+        "--max-frequency-hz",
+        type=float,
+        default=PROJECT_RF_POLICY.max_frequency_hz,
+    )
+    parser.add_argument(
+        "--max-die-um",
+        type=float,
+        default=PROJECT_RF_POLICY.max_die_um,
+    )
+    parser.add_argument(
+        "--die-width-um", type=float, default=PROJECT_RF_POLICY.max_die_um
+    )
+    parser.add_argument(
+        "--die-height-um", type=float, default=PROJECT_RF_POLICY.max_die_um
+    )
     parser.add_argument("--net", dest="critical_nets", action="append", default=[])
     parser.add_argument("--require-rc", action="store_true")
     parser.add_argument("--magic", default=os.environ.get("MAGIC", "magic"))
@@ -112,9 +152,10 @@ def main() -> int:
     manifest = process.pex_doc
     pex_profile = args.pex_profile or default_pex_profile(manifest)
     frequencies = frequencies_from_args(args)
+    policy = analysis_policy_from_args(args)
     try:
         validate_rf_request(
-            frequencies, args.die_width_um, args.die_height_um
+            frequencies, args.die_width_um, args.die_height_um, policy
         )
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
@@ -162,6 +203,7 @@ def main() -> int:
         die_width_um=args.die_width_um,
         die_height_um=args.die_height_um,
         critical_nets=args.critical_nets,
+        policy=policy,
     )
     report["artifacts"] = {
         "technology": str(technology),

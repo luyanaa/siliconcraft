@@ -162,11 +162,36 @@ class DeviceBinding:
     def gate_stack(self) -> str | None:
         value = self.canonical.get("gate_stack")
         return str(value) if value is not None else None
+    @property
+    def oxide_class(self) -> str | None:
+        value = self.canonical.get("oxide_class")
+        return str(value) if value is not None else None
+
+    @property
+    def threshold_class(self) -> str | None:
+        value = self.canonical.get("threshold_class")
+        return str(value) if value is not None else None
+
+    @property
+    def channel_class(self) -> str | None:
+        value = self.canonical.get("channel_class")
+        return str(value) if value is not None else None
+
+    @property
+    def isolation(self) -> Any:
+        return self.canonical.get("isolation")
+
 
     @property
     def isolation_domain(self) -> str | None:
         value = self.canonical.get("isolation_domain")
         return str(value) if value is not None else None
+    @property
+    def isolation_topology(self) -> Any:
+        """Prefer the topology contract, with legacy well-domain fallback."""
+
+        return self.isolation if self.isolation is not None else self.isolation_domain
+
 
     @property
     def topology(self) -> str | None:
@@ -207,8 +232,8 @@ class DeviceBinding:
 
 
 @dataclass(frozen=True)
-class ProcessCapabilities:
-    """Tool capabilities derived from available profile contracts."""
+class CollateralCapabilities:
+    """Tool and collateral readiness derived from profile contracts."""
 
     drc: bool
     lvs: bool
@@ -235,6 +260,31 @@ class ProcessCapabilities:
 
 
 @dataclass(frozen=True)
+class PhysicalCapabilities:
+    """Physical process capabilities, separate from tool readiness."""
+
+    values: dict[str, Any]
+    legacy_features: dict[str, bool]
+
+    def as_dict(self) -> dict[str, Any]:
+        return dict(self.values)
+
+    def get(self, name: str, default: Any = None) -> Any:
+        return self.values.get(name, default)
+
+    def enabled(self, name: str) -> bool:
+        value = self.values.get(name, False)
+        if isinstance(value, dict):
+            if "enabled" in value:
+                return bool(value["enabled"])
+            state = str(value.get("state", "")).lower()
+            if state:
+                return state in {"supported", "partial", "enabled"}
+            return bool(value)
+        return bool(value)
+
+
+@dataclass(frozen=True)
 class ProcessIR:
     """Composed, normalized view of one profile's source fragments."""
 
@@ -258,7 +308,8 @@ class ProcessIR:
     cells_doc: dict[str, Any]
     support_cells_doc: dict[str, Any]
     device_bindings: dict[str, DeviceBinding]
-    capabilities: ProcessCapabilities
+    physical_capabilities: PhysicalCapabilities
+    collateral_capabilities: CollateralCapabilities
 
     @property
     def profile_dir(self) -> Path:
@@ -291,6 +342,25 @@ class ProcessIR:
     @property
     def devices(self) -> dict[str, Any]:
         return self.devices_doc.get("devices") or {}
+    @property
+    def derived_layers(self) -> dict[str, Any]:
+        from common.recognition import parse_derived_layers
+
+        document = {
+            "derived_layers": {
+                **(self.layers_doc.get("derived_layers") or {}),
+                **(self.devices_doc.get("derived_layers") or {}),
+            }
+        }
+        return parse_derived_layers(document)
+    @property
+    def stack_v2(self) -> dict[str, Any]:
+        """Return the optional cross-section contract without fabricating data."""
+
+        value = self.layers_doc.get("stack_v2")
+        return dict(value) if isinstance(value, dict) else {}
+
+
     @property
     def scmos_extensions(self) -> dict[str, dict[str, Any]]:
         from common.scmos_extensions import extension_statuses
@@ -344,8 +414,11 @@ class ProcessIR:
             ) from exc
 
     def has_capability(self, name: str) -> bool:
-        value = getattr(self.capabilities, name, False)
+        value = getattr(self.collateral_capabilities, name, False)
         return bool(value)
+
+    def has_physical_capability(self, name: str) -> bool:
+        return self.physical_capabilities.enabled(name)
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -421,14 +494,82 @@ def _device_bindings(
     return result
 
 
-def _capabilities(
+def _physical_capabilities(
+    meta: dict[str, Any],
+    layers_doc: dict[str, Any],
+) -> PhysicalCapabilities:
+    features = {
+        str(key): bool(value)
+        for key, value in (meta.get("features") or {}).items()
+        if isinstance(value, bool)
+    }
+    layer_names = {
+        str(entry.get("name"))
+        for entry in layers_doc.get("layers", [])
+        if isinstance(entry, dict) and entry.get("name")
+    }
+
+    def feature(*names: str) -> bool:
+        return any(features.get(name, False) for name in names)
+
+    deep_nwell = feature("deepNwellAvailable", "deep_nwellAvailable")
+    twin_well = feature("twinWellAvailable", "twin_wellAvailable")
+    inferred: dict[str, Any] = {
+        "cmos": {"enabled": {"active", "poly"} <= layer_names, "source": "layer_vocabulary"},
+        "multiple_oxide": feature(
+            "multipleOxideAvailable", "thickOxideAvailable", "extraThickOxideAvailable"
+        ),
+        "deep_nwell": deep_nwell,
+        "bipolar": feature("bipolarAvailable", "bjtAvailable", "npnAvailable", "pnpAvailable"),
+        "rf": feature("rfAvailable"),
+        "hv": feature("hvAvailable", "hvcmosAvailable"),
+        "power": feature("powerAvailable", "ldmosAvailable", "dmosAvailable"),
+        "esd": feature("esdAvailable"),
+        "opto": feature("optoAvailable", "photodiodeAvailable"),
+        "mems": feature("memsAvailable"),
+        "analog": feature(
+            "analogAvailable",
+            "elecAvailable",
+            "highresAvailable",
+            "polycapAvailable",
+            "metalcapAvailable",
+            "cwellAvailable",
+        ),
+        "passive": feature(
+            "highresAvailable",
+            "polycapAvailable",
+            "metalcapAvailable",
+            "cwellAvailable",
+            "sblockAvailable",
+        ),
+        "isolation": {
+            "legacy_well_type": meta.get("well_type"),
+            "deep_nwell": deep_nwell,
+            "twin_well": twin_well,
+            "authority": "legacy_feature_projection",
+        },
+    }
+    explicit = meta.get("physical_capabilities") or {}
+    if not isinstance(explicit, dict):
+        raise ProcessIRError("meta.physical_capabilities must be a mapping")
+    for key, value in explicit.items():
+        if key == "isolation" and isinstance(value, dict) and isinstance(
+            inferred.get("isolation"), dict
+        ):
+            inferred["isolation"] = {**inferred["isolation"], **value}
+        else:
+            inferred[str(key)] = value
+    return PhysicalCapabilities(values=inferred, legacy_features=features)
+
+
+def _collateral_capabilities(
     profile_dir: Path,
     rules_doc: dict[str, Any],
     devices_doc: dict[str, Any],
     pex_doc: dict[str, Any],
     model_maturity_doc: dict[str, Any],
     model_contract_doc: dict[str, Any],
-) -> ProcessCapabilities:
+) -> CollateralCapabilities:
     pex_profiles = pex_doc.get("profiles") or {}
     generated_pex = any(
         isinstance(spec, dict) and spec.get("generated") is True
@@ -469,7 +610,7 @@ def _capabilities(
         pex_rc = "estimated"
     else:
         pex_rc = False
-    return ProcessCapabilities(
+    return CollateralCapabilities(
         drc=(profile_dir / "rules.yaml").exists() and bool(rules_doc),
         lvs=(profile_dir / "devices.yaml").exists() and bool(devices_doc),
         model=has_model_file or has_model_contract,
@@ -481,6 +622,22 @@ def _capabilities(
         pex_runtime=pex_runtime,
         pex_rc=pex_rc,
     )
+
+
+def _merge_canonical_catalog(
+    canonical_doc: dict[str, Any],
+    catalog_doc: dict[str, Any],
+) -> dict[str, Any]:
+    """Add shared family vocabulary without overriding profile source data."""
+
+    if not catalog_doc:
+        return canonical_doc
+    merged = dict(canonical_doc)
+    catalog_families = catalog_doc.get("families") or {}
+    source_families = canonical_doc.get("families") or {}
+    if isinstance(catalog_families, dict) and isinstance(source_families, dict):
+        merged["families"] = {**catalog_families, **source_families}
+    return merged
 
 
 def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
@@ -512,6 +669,10 @@ def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
         _load(_canonical_path(repo_root, profile_dir, bindings_path, str(canonical_source)))
         if canonical_source
         else {}
+    )
+    canonical_doc = _merge_canonical_catalog(
+        canonical_doc,
+        _load(repo_root / "common" / "devices" / "canonical" / "families.yaml"),
     )
     pex_doc = _load(profile_dir / "pex" / "manifest.yaml")
     model_maturity_doc = _load(profile_dir / "model_maturity.yaml")
@@ -557,7 +718,8 @@ def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
         cells_doc=cells_doc,
         support_cells_doc=support_cells_doc,
         device_bindings=_device_bindings(canonical_doc, bindings_doc),
-        capabilities=_capabilities(
+        physical_capabilities=_physical_capabilities(meta, layers_doc),
+        collateral_capabilities=_collateral_capabilities(
             profile_dir,
             rules_doc,
             devices_doc,
