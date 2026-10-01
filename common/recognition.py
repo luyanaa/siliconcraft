@@ -45,7 +45,7 @@ class RecognitionExpr:
 
     def __post_init__(self) -> None:
         if self.op == "layer":
-            if not isinstance(self.value, str) or not self.value:
+            if not isinstance(self.value, str) or not self.value.strip():
                 raise RecognitionError("layer expressions require a non-empty name")
             if self.args:
                 raise RecognitionError("layer expressions cannot have arguments")
@@ -105,7 +105,9 @@ def parse_expression(raw: Any) -> RecognitionExpr:
     op, value = next(iter(raw.items()))
     op = str(op).lower()
     if op == "layer":
-        return RecognitionExpr.layer(str(value))
+        if not isinstance(value, str) or not value.strip():
+            raise RecognitionError("layer expressions require a non-empty name")
+        return RecognitionExpr.layer(value)
     if op not in RECOGNITION_OPS:
         raise RecognitionError(f"unknown recognition operator {op!r}")
     if op in {"and", "or"}:
@@ -140,6 +142,43 @@ def parse_derived_layers(document: Mapping[str, Any]) -> dict[str, RecognitionEx
             raise RecognitionError("derived layer names must be non-empty")
         result[key] = parse_expression(expression)
     return result
+def _strict_touch(left: Any, right: Any) -> Any:
+    """Return left-hand polygons that touch right without positive-area overlap."""
+    if not hasattr(left, "each") or not hasattr(right, "each"):
+        method = getattr(left, "strictly_touching", None)
+        if callable(method):
+            return method(right)
+        raise RecognitionError(
+            "touch requires a KLayout Region-like backend with polygon iteration"
+        )
+    result = type(left)()
+    right_polygons = tuple(right.each())
+    for left_polygon in left.each():
+        left_region = type(left)(left_polygon)
+        for right_polygon in right_polygons:
+            right_region = type(left)(right_polygon)
+            if left_region.interacting(right_region).is_empty():
+                continue
+            if not (left_region & right_region).is_empty():
+                continue
+            result.insert(left_polygon)
+            break
+    return result
+
+
+def _quantize_distance(distance_um: float, dbu: float, op: str) -> int:
+    if isinstance(dbu, bool) or not isinstance(dbu, (int, float)):
+        raise RecognitionError("dbu must be a finite positive number")
+    dbu_value = float(dbu)
+    if not math.isfinite(dbu_value) or dbu_value <= 0.0:
+        raise RecognitionError("dbu must be a finite positive number")
+    distance = float(distance_um) / dbu_value
+    if not math.isfinite(distance) or distance < 0.0:
+        raise RecognitionError(f"{op} distance must be finite and non-negative")
+    # A non-zero physical operation must not silently round to a no-op.
+    return int(math.ceil(distance)) if distance else 0
+
+
 
 
 def compile_klayout(
@@ -149,18 +188,31 @@ def compile_klayout(
     dbu: float,
     *,
     connected_to: Callable[[Any, Any], Any] | None = None,
+    universe_source: str | None = None,
 ) -> Any:
     """Compile an expression to a KLayout-like ``Region`` object.
 
-    ``resolve_layer`` and ``connected_to`` are backend callbacks.  The latter
-    is mandatory for ``connected_to``; geometric interaction is never silently
-    treated as electrical connectivity.
+    ``universe_source`` is a required provenance label for complement
+    expressions.  Passing a region without naming its source is ambiguous
+    because complement semantics depend on the chosen cell boundary.
     """
+    _quantize_distance(0.0, dbu, expression.op)
+    if universe_source is not None and (
+        not isinstance(universe_source, str) or not universe_source.strip()
+    ):
+        raise RecognitionError("universe_source must be a non-empty label")
     op = expression.op
     if op == "layer":
         return resolve_layer(str(expression.value))
     args = [
-        compile_klayout(arg, resolve_layer, universe, dbu, connected_to=connected_to)
+        compile_klayout(
+            arg,
+            resolve_layer,
+            universe,
+            dbu,
+            connected_to=connected_to,
+            universe_source=universe_source,
+        )
         for arg in expression.args
     ]
     if op == "and":
@@ -174,13 +226,21 @@ def compile_klayout(
             result = result + arg
         return result
     if op == "not":
+        if universe_source is None:
+            raise RecognitionError(
+                "not requires an explicit universe_source label"
+            )
+        if universe is None:
+            raise RecognitionError(
+                f"not universe source {universe_source!r} resolved to None"
+            )
         return universe - args[0]
     if op == "interact":
         return args[0].interacting(args[1])
     if op == "overlap":
         return args[0] & args[1]
     if op == "touch":
-        return args[0].interacting(args[1])
+        return _strict_touch(args[0], args[1])
     if op == "inside":
         return args[0].inside(args[1])
     if op == "enclose":
@@ -188,10 +248,10 @@ def compile_klayout(
     if op == "holes":
         return args[0].holes()
     if op in {"grow", "shrink"}:
-        distance = float(expression.value) / float(dbu)
+        distance = _quantize_distance(float(expression.value), dbu, op)
         if op == "shrink":
             distance = -distance
-        return args[0].sized(int(round(distance)))
+        return args[0].sized(distance)
     if op == "connected_to":
         if connected_to is None:
             raise RecognitionError("connected_to requires an explicit backend resolver")
@@ -206,8 +266,9 @@ def compile_derived_layers(
     dbu: float,
     *,
     connected_to: Callable[[Any, Any], Any] | None = None,
+    universe_source: str | None = None,
 ) -> dict[str, Any]:
-    """Compile a registry with cycle detection and derived-layer references."""
+    """Compile a registry with cycle detection and explicit universe provenance."""
     cache: dict[str, Any] = {}
     resolving: set[str] = set()
 
@@ -227,6 +288,7 @@ def compile_derived_layers(
                 universe,
                 dbu,
                 connected_to=connected_to,
+                universe_source=universe_source,
             )
         finally:
             resolving.remove(name)

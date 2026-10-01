@@ -140,6 +140,93 @@ class DeviceBinding:
     @property
     def terminal_order(self) -> tuple[str, ...]:
         return tuple(self.canonical.get("terminal_order") or self.terminals)
+    @property
+    def canonical_terminal_order(self) -> tuple[str, ...]:
+        return self.terminal_order
+
+    @property
+    def terminal_maps(self) -> dict[str, dict[str, Any]]:
+        value = self.raw.get("terminal_maps") or {}
+        if not isinstance(value, dict):
+            raise ProcessIRError(f"{self.name}: terminal_maps must be a mapping")
+        maps = {}
+        for domain, spec in value.items():
+            if not isinstance(spec, dict):
+                raise ProcessIRError(
+                    f"{self.name}: terminal_maps.{domain} must be a mapping"
+                )
+            maps[str(domain)] = dict(spec)
+        for domain in ("simulation", "lvs"):
+            backend = self.raw.get(domain)
+            if not isinstance(backend, dict):
+                continue
+            inline = {}
+            if "terminal_map" in backend:
+                terminal_map = backend["terminal_map"]
+                if not isinstance(terminal_map, dict):
+                    raise ProcessIRError(
+                        f"{self.name}: {domain}.terminal_map must be a mapping"
+                    )
+                if set(terminal_map) & {
+                    "map",
+                    "canonical_to_backend",
+                    "order",
+                    "terminal_order",
+                }:
+                    inline.update(terminal_map)
+                else:
+                    inline["map"] = terminal_map
+            if "canonical_to_backend" in backend:
+                inline["canonical_to_backend"] = backend["canonical_to_backend"]
+            if "terminal_order" in backend:
+                inline["order"] = backend["terminal_order"]
+            if inline:
+                base = maps.get(domain) or {}
+                if not isinstance(base, dict):
+                    raise ProcessIRError(
+                        f"{self.name}: terminal_maps.{domain} must be a mapping"
+                    )
+                maps[domain] = {**inline, **base}
+        return maps
+
+    def _terminal_spec(self, domain: str) -> dict[str, Any]:
+        value = self.terminal_maps.get(domain) or {}
+        if not isinstance(value, dict):
+            return {}
+        return value
+
+    def terminal_map(self, domain: str) -> dict[str, str]:
+        spec = self._terminal_spec(domain)
+        mapping = spec.get("map") or spec.get("canonical_to_backend") or {}
+        if not isinstance(mapping, dict):
+            return {}
+        return {str(source): str(target) for source, target in mapping.items()}
+
+    def backend_terminal_order(self, domain: str) -> tuple[str, ...]:
+        spec = self._terminal_spec(domain)
+        order = spec.get("order") or spec.get("terminal_order")
+        if order is not None:
+            return tuple(str(item) for item in order)
+        mapping = self.terminal_map(domain)
+        if mapping:
+            return tuple(mapping.get(name, name) for name in self.canonical_terminal_order)
+        return self.canonical_terminal_order
+
+    @property
+    def simulation_terminal_order(self) -> tuple[str, ...]:
+        return self.backend_terminal_order("simulation")
+
+    @property
+    def lvs_terminal_order(self) -> tuple[str, ...]:
+        return self.backend_terminal_order("lvs")
+
+    @property
+    def simulation_terminal_map(self) -> dict[str, str]:
+        return self.terminal_map("simulation")
+
+    @property
+    def lvs_terminal_map(self) -> dict[str, str]:
+        return self.terminal_map("lvs")
 
     @property
     def symmetry_groups(self) -> tuple[tuple[str, ...], ...]:
@@ -152,6 +239,27 @@ class DeviceBinding:
     @property
     def canonical_id(self) -> str:
         return str(self.canonical.get("canonical_id") or self.canonical_family)
+    @property
+    def canonical_attributes(self) -> dict[str, Any]:
+        declared = self.canonical.get("attributes") or {}
+        if not isinstance(declared, dict):
+            return {}
+        return {
+            str(name): self.canonical[name]
+            for name in declared
+            if name in self.canonical
+        }
+
+    @property
+    def geometry(self) -> dict[str, Any]:
+        value = self.canonical.get("geometry") or {}
+        return dict(value) if isinstance(value, dict) else {}
+
+    @property
+    def geometry_mode(self) -> str | None:
+        value = self.geometry.get("mode")
+        return str(value) if value is not None else None
+
 
     @property
     def voltage_class(self) -> str | None:
@@ -215,10 +323,41 @@ class DeviceBinding:
 
     @property
     def parameter_map(self) -> dict[str, str]:
-        return {
-            str(source): str(target)
-            for source, target in (self.simulation.get("parameter_map") or {}).items()
-        }
+        value = self.simulation.get("parameter_map") or {}
+        if not isinstance(value, dict):
+            raise ProcessIRError(f"{self.name}: simulation.parameter_map must be a mapping")
+        return {str(source): str(target) for source, target in value.items()}
+
+    @property
+    def parameter_transforms(self) -> tuple[dict[str, Any], ...]:
+        value = self.simulation.get("parameter_transforms") or ()
+        if not isinstance(value, (list, tuple)):
+            raise ProcessIRError(
+                f"{self.name}: simulation.parameter_transforms must be a list"
+            )
+        transforms = []
+        for transform in value:
+            if not isinstance(transform, dict):
+                raise ProcessIRError(
+                    f"{self.name}: parameter transforms must be mappings"
+                )
+            transforms.append(dict(transform))
+        return tuple(transforms)
+    @property
+    def lvs_parameter_transforms(self) -> tuple[dict[str, Any], ...]:
+        value = self.lvs.get("parameter_transforms") or ()
+        if not isinstance(value, (list, tuple)):
+            raise ProcessIRError(
+                f"{self.name}: lvs.parameter_transforms must be a list"
+            )
+        transforms = []
+        for transform in value:
+            if not isinstance(transform, dict):
+                raise ProcessIRError(
+                    f"{self.name}: LVS parameter transforms must be mappings"
+                )
+            transforms.append(dict(transform))
+        return tuple(transforms)
 
     @property
     def lvs_class(self) -> str | None:
@@ -295,6 +434,7 @@ class ProcessIR:
     rules_doc: dict[str, Any]
     devices_doc: dict[str, Any]
     canonical_doc: dict[str, Any]
+    canonical_catalog_doc: dict[str, Any]
     bindings_doc: dict[str, Any]
     pcells_doc: dict[str, Any]
     symbols_doc: dict[str, Any]
@@ -340,8 +480,24 @@ class ProcessIR:
         return self.rules_doc.get("rules") or {}
 
     @property
+    def device_inventory(self) -> dict[str, Any]:
+        value = self.devices_doc.get("devices") or {}
+        return dict(value) if isinstance(value, dict) else {}
+
+    @property
     def devices(self) -> dict[str, Any]:
-        return self.devices_doc.get("devices") or {}
+        """Compatibility alias for the legacy grouped inventory."""
+        return self.device_inventory
+
+    @property
+    def canonical_catalog(self) -> dict[str, Any]:
+        return dict(self.canonical_catalog_doc)
+
+    @property
+    def bound_device_families(self) -> frozenset[str]:
+        return frozenset(
+            binding.canonical_family for binding in self.device_bindings.values()
+        )
     @property
     def derived_layers(self) -> dict[str, Any]:
         from common.recognition import parse_derived_layers
@@ -447,22 +603,185 @@ def _canonical_path(root: Path, profile_dir: Path, bindings_path: Path, source: 
     return candidates[0].resolve()
 
 
+def _terminal_sequence(value: Any, context: str) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)) or not value:
+        raise ProcessIRError(f"{context} must be a non-empty terminal list")
+    terminals = tuple(str(item) for item in value)
+    if any(not item for item in terminals):
+        raise ProcessIRError(f"{context} contains an empty terminal name")
+    if len(set(terminals)) != len(terminals):
+        raise ProcessIRError(f"{context} contains duplicate terminals")
+    return terminals
+
+
+def _validate_geometry_contract(
+    geometry: Any, context: str
+) -> None:
+    if geometry is None:
+        return
+    if not isinstance(geometry, dict):
+        raise ProcessIRError(f"{context}.geometry must be a mapping")
+    mode = geometry.get("mode")
+    if mode is None:
+        return
+    allowed = {"fixed", "scalable", "enumerated", "derived"}
+    if mode not in allowed:
+        raise ProcessIRError(
+            f"{context}.geometry.mode must be one of {sorted(allowed)}, got {mode!r}"
+        )
+    if mode == "enumerated" and not isinstance(
+        geometry.get("legal_values"), (list, tuple, dict)
+    ):
+        raise ProcessIRError(
+            f"{context}.geometry.mode=enumerated requires legal_values"
+        )
+    if mode == "derived" and (
+        not isinstance(geometry.get("derive"), str)
+        or not geometry["derive"].strip()
+    ):
+        raise ProcessIRError(
+            f"{context}.geometry.mode=derived requires a non-empty derive expression"
+        )
+
+
+def _validate_terminal_maps(
+    raw: dict[str, Any], canonical: dict[str, Any], context: str
+) -> None:
+    terminals = _terminal_sequence(canonical.get("terminals"), f"{context}.terminals")
+    canonical_order = _terminal_sequence(
+        canonical.get("terminal_order") or terminals,
+        f"{context}.terminal_order",
+    )
+    if set(canonical_order) != set(terminals):
+        raise ProcessIRError(
+            f"{context}.terminal_order must contain exactly the canonical terminals"
+        )
+    raw_maps = raw.get("terminal_maps") or {}
+    if not isinstance(raw_maps, dict):
+        raise ProcessIRError(f"{context}.terminal_maps must be a mapping")
+    maps = dict(raw_maps)
+    for domain in ("simulation", "lvs"):
+        backend = raw.get(domain)
+        if not isinstance(backend, dict):
+            continue
+        inline = {}
+        if "terminal_map" in backend:
+            terminal_map = backend["terminal_map"]
+            if not isinstance(terminal_map, dict):
+                raise ProcessIRError(
+                    f"{context}.terminal_maps.{domain}.terminal_map must be a mapping"
+                )
+            if set(terminal_map) & {
+                "map",
+                "canonical_to_backend",
+                "order",
+                "terminal_order",
+            }:
+                inline.update(terminal_map)
+            else:
+                inline["map"] = terminal_map
+        if "canonical_to_backend" in backend:
+            inline["canonical_to_backend"] = backend["canonical_to_backend"]
+        if "terminal_order" in backend:
+            inline["order"] = backend["terminal_order"]
+        if inline:
+            base = maps.get(domain) or {}
+            if not isinstance(base, dict):
+                raise ProcessIRError(
+                    f"{context}.terminal_maps.{domain} must be a mapping"
+                )
+            maps[domain] = {**inline, **base}
+    for domain, spec in maps.items():
+        if domain not in {"simulation", "lvs"}:
+            raise ProcessIRError(
+                f"{context}.terminal_maps has unsupported domain {domain!r}"
+            )
+        if not isinstance(spec, dict):
+            raise ProcessIRError(
+                f"{context}.terminal_maps.{domain} must be a mapping"
+            )
+        mapping = spec.get("map") or spec.get("canonical_to_backend") or {}
+        if not isinstance(mapping, dict):
+            raise ProcessIRError(
+                f"{context}.terminal_maps.{domain}.map must be a mapping"
+            )
+        if set(mapping) - set(terminals):
+            unknown = sorted(set(mapping) - set(terminals))
+            raise ProcessIRError(
+                f"{context}.terminal_maps.{domain} has unknown canonical terminals "
+                f"{unknown}"
+            )
+        if mapping and set(mapping) != set(terminals):
+            missing = sorted(set(terminals) - set(mapping))
+            raise ProcessIRError(
+                f"{context}.terminal_maps.{domain}.map must cover all canonical "
+                f"terminals; missing {missing}"
+            )
+        mapped = tuple(str(value) for value in mapping.values())
+        if len(set(mapped)) != len(mapped):
+            raise ProcessIRError(
+                f"{context}.terminal_maps.{domain}.map has duplicate backend terminals"
+            )
+        order = spec.get("order") or spec.get("terminal_order")
+        if order is not None:
+            backend_order = _terminal_sequence(
+                order, f"{context}.terminal_maps.{domain}.order"
+            )
+            expected = set(mapping.values()) if mapping else set(terminals)
+            if set(backend_order) != expected:
+                raise ProcessIRError(
+                    f"{context}.terminal_maps.{domain}.order does not match its map"
+                )
+
+
+def _canonical_attribute_overrides(
+    raw: dict[str, Any], canonical_device: dict[str, Any], context: str
+) -> dict[str, Any]:
+    overrides = raw.get("canonical_attributes")
+    if overrides is None:
+        return {}
+    if not isinstance(overrides, dict):
+        raise ProcessIRError(f"{context}.canonical_attributes must be a mapping")
+    declared = canonical_device.get("attributes") or {}
+    if not isinstance(declared, dict):
+        raise ProcessIRError(
+            f"{context}: canonical family attributes must be a mapping"
+        )
+    unknown = sorted(set(overrides) - set(declared))
+    if unknown:
+        raise ProcessIRError(
+            f"{context}.canonical_attributes contains undeclared attributes "
+            f"{unknown}"
+        )
+    return {str(key): value for key, value in overrides.items()}
+
+
 def _device_bindings(
-    canonical_doc: dict[str, Any], bindings_doc: dict[str, Any]
+    canonical_doc: dict[str, Any],
+    bindings_doc: dict[str, Any],
+    catalog_doc: dict[str, Any] | None = None,
 ) -> dict[str, DeviceBinding]:
-    canonical_families = canonical_doc.get("families") or {}
-    default_family = str(canonical_doc.get("default_family") or "mos4")
+    source_families = canonical_doc.get("families") or {}
+    catalog_families = (catalog_doc or {}).get("families") or {}
+    if not isinstance(source_families, dict) or not isinstance(catalog_families, dict):
+        raise ProcessIRError("canonical family documents must contain mapping families")
+    canonical_families = {**catalog_families, **source_families}
+    default_family = str(
+        canonical_doc.get("default_family")
+        or (catalog_doc or {}).get("default_family")
+        or "mos4"
+    )
     result: dict[str, DeviceBinding] = {}
     for name, raw in (bindings_doc.get("bindings") or {}).items():
         if not isinstance(raw, dict):
             raise ProcessIRError(f"device binding {name!r} must be a mapping")
+        context = f"device binding {name!r}"
         family_name = str(raw.get("canonical_family") or default_family)
         if canonical_families:
             family_doc = canonical_families.get(family_name)
             if not isinstance(family_doc, dict):
                 raise ProcessIRError(
-                    f"device binding {name!r} references unknown canonical family "
-                    f"{family_name!r}"
+                    f"{context} references unknown canonical family {family_name!r}"
                 )
             canonical_device = family_doc.get("device") or {}
             variants = family_doc.get("variants") or {}
@@ -471,17 +790,24 @@ def _device_bindings(
             family_name = "mos4"
             canonical_device = canonical_doc.get("device") or {}
             variants = canonical_doc.get("variants") or {}
+        if not isinstance(canonical_device, dict) or not isinstance(variants, dict):
+            raise ProcessIRError(f"{context} has malformed canonical family {family_name!r}")
         variant_name = str(raw.get("canonical_variant") or name)
         variant = variants.get(variant_name)
         if not isinstance(variant, dict):
             raise ProcessIRError(
-                f"device binding {name!r} references unknown canonical variant "
-                f"{variant_name!r} in family {family_name!r}"
+                f"{context} references unknown canonical variant {variant_name!r} "
+                f"in family {family_name!r}"
             )
         canonical = dict(canonical_device)
         canonical.update(variant)
+        canonical.update(
+            _canonical_attribute_overrides(raw, canonical_device, context)
+        )
         canonical["canonical_family"] = family_name
-        canonical["canonical_id"] = str(canonical_device.get("id") or family_name)
+        canonical["canonical_id"] = str(canonical.get("id") or family_name)
+        _validate_geometry_contract(canonical.get("geometry"), context)
+        _validate_terminal_maps(raw, canonical, context)
         result[name] = DeviceBinding(
             name=name,
             canonical_variant=variant_name,
@@ -497,6 +823,8 @@ def _device_bindings(
 def _physical_capabilities(
     meta: dict[str, Any],
     layers_doc: dict[str, Any],
+    device_bindings: dict[str, DeviceBinding],
+    devices_doc: dict[str, Any],
 ) -> PhysicalCapabilities:
     features = {
         str(key): bool(value)
@@ -508,23 +836,72 @@ def _physical_capabilities(
         for entry in layers_doc.get("layers", [])
         if isinstance(entry, dict) and entry.get("name")
     }
+    bound_families = {
+        binding.canonical_family for binding in device_bindings.values()
+    }
+    inventory_kinds: set[str] = set()
+    inventory = devices_doc.get("devices") or {}
+    if isinstance(inventory, dict):
+        for entries in inventory.values():
+            if not isinstance(entries, list):
+                continue
+            for entry in entries:
+                if isinstance(entry, dict) and entry.get("kind") is not None:
+                    inventory_kinds.add(str(entry["kind"]))
 
     def feature(*names: str) -> bool:
         return any(features.get(name, False) for name in names)
 
     deep_nwell = feature("deepNwellAvailable", "deep_nwellAvailable")
     twin_well = feature("twinWellAvailable", "twin_wellAvailable")
+    mos_bound = bool(
+        bound_families & {"mos4", "asymmetric_mos4", "rf_mos4"}
+    ) or bool(inventory_kinds & {"mos", "mos4", "soi_mos", "rf_mos4"})
+    bipolar_bound = bool(bound_families & {"bjt", "hbt"}) or bool(
+        inventory_kinds & {"bjt", "bjt3", "hbt", "hbt3", "npn", "pnp"}
+    )
+    rf_bound = "rf_mos4" in bound_families or "rf_mos4" in inventory_kinds
+    power_bound = "asymmetric_mos4" in bound_families or any(
+        binding.topology == "asymmetric_drift"
+        for binding in device_bindings.values()
+    )
+    esd_bound = "esd" in bound_families or bool(
+        inventory_kinds & {"esd", "esd2", "esd_device"}
+    )
+    isolation_domains = sorted(
+        {
+            binding.isolation_domain
+            for binding in device_bindings.values()
+            if binding.isolation_domain
+            and binding.isolation_domain not in {"bulk", "none", "None"}
+        }
+    )
+    cmos_enabled = mos_bound or ({"active", "poly"} <= layer_names)
+    cmos_source = (
+        "effective_bindings"
+        if mos_bound
+        else "device_inventory"
+        if inventory_kinds & {"mos", "mos4", "soi_mos", "rf_mos4"}
+        else "layer_vocabulary_fallback"
+    )
     inferred: dict[str, Any] = {
-        "cmos": {"enabled": {"active", "poly"} <= layer_names, "source": "layer_vocabulary"},
+        "cmos": {"enabled": cmos_enabled, "source": cmos_source},
         "multiple_oxide": feature(
-            "multipleOxideAvailable", "thickOxideAvailable", "extraThickOxideAvailable"
+            "multipleOxideAvailable",
+            "thickOxideAvailable",
+            "extraThickOxideAvailable",
         ),
         "deep_nwell": deep_nwell,
-        "bipolar": feature("bipolarAvailable", "bjtAvailable", "npnAvailable", "pnpAvailable"),
-        "rf": feature("rfAvailable"),
-        "hv": feature("hvAvailable", "hvcmosAvailable"),
-        "power": feature("powerAvailable", "ldmosAvailable", "dmosAvailable"),
-        "esd": feature("esdAvailable"),
+        "bipolar": feature(
+            "bipolarAvailable", "bjtAvailable", "npnAvailable", "pnpAvailable"
+        )
+        or bipolar_bound,
+        "rf": feature("rfAvailable") or rf_bound,
+        "hv": feature("hvAvailable", "hvcmosAvailable")
+        or any(binding.voltage_class == "hv" for binding in device_bindings.values()),
+        "power": feature("powerAvailable", "ldmosAvailable", "dmosAvailable")
+        or power_bound,
+        "esd": feature("esdAvailable") or esd_bound,
         "opto": feature("optoAvailable", "photodiodeAvailable"),
         "mems": feature("memsAvailable"),
         "analog": feature(
@@ -542,23 +919,58 @@ def _physical_capabilities(
             "cwellAvailable",
             "sblockAvailable",
         ),
-        "isolation": {
+        "well_topology": {
+            "enabled": meta.get("well_type") in {"n", "p", "e"},
             "legacy_well_type": meta.get("well_type"),
+            "authority": "legacy_well_type",
+        },
+        "advanced_isolation": {
+            "enabled": bool(deep_nwell or twin_well or isolation_domains),
             "deep_nwell": deep_nwell,
             "twin_well": twin_well,
-            "authority": "legacy_feature_projection",
+            "domains": isolation_domains,
+            "authority": (
+                "effective_bindings"
+                if isolation_domains
+                else "feature_projection"
+            ),
         },
     }
+    # ``isolation`` remains a compatibility key, but it now means advanced
+    # isolation only; legacy well topology is available separately.
+    inferred["isolation"] = dict(inferred["advanced_isolation"])
     explicit = meta.get("physical_capabilities") or {}
     if not isinstance(explicit, dict):
         raise ProcessIRError("meta.physical_capabilities must be a mapping")
+    legacy_isolation = explicit.get("isolation")
+    if isinstance(legacy_isolation, dict):
+        legacy_well_type = legacy_isolation.get("legacy_well_type")
+        if legacy_well_type is not None:
+            inferred["well_topology"] = {
+                **inferred["well_topology"],
+                "legacy_well_type": legacy_well_type,
+                "enabled": True,
+            }
+        inferred["advanced_isolation"] = {
+            **inferred["advanced_isolation"],
+            **{
+                key: value
+                for key, value in legacy_isolation.items()
+                if key != "legacy_well_type"
+            },
+        }
+    elif legacy_isolation is not None:
+        inferred["advanced_isolation"] = legacy_isolation
     for key, value in explicit.items():
-        if key == "isolation" and isinstance(value, dict) and isinstance(
-            inferred.get("isolation"), dict
-        ):
-            inferred["isolation"] = {**inferred["isolation"], **value}
+        if key == "isolation":
+            continue
+        if key in {"well_topology", "advanced_isolation"} and isinstance(
+            value, dict
+        ) and isinstance(inferred.get(key), dict):
+            inferred[key] = {**inferred[key], **value}
         else:
             inferred[str(key)] = value
+    inferred["isolation"] = dict(inferred["advanced_isolation"])
     return PhysicalCapabilities(values=inferred, legacy_features=features)
 
 
@@ -624,20 +1036,6 @@ def _collateral_capabilities(
     )
 
 
-def _merge_canonical_catalog(
-    canonical_doc: dict[str, Any],
-    catalog_doc: dict[str, Any],
-) -> dict[str, Any]:
-    """Add shared family vocabulary without overriding profile source data."""
-
-    if not catalog_doc:
-        return canonical_doc
-    merged = dict(canonical_doc)
-    catalog_families = catalog_doc.get("families") or {}
-    source_families = canonical_doc.get("families") or {}
-    if isinstance(catalog_families, dict) and isinstance(source_families, dict):
-        merged["families"] = {**catalog_families, **source_families}
-    return merged
 
 
 def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
@@ -670,9 +1068,8 @@ def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
         if canonical_source
         else {}
     )
-    canonical_doc = _merge_canonical_catalog(
-        canonical_doc,
-        _load(repo_root / "common" / "devices" / "canonical" / "families.yaml"),
+    canonical_catalog_doc = _load(
+        repo_root / "common" / "devices" / "canonical" / "families.yaml"
     )
     pex_doc = _load(profile_dir / "pex" / "manifest.yaml")
     model_maturity_doc = _load(profile_dir / "model_maturity.yaml")
@@ -697,6 +1094,9 @@ def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
     validate_rule_family(meta, layers_path)
     validate_hvcmos_lambda_override(rules_doc, meta, profile_dir / "rules.yaml")
 
+    device_bindings = _device_bindings(
+        canonical_doc, bindings_doc, canonical_catalog_doc
+    )
     return ProcessIR(
         root=repo_root,
         profile=profile_name,
@@ -705,6 +1105,7 @@ def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
         rules_doc=rules_doc,
         devices_doc=devices_doc,
         canonical_doc=canonical_doc,
+        canonical_catalog_doc=canonical_catalog_doc,
         bindings_doc=bindings_doc,
         pcells_doc=pcells_doc,
         symbols_doc=symbols_doc,
@@ -717,8 +1118,10 @@ def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
         xschem_smoke_doc=xschem_smoke_doc,
         cells_doc=cells_doc,
         support_cells_doc=support_cells_doc,
-        device_bindings=_device_bindings(canonical_doc, bindings_doc),
-        physical_capabilities=_physical_capabilities(meta, layers_doc),
+        device_bindings=device_bindings,
+        physical_capabilities=_physical_capabilities(
+            meta, layers_doc, device_bindings, devices_doc
+        ),
         collateral_capabilities=_collateral_capabilities(
             profile_dir,
             rules_doc,

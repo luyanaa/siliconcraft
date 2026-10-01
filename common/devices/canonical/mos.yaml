@@ -22,6 +22,7 @@ families:
         - s
         - b
       geometry:
+        mode: scalable
         required:
           - w
           - l
@@ -31,7 +32,7 @@ families:
           - ad
           - as
           - pd
-          - ps
+          - total_width
         parameter_units:
           w: um
           l: um
@@ -40,7 +41,7 @@ families:
           ad: um2
           as: um2
           pd: um
-          ps: um
+          total_width: um
         parameter_semantics:
           w: "channel width per physical gate finger"
           l: "channel length"
@@ -56,7 +57,7 @@ families:
         threshold_class: profile_defined
         channel_class: profile_defined
         gate_stack: profile_defined
-        isolation: profile_defined
+        isolation_topology: profile_defined
         isolation_domain: legacy_optional
         topology: symmetric
         silicided: optional
@@ -138,6 +139,7 @@ families:
         b: "bulk or isolated-well terminal"
         symmetry: "d/s are not permutable"
       geometry:
+        mode: scalable
         required:
           - w
           - l
@@ -148,6 +150,7 @@ families:
           - as
           - pd
           - ps
+          - total_width
         parameter_units:
           w: um
           l: um
@@ -157,6 +160,7 @@ families:
           as: um2
           pd: um
           ps: um
+          total_width: um
       attributes:
         polarity:
           - n
@@ -167,6 +171,7 @@ families:
         channel_class: profile_defined
         gate_stack: profile_defined
         isolation: profile_defined
+        isolation_topology: profile_defined
         isolation_domain: legacy_optional
         topology: asymmetric_drift
       symmetry_groups: []

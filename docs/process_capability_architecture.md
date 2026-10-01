@@ -362,3 +362,43 @@ or mechanical material properties.
 6. Keep RF frequency/die limits in an explicit analysis policy, not in
    `ProcessIR` or physical capability claims.  Add RF/ESD/power/special-device
    collateral validators only alongside source evidence.
+## 9. Canonical device contract
+
+The canonical catalog is structural vocabulary, not process support. A composed
+`ProcessIR` keeps three roles separate:
+
+- `device_inventory`: the profile's grouped legacy/source-backed device table;
+- `device_bindings`: the profile's layout, simulation, and LVS binding records;
+- `canonical_catalog`: shared family definitions and terminal variants.
+
+Binding records may supply `canonical_attributes`, but the loader rejects every
+key not declared by the referenced family. Terminal variants carry the complete
+canonical terminal list; backend-specific `simulation` and `lvs` maps/orders are
+validated independently. This is required for body/substrate, shield, Kelvin,
+four-terminal HBT, and substrate-referenced passive devices.
+
+Geometry contracts declare one of `fixed`, `scalable`, `enumerated`, or
+`derived`. MOS and RF MOS share the same width semantics: `w` is per physical
+finger, `nf` is the physical finger count, `m` is electrical multiplicity, and
+`total_width`/`effective_width` are normalized explicitly. Parameter transforms
+support rename, scale/multiply, divide, derive, and ignore without evaluating
+arbitrary code; simulation and LVS transform sequences are independent.
+
+## 10. Recognition, capability, and external oracles
+
+Recognition complements require a named `universe_source`. Physical growth and
+shrink quantize non-zero distances conservatively to at least one DBU;
+`touch` is strict edge/point contact and does not match positive-area overlap.
+Invalid layer names and non-positive DBU values fail at the IR boundary.
+
+`well_topology` records legacy bulk/well topology. `advanced_isolation` records
+deep-well, twin-well, isolated-domain, or explicitly declared isolation modes.
+The compatibility `isolation` key refers to advanced isolation only. CMOS and
+special-device capability projections use effective bindings and inventory;
+catalog membership alone is never evidence of process support.
+
+`common.devices.gf180_device_oracle` and
+`common.devices.sg13g2_device_oracle` are thin, manifest-driven adapters.
+They require an operator-provisioned official artifact root and compare
+canonical terminal/attribute observations. No GF180MCU or IHP SG13G2 PDK facts,
+model numbers, ports, or geometry constants are embedded in SiliconCraft.

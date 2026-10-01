@@ -37,30 +37,46 @@ def main() -> int:
             for key, value in process.meta.get("features", {}).items()
             if isinstance(value, bool)
         }
-        canonical_families = {
-            "diode2",
-            "resistor2",
-            "resistor4",
-            "capacitor2",
-            "capacitor3",
-            "bjt3",
-            "tap2",
+        catalog_families = set(process.canonical_catalog["families"])
+        assert {
+            "diode",
+            "resistor",
+            "capacitor",
+            "bjt",
+            "hbt",
+            "varactor",
+            "inductor",
             "rf_mos4",
-            "power_device",
+        } <= catalog_families
+        assert "power_device" not in catalog_families
+        source_families = set(process.canonical_doc.get("families") or {})
+        assert source_families <= catalog_families | {"mos4", "asymmetric_mos4"}
+        for family_name, variant_names in {
+            "resistor": ("resistor2", "resistor3", "resistor4"),
+            "bjt": ("bjt3", "bjt4"),
+            "hbt": ("hbt3", "hbt4"),
+            "inductor": ("inductor2", "inductor3", "inductor4"),
+            "varactor": ("varactor2", "varactor3", "svaricap4"),
+        }.items():
+            variants = process.canonical_catalog["families"][family_name]["variants"]
+            for variant_name in variant_names:
+                variant = variants[variant_name]
+                assert variant["terminals"] == variant["terminal_order"]
+                assert variant["terminals"]
+        assert {
+            "voltage_class",
+            "oxide_class",
+            "threshold_class",
+            "channel_class",
+            "gate_stack",
+            "isolation",
+        } <= set(
+            process.canonical_catalog["families"]["rf_mos4"]["device"]["attributes"]
+        )
+        assert process.bound_device_families <= {
+            "mos4",
+            "asymmetric_mos4",
         }
-        assert canonical_families <= set(process.canonical_doc["families"])
-        for family_name in canonical_families:
-            family_device = process.canonical_doc["families"][family_name]["device"]
-            assert family_device["terminals"] == family_device["terminal_order"]
-        if "mos4" in process.canonical_doc["families"]:
-            assert {
-                "voltage_class",
-                "oxide_class",
-                "threshold_class",
-                "channel_class",
-                "gate_stack",
-                "isolation",
-            } <= set(process.canonical_doc["families"]["mos4"]["device"]["attributes"])
         if process.device_bindings:
             nmos = next(
                 binding
@@ -69,9 +85,12 @@ def main() -> int:
             )
             assert nmos.voltage_class
             assert nmos.isolation_topology == nmos.isolation_domain
-        isolation = process.physical_capabilities.get("isolation")
-        assert isolation["legacy_well_type"] == process.meta["well_type"]
-        assert process.has_physical_capability("isolation")
+        well_topology = process.physical_capabilities.get("well_topology")
+        assert well_topology["legacy_well_type"] == process.meta["well_type"]
+        assert process.has_physical_capability("well_topology")
+        assert process.has_physical_capability("isolation") == process.has_physical_capability(
+            "advanced_isolation"
+        )
         if process.collateral_capabilities.pex_runtime:
             assert process.collateral_capabilities.pex_topology
             assert process.pex_doc.get("topology", {}).get("magic_device_class") == "mosfet"

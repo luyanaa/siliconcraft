@@ -53,6 +53,27 @@
               },
               "additionalProperties": true
             },
+            "well_topology": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "authority": { "type": "string" },
+                "legacy_well_type": { "enum": ["n", "p", "e"] }
+              },
+              "additionalProperties": true
+            },
+            "advanced_isolation": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "authority": { "type": "string" },
+                "topology": { "type": "string" },
+                "domains": { "type": "array", "items": { "type": "string" } },
+                "deep_nwell": { "type": "boolean" },
+                "twin_well": { "type": "boolean" }
+              },
+              "additionalProperties": true
+            },
             "bipolar": { "$ref": "#/$defs/physical_capability" },
             "rf": { "$ref": "#/$defs/physical_capability" },
             "power": { "$ref": "#/$defs/physical_capability" },
@@ -259,67 +280,38 @@
         }
       }
     },
-    "devices": {
-      "type": "array",
-      "description": "device recognition and netlisting contract (LVS + xschem + PCells)",
-      "items": {
-        "type": "object",
-        "required": ["name", "terminals"],
-        "properties": {
-          "name": { "type": "string" },
-          "kind": {
-            "enum": [
-              "mos4", "mos", "soi_mos", "asymmetric_mos4", "rf_mos4",
-              "power_device",
-              "resistor", "resistor2", "resistor4",
-              "capacitor", "capacitor2", "capacitor3",
-              "diode", "diode2", "schottky2",
-              "bjt", "bjt3", "hbt3",
-              "varactor2", "varactor3",
-              "tap2", "inductor2", "inductor3",
-              "esd_device", "fuse2"
-            ]
-          },
-          "terminals": { "type": "array", "items": { "type": "string" } },
-          "canonical_family": { "type": "string" },
-          "origin": { "enum": ["intentional", "parasitic"] },
-          "extraction": {
-            "type": "object",
-            "description": "device extraction contract and escalation boundary",
-            "properties": {
-              "level": { "enum": ["none", "lumped", "distributed", "field_solver"] },
-              "escalation": {
-                "type": "array",
-                "items": { "enum": ["geometry", "lumped", "distributed", "field_solver"] }
-              },
-              "provenance": { "type": "string" },
-              "model": { "type": "string" }
-            },
-            "additionalProperties": true
-          },
-          "analysis": {
-            "type": "object",
-            "description": "optional RF, power, ESD, or special-device analysis contract",
-            "properties": {
-              "representation": {
-                "enum": ["compact", "lumped", "s_parameters", "vector_fit", "field_solver"]
-              },
-              "frequency_dependent": { "type": "boolean" },
-              "requires_stack_v2": { "type": "boolean" },
-              "source": { "type": "string" }
-            },
-            "additionalProperties": true
-          },
-          "attributes": { "type": "object", "additionalProperties": true },
-          "recognition": {
-            "type": "object",
-            "description": "layer names used to recognize the device, e.g. {gate: poly, diff: nactive, bulk: pwell}",
-            "additionalProperties": { "$ref": "#/$defs/recognition_expr" }
-          },
-          "model": { "type": "string", "description": "SPICE model name (prefix + suffix)" },
-          "params": { "type": "array", "items": { "type": "string" } }
-        }
+    "device_inventory": {
+      "type": "object",
+      "description": "profile-provided grouped device inventory used by legacy LVS and extraction adapters",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/device_inventory_entry" }
       }
+    },
+    "device_bindings": {
+      "type": "object",
+      "description": "profile bindings from physical/inventory names to canonical families and tool backends",
+      "additionalProperties": { "$ref": "#/$defs/device_binding" }
+    },
+    "canonical_catalog": {
+      "$ref": "#/$defs/canonical_catalog",
+      "description": "shared structural vocabulary; catalog membership is not process support"
+    },
+    "devices": {
+      "description": "legacy compatibility role. New documents use device_inventory, device_bindings, and canonical_catalog.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/device_inventory_entry" }
+          }
+        },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/device_record" }
+        }
+      ]
     },
     "models": {
       "type": "object",
@@ -376,6 +368,235 @@
     }
   },
   "$defs": {
+    "device_kind": {
+      "enum": [
+        "mos4", "mos", "soi_mos", "asymmetric_mos4", "rf_mos4",
+        "resistor", "resistor2", "resistor3", "resistor4",
+        "capacitor", "capacitor2", "capacitor3",
+        "diode", "diode2", "diode3", "schottky", "schottky2",
+        "bjt", "bjt3", "bjt4", "hbt", "hbt3", "hbt4",
+        "varactor", "varactor2", "varactor3", "svaricap4",
+        "tap", "tap2", "inductor", "inductor2", "inductor3", "inductor4",
+        "esd", "esd2", "fuse", "fuse2"
+      ]
+    },
+    "geometry_contract": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": ["fixed", "scalable", "enumerated", "derived"]
+        },
+        "required": { "type": "array", "items": { "type": "string" } },
+        "optional": { "type": "array", "items": { "type": "string" } },
+        "legal_values": {
+          "oneOf": [
+            { "type": "array" },
+            { "type": "object" }
+          ]
+        },
+        "derive": { "type": "string" },
+        "parameter_units": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "constraints": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "additionalProperties": true
+    },
+    "terminal_map": {
+      "type": "object",
+      "properties": {
+        "map": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "canonical_to_backend": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "order": { "type": "array", "items": { "type": "string" } },
+        "terminal_order": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "backend_terminal_map": {
+      "oneOf": [
+        { "$ref": "#/$defs/terminal_map" },
+        {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      ]
+    },
+    "parameter_transform": {
+      "type": "object",
+      "required": ["operation"],
+      "properties": {
+        "operation": {
+          "enum": ["rename", "scale", "multiply", "divide", "derive", "ignore"]
+        },
+        "source": { "type": "string" },
+        "target": { "type": "string" },
+        "factor": { "type": "number" },
+        "expression": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "device_record": {
+      "type": "object",
+      "required": ["name", "terminals"],
+      "properties": {
+        "name": { "type": "string" },
+        "kind": { "$ref": "#/$defs/device_kind" },
+        "terminals": { "type": "array", "items": { "type": "string" } },
+        "terminal_order": { "type": "array", "items": { "type": "string" } },
+        "canonical_family": { "type": "string" },
+        "origin": { "enum": ["intentional", "parasitic"] },
+        "geometry": { "$ref": "#/$defs/geometry_contract" },
+        "extraction": {
+          "type": "object",
+          "properties": {
+            "level": { "enum": ["none", "lumped", "distributed", "field_solver"] },
+            "escalation": {
+              "type": "array",
+              "items": { "enum": ["geometry", "lumped", "distributed", "field_solver"] }
+            },
+            "provenance": { "type": "string" },
+            "model": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "analysis": {
+          "type": "object",
+          "properties": {
+            "representation": {
+              "enum": ["compact", "lumped", "s_parameters", "vector_fit", "field_solver"]
+            },
+            "frequency_dependent": { "type": "boolean" },
+            "requires_stack_v2": { "type": "boolean" },
+            "source": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "attributes": { "type": "object", "additionalProperties": true },
+        "recognition": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/recognition_expr" }
+        },
+        "model": { "type": "string" },
+        "params": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "device_inventory_entry": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "kind": { "$ref": "#/$defs/device_kind" },
+        "status": { "type": "string" },
+        "source": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "device_binding": {
+      "type": "object",
+      "properties": {
+        "canonical_family": { "type": "string" },
+        "canonical_variant": { "type": "string" },
+        "canonical_attributes": {
+          "type": "object",
+          "description": "validated by the referenced family attribute declaration",
+          "additionalProperties": true
+        },
+        "terminal_maps": {
+          "type": "object",
+          "properties": {
+            "simulation": { "$ref": "#/$defs/terminal_map" },
+            "lvs": { "$ref": "#/$defs/terminal_map" }
+          },
+          "additionalProperties": false
+        },
+        "layout": { "type": "object", "additionalProperties": true },
+        "simulation": {
+          "type": "object",
+          "properties": {
+            "representation": { "type": "string" },
+            "name": { "type": "string" },
+            "prefix": { "type": "string" },
+            "model_library": { "type": "string" },
+            "terminal_map": { "$ref": "#/$defs/backend_terminal_map" },
+            "terminal_order": { "type": "array", "items": { "type": "string" } },
+            "parameter_map": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            },
+            "parameter_transforms": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/parameter_transform" }
+            }
+          },
+          "additionalProperties": true
+        },
+        "lvs": {
+          "type": "object",
+          "properties": {
+            "terminal_map": { "$ref": "#/$defs/backend_terminal_map" },
+            "terminal_order": { "type": "array", "items": { "type": "string" } },
+            "parameter_transforms": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/parameter_transform" }
+            },
+            "netgen_class": { "type": "string" },
+            "permutable": {
+              "type": "array",
+              "items": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "canonical_family": {
+      "type": "object",
+      "required": ["device", "variants"],
+      "properties": {
+        "device": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "kind": { "$ref": "#/$defs/device_kind" },
+            "terminals": { "type": "array", "items": { "type": "string" } },
+            "terminal_order": { "type": "array", "items": { "type": "string" } },
+            "geometry": { "$ref": "#/$defs/geometry_contract" },
+            "attributes": { "type": "object", "additionalProperties": true }
+          },
+          "additionalProperties": true
+        },
+        "variants": {
+          "type": "object",
+          "additionalProperties": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "additionalProperties": true
+    },
+    "canonical_catalog": {
+      "type": "object",
+      "required": ["families"],
+      "properties": {
+        "schema_version": { "type": "integer" },
+        "default_family": { "type": "string" },
+        "families": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/canonical_family" }
+        }
+      },
+      "additionalProperties": true
+    },
     "physical_capability": {
       "anyOf": [
         { "type": "boolean" },

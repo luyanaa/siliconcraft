@@ -2,10 +2,10 @@
 """Static contract tests for the process-neutral Magic PEX flow."""
 
 from __future__ import annotations
-
 from pathlib import Path
+import shutil
 import sys
-
+import tempfile
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
 from common.pex.magic import (  # noqa: E402
     assemble_technology,
     convert_to_magic,
+    generate_profile,
     render_profile_extract,
     without_well_routing,
 )
@@ -265,7 +266,19 @@ def main() -> int:
     assert "areacap (ndiff,ndc)/a 30" in tr1um_reference
     assert "lambda 50" in tr1um_reference
     assert (tr1um_path.parent.parent / "models/tr1um.lib").read_text().count(".lib tr1um") == 1
-    tr1um_tech = (tr1um_path.parent.parent / "pex/tr1um_engineering.tech").read_text()
+    with tempfile.TemporaryDirectory(prefix="siliconcraft-tr1um-") as temp_dir:
+        temp_profile = Path(temp_dir) / "tr1um"
+        shutil.copytree(tr1um_path.parent.parent, temp_profile)
+        temp_manifest_path = temp_profile / "pex" / "manifest.yaml"
+        temp_manifest = load(temp_manifest_path.read_text())
+        generated = generate_profile(
+            temp_manifest,
+            temp_manifest_path,
+            "tr1um_engineering",
+            tr1um_ir.device_bindings,
+        )
+        assert generated.parent == temp_profile / "pex"
+        tr1um_tech = generated.read_text()
     assert "calma CMF 48 0" in tr1um_tech
     assert "calma CMS 49 0" in tr1um_tech
 

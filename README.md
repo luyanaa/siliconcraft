@@ -18,10 +18,17 @@ monolithic process YAML.
   legacy fallback and LDMOS D/S terminals are never LVS-permutable.
 - `common/devices/canonical/families.yaml` defines structural diode,
   Schottky, resistor, capacitor, BJT/HBT, varactor, tap, inductor, ESD, and
-  fuse families.  These families do not claim profile recognition or models.
+  fuse families as terminal variants.  `resistor3`, body/substrate terminals,
+  shields, and Kelvin terminals are represented explicitly; catalog membership
+  never claims process support.
+- Profiles keep three roles separate: grouped `device_inventory`,
+  `device_bindings`, and the shared `canonical_catalog`. Binding
+  `canonical_attributes` are restricted to family-declared attributes.
 - `profiles/*/devices/bindings.yaml` binds canonical devices to layout,
   simulator, and LVS identities. `common/devices/netlist.py` exposes the
-  validated typed contract.
+  validated typed contract, explicit backend terminal maps, and parameter
+  transforms (`rename`, `scale`, `multiply`, `divide`, `derive`, `ignore`);
+  simulation and LVS transform sequences are independent.
 - `profiles/*/symbols.yaml` contains only xschem UI geometry and pin placement.
   Netlist formatting/defaults are in `devices/symbol_netlist.yaml`.
 - `common/devices/models.py` separates model identity, simulation/LVS
@@ -34,6 +41,13 @@ monolithic process YAML.
   and compiles them only through explicit backend adapters. `stack_v2` is the
   optional cross-section contract for semiconductor, conductor, dielectric,
   and via data; absent source data stays unavailable.
+- Recognition `not` expressions require an explicit `universe_source`;
+  non-zero grow/shrink distances never round to a DBU no-op, and `touch`
+  excludes positive-area overlap.
+- Physical capability projections expose `well_topology`,
+  `advanced_isolation`, and `bound_device_families`; catalog families are not
+  evidence of a process feature. GF180MCU and IHP SG13G2 adapters consume only
+  externally provisioned official oracle artifacts.
 
 - CI selects profiles from `collateral_capabilities` (tool readiness such as
   `pex_runtime`, `pcells`, and related contracts), while physical process
@@ -383,6 +397,13 @@ Rule-family and ProcessIR contracts:
 ```bash
 python3 scripts/test_process_ir.py
 python3 scripts/test_scmos_rule_families.py
+python3 scripts/test_device_ir_contracts.py
+python3 scripts/test_device_oracles.py
+```
+Recognition compiler (KLayout backend):
+
+```bash
+nix-shell -p klayout python3 --run "python3 scripts/test_recognition_ir.py"
 ```
 OpenRule1um portable legality/efficiency contract:
 
