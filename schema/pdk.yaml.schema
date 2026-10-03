@@ -373,10 +373,11 @@
         "mos4", "mos", "soi_mos", "asymmetric_mos4", "rf_mos4",
         "resistor", "resistor2", "resistor3", "resistor4",
         "capacitor", "capacitor2", "capacitor3",
-        "diode", "diode2", "diode3", "schottky", "schottky2",
-        "bjt", "bjt3", "bjt4", "hbt", "hbt3", "hbt4",
-        "varactor", "varactor2", "varactor3", "svaricap4",
+        "diode", "diode2", "diode3", "schottky", "schottky2", "jfet", "jfet3",
+        "bjt", "bjt3", "bjt4", "bjt5", "hbt", "hbt3", "hbt4",
+        "varactor", "varactor2", "varactor3", "varactor4", "svaricap4",
         "tap", "tap2", "inductor", "inductor2", "inductor3", "inductor4",
+        "coupled_inductor", "coupled_inductor4",
         "esd", "esd2", "fuse", "fuse2"
       ]
     },

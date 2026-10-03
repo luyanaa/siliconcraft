@@ -447,6 +447,9 @@ class ProcessIR:
     xschem_smoke_doc: dict[str, Any]
     cells_doc: dict[str, Any]
     support_cells_doc: dict[str, Any]
+    module_contract_doc: dict[str, Any]
+    process_variant: str | None
+    enabled_modules: frozenset[str] | None
     device_bindings: dict[str, DeviceBinding]
     physical_capabilities: PhysicalCapabilities
     collateral_capabilities: CollateralCapabilities
@@ -756,6 +759,125 @@ def _canonical_attribute_overrides(
     return {str(key): value for key, value in overrides.items()}
 
 
+def _process_variant_modules(
+    document: dict[str, Any], variant: str | None, profile: str
+) -> tuple[str | None, frozenset[str] | None]:
+    """Resolve a profile variant's enabled modules, including its parent chain."""
+    if not document:
+        if variant is not None:
+            raise ProcessIRError(
+                f"{profile}: variant {variant!r} requested without modules.yaml"
+            )
+        return None, None
+
+    module_catalog = document.get("module_catalog") or {}
+    variants = document.get("variants") or {}
+    default = document.get("default_variant")
+    if not isinstance(module_catalog, dict) or not isinstance(variants, dict):
+        raise ProcessIRError(f"{profile}: modules.yaml needs module_catalog and variants")
+    selected = str(variant or default or "")
+    if not selected or selected not in variants:
+        raise ProcessIRError(
+            f"{profile}: unknown process variant {selected!r}; "
+            f"available variants are {sorted(variants)}"
+        )
+
+    def resolve(name: str, stack: tuple[str, ...]) -> set[str]:
+        if name in stack:
+            raise ProcessIRError(
+                f"{profile}: cyclic process variant inheritance: "
+                + " -> ".join((*stack, name))
+            )
+        spec = variants.get(name)
+        if not isinstance(spec, dict):
+            raise ProcessIRError(f"{profile}: variant {name!r} must be a mapping")
+        enabled: set[str] = set()
+        parent = spec.get("extends")
+        if parent is not None:
+            if not isinstance(parent, str):
+                raise ProcessIRError(
+                    f"{profile}: variant {name!r}.extends must be a string"
+                )
+            enabled.update(resolve(parent, (*stack, name)))
+        modules = spec.get("modules") or []
+        if not isinstance(modules, list) or any(
+            not isinstance(module, str) for module in modules
+        ):
+            raise ProcessIRError(
+                f"{profile}: variant {name!r}.modules must be a string list"
+            )
+        enabled.update(modules)
+        unknown = sorted(enabled - set(module_catalog))
+        if unknown:
+            raise ProcessIRError(
+                f"{profile}: variant {name!r} references unknown modules {unknown}"
+            )
+        return enabled
+
+    return selected, frozenset(resolve(selected, ()))
+
+
+def _filter_module_entries(
+    document: dict[str, Any],
+    section: str,
+    enabled_modules: frozenset[str] | None,
+    module_names: set[str],
+    context: str,
+    *,
+    grouped_lists: bool = False,
+) -> dict[str, Any]:
+    """Drop module-qualified entries not present in the selected variant."""
+    entries = document.get(section) or {}
+    if not isinstance(entries, dict):
+        raise ProcessIRError(f"{context}.{section} must be a mapping")
+    filtered = dict(document)
+
+    def include(entry: Any, entry_context: str) -> bool:
+        if not isinstance(entry, dict):
+            raise ProcessIRError(f"{entry_context} must be a mapping")
+        required = entry.get("requires_modules") or []
+        if isinstance(required, str):
+            required = [required]
+        if not isinstance(required, list) or any(
+            not isinstance(module, str) for module in required
+        ):
+            raise ProcessIRError(
+                f"{entry_context}.requires_modules must be a string list"
+            )
+        unknown = sorted(set(required) - module_names)
+        if unknown:
+            raise ProcessIRError(
+                f"{entry_context} references unknown modules {unknown}"
+            )
+        if required and enabled_modules is None:
+            raise ProcessIRError(
+                f"{entry_context} requires modules but this profile has no modules.yaml"
+            )
+        return enabled_modules is None or set(required) <= enabled_modules
+
+    if grouped_lists:
+        selected_groups = {}
+        for group, rows in entries.items():
+            if not isinstance(rows, list):
+                selected_groups[group] = rows
+                continue
+            selected_rows = [
+                entry
+                for index, entry in enumerate(rows)
+                if include(entry, f"{context}.{section}.{group}[{index}]")
+            ]
+            if selected_rows:
+                selected_groups[group] = selected_rows
+        filtered[section] = selected_groups
+    else:
+        filtered[section] = {
+            name: entry
+            for name, entry in entries.items()
+            if include(entry, f"{context}.{section}.{name}")
+        }
+    return filtered
+
+
 def _device_bindings(
     canonical_doc: dict[str, Any],
     bindings_doc: dict[str, Any],
@@ -1038,8 +1160,12 @@ def _collateral_capabilities(
 
 
 
-def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
-    """Load all profile fragments into one normalized ProcessIR."""
+def load_process(
+    profile: str | Path,
+    root: Path | None = None,
+    variant: str | None = None,
+) -> ProcessIR:
+    """Load all profile fragments, optionally selecting a process-module variant."""
 
     repo_root = Path(root or ROOT).resolve()
     profile_dir = (
@@ -1050,6 +1176,7 @@ def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
     if not profile_dir.is_dir():
         raise ProcessIRError(f"profile directory not found: {profile_dir}")
     profile_name = profile_dir.name
+    module_contract_doc = _load(profile_dir / "modules.yaml")
     layers_path = profile_dir / "layers.yaml"
     if not layers_path.exists():
         raise ProcessIRError(f"{profile_dir}: layers.yaml is required")
@@ -1082,6 +1209,35 @@ def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
     xschem_smoke_doc = _load(profile_dir / "xschem_smoke.yaml")
     cells_doc = _load(profile_dir / "cells.yaml")
     support_cells_doc = _load(profile_dir / "support_cells.yaml")
+
+    process_variant, enabled_modules = _process_variant_modules(
+        module_contract_doc, variant, profile_name
+    )
+    module_names = set(module_contract_doc.get("module_catalog") or {})
+    bindings_doc = _filter_module_entries(
+        bindings_doc, "bindings", enabled_modules, module_names,
+        f"{profile_name}.devices",
+    )
+    devices_doc = _filter_module_entries(
+        devices_doc, "devices", enabled_modules, module_names,
+        f"{profile_name}.devices", grouped_lists=True,
+    )
+    pcells_doc = _filter_module_entries(
+        pcells_doc, "pcells", enabled_modules, module_names,
+        f"{profile_name}.pcells",
+    )
+    symbols_doc = _filter_module_entries(
+        symbols_doc, "symbols", enabled_modules, module_names,
+        f"{profile_name}.symbols",
+    )
+    symbol_netlist_doc = _filter_module_entries(
+        symbol_netlist_doc, "symbols", enabled_modules, module_names,
+        f"{profile_name}.symbol_netlist",
+    )
+    model_maturity_doc = _filter_module_entries(
+        model_maturity_doc, "models", enabled_modules, module_names,
+        f"{profile_name}.model_maturity",
+    )
 
     meta = layers_doc.get("meta")
     if not isinstance(meta, dict):
@@ -1118,6 +1274,9 @@ def load_process(profile: str | Path, root: Path | None = None) -> ProcessIR:
         xschem_smoke_doc=xschem_smoke_doc,
         cells_doc=cells_doc,
         support_cells_doc=support_cells_doc,
+        module_contract_doc=module_contract_doc,
+        process_variant=process_variant,
+        enabled_modules=enabled_modules,
         device_bindings=device_bindings,
         physical_capabilities=_physical_capabilities(
             meta, layers_doc, device_bindings, devices_doc

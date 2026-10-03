@@ -1,8 +1,10 @@
 # ams C35 RF models (ENG-188 Rev 5.0) and the SCMOS_RF patch architecture
 
-All numbers below are verified against the ENG-188 Rev 5.0 document
-("0.35 µm CMOS C35 RF SPICE Models", 2005-11-03; public copy at pdfcoffee).
-ENG-188 applies to the C35B4C3 variant tracked by the ams_c35 profile.
+This file records the historical ENG-188 Rev 5.0 RF model contract used by the
+repository; it is not a current licensed PDK specification. The ENG-188 PDF
+mirror was inaccessible during this research pass. An accessible university
+tutorial independently confirms the RF MOS model names and key limits; details
+not covered there remain historical, unverified contract data.
 
 ## 1. RF MOS = BSIM3 core + extrinsic network (not a different BSIM)
 
@@ -102,3 +104,41 @@ RF passives
 set of RF-qualified layout topologies plus extrinsic models. AMS C35 is the
 reference precedent for this split — do not try to turn SCMOS λ rules into
 "RF rules".
+
+The C35 profile has module-scoped RF MOS, RF passive, and inductor contracts.
+They remain `contract_only`: no local C35 RF PCell, executable LVS device
+recognizer, simulator wrapper, licensed model card, or device-level EM result
+is claimed. O1 is deferred; the historical runset's HRES switch conflicts with
+the current Europractice 2026 O1 listing, so no O1 resistor capability is
+inferred. CMIM/CMIMRF are disabled in the active C3 target because METCAP is
+off.
+
+The historical public Calibre runset provides terminal declarations for
+`nmosrf`/`pmosrf` (G,S,D,B), `rpoly2rf`/`rpolyhrf` (POS,NEG,SUB),
+`cpolyrf` (POS,NEG,SUB), and fixed spiral variants (POS,NEG,SUB). It does not
+provide a `dixxpt` extraction declaration; the differential inductor remains
+an ENG-188 model contract without repository LVS recognition.
+
+The PEX manifest lists Palace only as a candidate field solver. The repository
+contains no `gds2palace` bridge, and the generic BEOL solver path cannot
+transform an RF device into a characterized ENG-188 macro. No Palace RF result
+is claimed.
+
+## 10. Sources and model-card access
+
+- AMS [2016 iPDK announcement](https://ams-osram.com/news/press-releases/ams-releases-interoperable-pdk-for-its-0-35mm-analog-specialty-processes)
+  says the licensed environment includes characterized simulation models,
+  Calibre/Assura extraction and verification runsets, and PyCells.
+- CMC [AMS 0.35 µm kit access](https://www.cmc.ca/ams-0-35-%C2%B5m-design-kits/)
+  requires a site license and confidentiality agreements for C35B4C3/C35B4O1;
+  it also requires the current kit for fabrication DRC signoff.
+- The accessible [RF LNA tutorial](https://www.emse.fr/~dutertre/documents/TP_RF_LNA_MOS.pdf)
+  names `modnrf`/`modprf`, confirms their 6 GHz limit, fixed 0.35 µm gate
+  length, 5/10 µm finger widths, total-width limits, and the `poly2rf` model.
+- The [historical AMS Calibre runset](https://raw.githubusercontent.com/jjwikner/daisy/c6d8341f36d734a55b9ac0902547744c93cd4cd6/daisy/pdk/ams035/pv/calibre/cac35b4rules_all.run)
+  provides the extraction pin metadata above, but is not the current licensed
+  signoff deck.
+
+No C35 RF model-card files were recovered from public sources or this
+repository. Keep RF `model_library` entries null until the licensed kit and
+current model wrappers are available.

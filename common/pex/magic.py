@@ -75,6 +75,32 @@ def convert_to_magic(value: object, unit: object, lambda_um: object) -> int:
     raise MagicPexError(f"unsupported source unit {unit!r}")
 
 
+def capacitance_to_magic(value: object, unit: object, lambda_um: object) -> str:
+    """Convert a capacitance coefficient without discarding sub-attofarad precision."""
+
+    number = _decimal(value)
+    unit_name = _unit_name(unit)
+    lam = _decimal(lambda_um)
+    if lam <= 0:
+        raise MagicPexError(f"lambda must be positive, got {lambda_um!r}")
+    if unit_name in {"af_per_lambda2", "attofarad_per_lambda2", "attofarads_per_lambda2"}:
+        converted = number
+    elif unit_name in {"af_per_lambda", "attofarad_per_lambda", "attofarads_per_lambda"}:
+        converted = number
+    elif unit_name in {"af_per_um2", "attofarad_per_um2", "attofarads_per_um2"}:
+        converted = number * lam * lam
+    elif unit_name in {"af_per_um", "attofarad_per_um", "attofarads_per_um"}:
+        converted = number * lam
+    elif unit_name in {"ff_per_um2", "femtofarad_per_um2", "femtofarads_per_um2"}:
+        converted = number * Decimal("1000") * lam * lam
+    elif unit_name in {"ff_per_um", "femtofarad_per_um", "femtofarads_per_um"}:
+        converted = number * Decimal("1000") * lam
+    else:
+        raise MagicPexError(f"unsupported capacitance unit {unit!r}")
+    return format(converted.normalize(), "f")
+
+
+
 def sheet_to_magic_mohm(value_ohm_sq: object) -> int:
     """Compatibility conversion used by the original LS1u manifest."""
 
@@ -107,6 +133,30 @@ def _replace_section(text: str, name: str, replacement: str) -> str:
         raise MagicPexError(f"technology {name} section has no end") from exc
     replacement_lines = replacement.rstrip("\n").splitlines()
     return "\n".join(lines[:start] + replacement_lines + lines[end + 1 :]) + "\n"
+
+
+def _append_section_lines(text: str, name: str, additions: object) -> str:
+    if not isinstance(additions, list) or not all(
+        isinstance(line, str) and "\n" not in line for line in additions
+    ):
+        raise MagicPexError(
+            f"source_technology.section_extensions.{name} must be a list of single-line strings"
+        )
+    lines = text.splitlines()
+    try:
+        start = next(i for i, line in enumerate(lines) if line.strip() == name)
+        end = next(
+            i for i in range(start + 1, len(lines)) if lines[i].strip() == "end"
+        )
+    except StopIteration as exc:
+        raise MagicPexError(
+            f"technology base has no complete {name} section"
+        ) from exc
+    return "\n".join(
+        lines[:end] + [f"    {line}" for line in additions] + lines[end:]
+    ) + "\n"
+
+
 
 _WELL_ROUTE_CONNECTS = {
     "nwell,nsc,nsd nwell,nsc,nsd",
@@ -309,9 +359,13 @@ def _render_structured_directive(item: dict[str, Any], lambda_um: object) -> str
             ]
         )
 
-    value = _required(item, "value", f"{kind} directive")
-    unit = _required(item, "unit", f"{kind} directive")
-    converted = convert_to_magic(value, unit, lambda_um)
+    value = _required(item, "value", str(kind))
+    unit = _required(item, "unit", str(kind))
+    converted = (
+        capacitance_to_magic(value, unit, lambda_um)
+        if kind in {"areacap", "perimc", "overlap", "sideoverlap", "sidewall"}
+        else convert_to_magic(value, unit, lambda_um)
+    )
     if kind == "resist":
         return f"    resist {_required(item, 'layers', kind)} {converted}"
     if kind == "areacap":
@@ -408,11 +462,19 @@ def render_profile_extract(
         for item in spec["magic_directives"]:
             if not isinstance(item, dict):
                 raise MagicPexError("magic_directives entries must be mappings")
+            source = item.get("source")
+            if source:
+                directives.append("    # " + " ".join(str(source).split()))
             directives.append(
                 _render_structured_directive(item, physical["lambda_um"])
             )
     else:
         directives.extend(_render_legacy_directives(spec, physical, manifest))
+    if spec.get("maturity") == "estimated":
+        directives.insert(
+            0,
+            "    # WARNING: estimated parasitic coefficients; not foundry signoff.",
+        )
     insert_at = len(lines) - 1
     return "\n".join(lines[:insert_at] + directives + lines[insert_at:] + [""])
 
@@ -479,6 +541,17 @@ def assemble_technology(
     assembled = _replace_description(
         assembled, manifest.get("technology", {}).get("description")
     )
+    extensions = source.get("section_extensions") or {}
+    if not isinstance(extensions, dict):
+        raise MagicPexError(
+            "source_technology.section_extensions must be a mapping"
+        )
+    for name, additions in extensions.items():
+        if not isinstance(name, str) or name in {"cifinput", "extract"}:
+            raise MagicPexError(
+                "section_extensions may only extend non-generated sections"
+            )
+        assembled = _append_section_lines(assembled, name, additions)
     cif = map_path.read_text().rstrip("\n")
     cif_lines = cif.splitlines()
     if cif_lines and cif_lines[0].strip() == "cifinput":
@@ -499,9 +572,13 @@ def generate_profile(
         raise MagicPexError(f"unknown PEX profile {profile_name!r}")
     if spec.get("generated") is False:
         raise MagicPexError(f"profile {profile_name} is reserved and not generated")
-    output_name = spec.get("output", f"{profile_name}.tech")
-    output = manifest_path.parent / str(output_name)
-    output.parent.mkdir(parents=True, exist_ok=True)
+    configured_output = spec.get("output")
+    output_name = (
+        configured_output
+        if isinstance(configured_output, str)
+        else f"{profile_name}.tech"
+    )
+    output = manifest_path.parent / output_name
     output.write_text(
         assemble_technology(manifest, profile_name, manifest_path.parent, device_bindings)
     )

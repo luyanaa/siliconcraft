@@ -261,22 +261,27 @@ recognition_layers:
     status: optional
   -
     name: ZENER
+    logical: zener_id
     stream: {layer: 62, datatype: 10}
     status: optional
   -
     name: DIODE
+    logical: dio_id
     stream: {layer: 62, datatype: 11}
     status: optional
   -
     name: TUBDEF
+    logical: tubdef
     stream: {layer: 62, datatype: 12}
     status: optional
   -
     name: RESDEF
+    logical: res_id
     stream: {layer: 62, datatype: 13}
     status: optional
   -
     name: RESTRM
+    logical: restdm
     stream: {layer: 62, datatype: 14}
     status: optional
   -
@@ -285,6 +290,7 @@ recognition_layers:
     status: optional
   -
     name: CAPDEF
+    logical: cap_id
     stream: {layer: 62, datatype: 20}
     status: optional
   -

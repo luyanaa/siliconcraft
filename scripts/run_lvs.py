@@ -10,10 +10,10 @@ For KLayout-LVS manifests, `netgen_circuit: auto` selects the first `.subckt`
 from the schematic and passes explicit `file circuit` operands to Netgen.
 
 Usage:
-  python3 scripts/run_lvs.py --profile ami06 --layout <in.gds> \
-      --schematic <sch.spice> --workdir build/lvs \
-      [--deck reference|authoritative|auto] [--klayout <cmd>] [--netgen <cmd>] \
-      [--circuit <subckt>]
+  python3 scripts/run_lvs.py --profile ams_c35 --variant C35B4C3 \
+      --layout <in.gds> --schematic <sch.spice> --workdir build/lvs \
+      [--deck reference|authoritative|auto] [--klayout <cmd>] \
+      [--netgen <cmd>] [--circuit <subckt>]
 
 The schematic must mirror the layout topology (same nets, incl. floating
 ones) and device parameters; netgen applies its value tolerances.
@@ -30,6 +30,7 @@ from pathlib import Path
 
 import run_drc
 import yamlish
+from common.gds_layer_map import load_gds_layer_map
 
 ROOT = Path(__file__).resolve().parent.parent
 REF_DECK = ROOT / "common/lvs/scmos_reference_lvs.py"
@@ -80,11 +81,11 @@ def resolve_netgen_setup(profile_dir, deck):
         return None
     path = profile_dir / deck / setup
     return path if path.exists() else None
-def generated_netgen_permutation_setup(profile_dir):
+def generated_netgen_permutation_setup(profile_dir, variant=None):
     """Translate canonical LVS symmetry groups to Netgen pin names."""
     from common.process_ir import load_process
 
-    process = load_process(profile_dir.name, ROOT)
+    process = load_process(profile_dir.name, ROOT, variant=variant)
     pin_names = {"d": "drain", "s": "source", "g": "gate", "b": "bulk"}
     lines = []
     for binding in process.device_bindings.values():
@@ -131,6 +132,15 @@ def extract(profile_dir, layout, deck, workdir, klayout, extra_env=None, top_cel
     workdir.mkdir(parents=True, exist_ok=True)
     spice = workdir / f"extracted_{deck}.spice"
     env = os.environ.copy()
+    gds_map = load_gds_layer_map(profile_dir)
+    net_text_layers = [
+        [
+            int(item["stream"]["layer"]),
+            int(item["stream"]["datatype"]),
+        ]
+        for item in (gds_map or {}).get("text_layers", [])
+        if item.get("purpose") == "net"
+    ] or [[64, 0]]
     env.update({
         "LAYOUT": str(Path(layout).resolve()),
         "REPORT": str(spice),
@@ -143,8 +153,36 @@ def extract(profile_dir, layout, deck, workdir, klayout, extra_env=None, top_cel
         "LAMBDA": str(meta["lambda_um"]),
         "GRID": str(meta.get("grid_um", 0.15)),
         "LAYERMAP": json.dumps(layermap),
+        "NET_TEXT_LAYERS": json.dumps(net_text_layers),
         "FEATURES": json.dumps(features),
     })
+    devices_path = profile_dir / "devices.yaml"
+    if devices_path.exists():
+        env.setdefault("DEVICES", str(devices_path.resolve()))
+    rc_path = profile_dir / "reference" / "rc_coefficients.yaml"
+    if "SHEET_RES" not in env and rc_path.exists():
+        coefficients = yamlish.load(rc_path.read_text()).get(
+            "sheet_resistance_ohm_sq", {}
+        )
+        sheet_res = {}
+        for source, target in (
+            ("n_diff", "n_diff"),
+            ("p_diff", "p_diff"),
+            ("hres", "highres"),
+            ("nwell", "nwell"),
+        ):
+            if source in coefficients:
+                value = coefficients[source]
+                sheet_res[target] = value if isinstance(value, (int, float)) else None
+        if sheet_res:
+            env["SHEET_RES"] = json.dumps(sheet_res)
+    if meta.get("process") == "C35B4C3":
+        if "SHEET_RES" not in os.environ:
+            sheet_res = json.loads(env.get("SHEET_RES", "{}"))
+            sheet_res["elec"] = None
+            env["SHEET_RES"] = json.dumps(sheet_res)
+        if "CAP_AREACAP" not in os.environ:
+            env["CAP_AREACAP"] = json.dumps({"elec_poly": None})
     if extra_env:
         env.update(extra_env)
     deck_path, spec, resolved_deck = resolve_deck(profile_dir, deck)
@@ -166,8 +204,17 @@ def extract(profile_dir, layout, deck, workdir, klayout, extra_env=None, top_cel
             except ValueError:
                 pass
     if proc.returncode != 0:
-        print(proc.stderr, file=sys.stderr)
-        raise SystemExit(f"klayout failed ({proc.returncode}) for {resolved_deck} deck {deck_path}")
+        failure_output = "\n".join(
+            output.rstrip("\n")
+            for output in (proc.stdout, proc.stderr)
+            if output
+        )
+        if failure_output:
+            print(failure_output, file=sys.stderr)
+        raise SystemExit(
+            f"klayout failed ({proc.returncode}) for {resolved_deck} "
+            f"deck {deck_path}"
+        )
     if (spec or {}).get("format") == "klayout-lvs" and not spice.exists():
         raise SystemExit(
             f"KLayout LVS deck {deck_path} did not emit {spice}; "
@@ -183,6 +230,7 @@ def main():
     ap.add_argument("--top-cell", default=None,
                     help="optional explicit KLayout source top cell for multi-root GDS")
     ap.add_argument("--schematic", required=True)
+    ap.add_argument("--variant", default=None, help="select a profile module variant")
     ap.add_argument("--workdir", default="build/lvs")
     ap.add_argument("--deck", default="auto",
                     choices=["auto", "reference", "authoritative"])
@@ -206,7 +254,10 @@ def main():
         deck,
         workdir,
         args.klayout,
-        extra_env={"SCHEMATIC": str(sch)},
+        extra_env={
+            "SCHEMATIC": str(sch),
+            "PROCESS_VARIANT": args.variant or "",
+        },
         top_cell=args.top_cell,
     )
     print(f"[run_lvs] deck={deck} devices={summary.get('devices')} "
@@ -219,7 +270,9 @@ def main():
     setup_source = resolve_netgen_setup(profile_dir, deck)
     setup_text = setup_source.read_text().rstrip() if setup_source else ""
     circuit = _netgen_circuit(profile_dir, deck, sch, args.circuit)
-    permutation_setup = generated_netgen_permutation_setup(profile_dir)
+    permutation_setup = generated_netgen_permutation_setup(
+        profile_dir, variant=args.variant
+    )
     setup_parts = [setup_text, permutation_setup, "set tcl_precision 6"]
     setup_body = "\n".join(part for part in setup_parts if part) + "\n"
     if circuit:

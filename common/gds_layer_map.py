@@ -136,6 +136,7 @@ def validate_profile_gds_map(
         layers_doc = yamlish.load(layers_path.read_text())
     if not isinstance(layers_doc, dict):
         raise GDSLayerMapError(f"{profile_dir / 'layers.yaml'}: expected a mapping")
+    profile_streams = _profile_streams(layers_doc)
     meta = layers_doc.get("meta") or {}
     if document.get("process") != meta.get("process"):
         raise GDSLayerMapError(
@@ -161,12 +162,20 @@ def validate_profile_gds_map(
                 raise GDSLayerMapError(f"{section}[{index}]: name is required")
             _stream(entry, f"{section}[{index}]")
 
-    profile_streams = _profile_streams(layers_doc)
-    mapped_logical = {
-        str(entry["logical"]): _stream(entry, f"mask_layers[{index}]")
-        for index, entry in enumerate(mask_entries)
-        if entry.get("logical")
-    }
+    mapped_logical = {}
+    for section, entries in (
+        ("mask_layers", mask_entries),
+        ("recognition_layers", recognition_entries),
+    ):
+        for index, entry in enumerate(entries):
+            logical = entry.get("logical")
+            if logical:
+                key = str(logical)
+                if key in mapped_logical:
+                    raise GDSLayerMapError(
+                        f"{profile_dir / _MAP_NAME}: duplicate logical stream {key!r}"
+                    )
+                mapped_logical[key] = _stream(entry, f"{section}[{index}]")
     unmapped_profile_layers = sorted(
         logical
         for logical in profile_streams

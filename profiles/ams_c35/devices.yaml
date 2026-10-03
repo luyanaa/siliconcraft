@@ -1,14 +1,21 @@
-# profiles/ams_c35/devices.yaml — authoritative LVS device table (ams C35)
-#
-# Derived from ENG-183 element definitions (NMOS/PMOS, CPOLY PiP capacitor).
-# ams CONT is the single contact layer bound to `cc`; ca/cp/ce classify from
-# it.  The LVS emits prefix+suffix model names (model_prefix `c35` ->
-# c35N/c35P); the RF model topology (BSIM3v3.1 intrinsic + RG/RD/RS + RSUB +
-# external junction diodes, ENG-188) is recorded in model_contract.yaml —
-# ams model cards are company confidential and not redistributed.
+# C35B4C3 primitive recognition and terminal extraction. RNWELL is an n-well
+# JFET, not a three-terminal resistor. Missing compact cards fail closed in PEX.
 devices:
   mos4:
-    - { name: nmos4, channel: nChannel, diff: nDiff, bulk_net: substrate, model_suffix: nmos }
-    - { name: pmos4, channel: pChannel, diff: pDiff, bulk_net: nBulk, model_suffix: pmos }
+    - {name: nmos4, channel: nChannel, diff: nDiff, bulk_net: substrate, model_suffix: nmos}
+    - {name: pmos4, channel: pChannel, diff: pDiff, bulk_net: nBulk, model_suffix: pmos}
+    - {name: nmosm, channel: nChannelM, diff: nDiff, bulk_net: substrate, model_name: MODNM}
+    - {name: pmosm, channel: pChannelM, diff: pDiff, bulk_net: nBulk, model_name: MODPM}
+  resistor:
+    - {name: rp2, body: elecRes, terminal_marker: restdm, terminal_layer: elec, sheet: rp2}
+    - {name: rph, body: elecHighres, terminal_marker: pselect, terminal_layer: elec, terminal_gap_um: 0.35, sheet: highres}
+    - {name: rdiffn, body: rdiffnRegion, terminal_marker: restdm, terminal_layer: nDiff, sheet: n_diff}
+    - {name: rdiffp, body: rdiffpRegion, terminal_marker: restdm, terminal_layer: pDiff, sheet: p_diff}
+  jfet:
+    - {name: rnwell, region: nwellRes}
   capacitor:
-    - { name: PiPCap, region: polyElecCap, top: elec, bottom: poly, area_cap: elec_poly }
+    - {name: PiPCap, region: polyElecCap, top: elec, bottom: poly, area_cap: c35_pip}
+  diode:
+    - {name: subdiode, region: NPdiode, plus: substrate, minus: nDiff, model_name: ND}
+    - {name: welldiode, region: PNdiode, plus: pDiff, minus: nBulk, model_name: PD}
+    - {name: nwd, region: NwPdiode, plus: substrate, minus: nBulk, model_name: NWD}

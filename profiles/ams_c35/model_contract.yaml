@@ -2,14 +2,9 @@
 #
 # STANDARD MODELS (now shipped):
 #   profiles/ams_c35/models/ams_c35.lib holds the ENG-182 REV_6 BSIM3v3 cards
-#   (MODN/MODP) transcribed from the public appendix of E. I. Ishibe,
-#   "Projeto de uma fonte de tensão de referência", M.Sc. thesis EESC/USP
-#   2014 (Anexos A/B/C; thesis license: reproduction for study/research with
-#   citation).  The ELDO dialect is mapped to ngspice (LEVEL 53 -> 49,
-#   VERSION 3.3, ELDO-only parameters dropped).  The same parameter family
-#   appears in Appendix C of Leblebici, "Fundamentals of High-Frequency CMOS
-#   Analog Integrated Circuits" (Cambridge University Press) — used as a
-#   cross-reference, not reproduced here.
+#   (MODN/MODP), source-backed CPOLY/RPOLYH cards, user-supplied RPOLY2 corners,
+#   and the source-backed typical VERT10 PNP card. See model_maturity.yaml for
+#   evidence and limitations of each family.
 #
 # RF MODELS (contract only): the ams ENG-188 Rev 5.0 "0.35 um CMOS C35 RF
 # SPICE Models" defines the RF primitive subcircuits; the model FILES are ams
@@ -91,7 +86,7 @@ model_topology:
 source_policy:
   simulator:
     authority: shipped_eng182_cards
-    rule: "Use models/ams_c35.lib (typical / worst-speed / worst-power) for standard MOS; the ENG-188 RF subcircuit cards are ams HIT-Kit files and user-supplied."
+    rule: "Use models/ams_c35.lib for standard MOS, CPOLY, RPOLYH, RPOLY2, and typical VERT10; LAT2, RNWELL JFET, and ND/PD/NWD remain contract-only. ENG-188 RF subcircuit cards are ams HIT-Kit files and user-supplied."
   layout_lvs:
     authority: "SCMOS derived-layer extraction (devices.yaml) with c35N/c35P model names"
     rule: "Extracted NMOS/PMOS/PiP match the ENG-183 element definitions (NGATE/PSUB, PGATE/NTUB, CPOLY)."

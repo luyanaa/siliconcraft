@@ -356,6 +356,91 @@ AMS_C35_CORNERS = {
 }
 
 
+_AMS_C35_PASSIVE_CORNERS = {
+    "ams_c35": {
+        "cpoly": (0.860e-3, 0.086e-9),
+        "rpolyh": (1.204e3, 2.022e-7),
+    },
+    "ams_c35_wp": {
+        "cpoly": (0.780e-3, 0.083e-9),
+        "rpolyh": (1.000e3, 1.000e-7),
+    },
+    "ams_c35_ws": {
+        "cpoly": (0.960e-3, 0.089e-9),
+        "rpolyh": (1.400e3, 3.000e-7),
+    },
+}
+
+_AMS_C35_RPOLY2_CORNERS = {
+    "ams_c35": (50.0, 0.40),
+    "ams_c35_ws": (60.0, 0.50),
+    "ams_c35_wp": (40.0, 0.30),
+}
+
+_AMS_C35_VERT10_TYPICAL = {
+    "IS": "2.3330e-17", "IRB": "4.3770e-06", "IKF": "1.3760e-03",
+    "BF": "5.9810e+00", "NF": "9.9250e-01", "ISE": "6.5290e-16",
+    "NE": "1.7760e+00", "VAF": "1.9420e+02", "IKR": "1.9410e-04",
+    "BR": "9.8740e-02", "NR": "9.9470e-01", "ISC": "2.8430e-14",
+    "NC": "1.1490e+00", "VAR": "1.0320e+01", "RBM": "1.0000e+00",
+    "RB": "2.1380e+02", "RE": "9.7360e+00", "AF": "1.3000e+00",
+    "RC": "4.5400e+01", "KF": "9.1000e-15", "TF": "6.4800e-10",
+    "EG": "1.1150e+00", "XTI": "5.5300e+00", "XTB": "2.2500e+00",
+    "CJE": "1.4880e-13", "VJE": "1.0200e+00", "MJE": "5.4882e-01",
+    "CJC": "4.3387e-14", "VJC": "5.3000e-01", "MJC": "3.1214e-01",
+}
+
+
+def _append_ams_c35_supported_models(lines: list[str], section: str) -> None:
+    cpoly_area, cpoly_perimeter = _AMS_C35_PASSIVE_CORNERS[section]["cpoly"]
+    cpoly_tempco1 = " TC1=3e-5" if section == "ams_c35" else ""
+    lines.extend([
+        "* CPOLY card: ENG-182 Rev.4.1, USP thesis Anexo A; AREA in m^2, PERI in m; typical TC1=3e-5.",
+        ".subckt CPOLY N1 N2 params: AREA=0 PERI=0",
+        f"C1 N1 N2 {{{cpoly_area:.6g}*AREA+{cpoly_perimeter:.6g}*PERI}}{cpoly_tempco1}",
+        ".ends CPOLY",
+        "",
+        "* RPOLYH card: ENG-182 Rev.5.0, USP thesis Anexo A/B; W and L in m.",
+    ])
+    rpolyh_sheet, rpolyh_correction = _AMS_C35_PASSIVE_CORNERS[section]["rpolyh"]
+    voltage_factor = (
+        "(1+7.745e-05*(-7.468e-4)*W*(V(N1,N2)/L)*(V(N1,N2)/L)"
+        "*(1/(1+exp(log(50)*((29.8e-6-L)*1e6))))"
+        "*(1/(1+exp(log(50)*(4.8-L/W)))))"
+    )
+    temperature_factor = "(1-7.468e-4*(TEMP_C-27)+3.821e-6*(TEMP_C-27)*(TEMP_C-27))"
+    lines.extend([
+        ".subckt RPOLYH N1 N2 params: W=1e-6 L=1e-6 TEMP_C=27",
+        f"B1 N1 N2 I={{V(N1,N2)/({rpolyh_sheet:.6g}*L/(W-{rpolyh_correction:.6g})*{voltage_factor}*{temperature_factor})}}",
+        ".ends RPOLYH",
+        "",
+    ])
+    rpoly2_sheet, rpoly2_correction = _AMS_C35_RPOLY2_CORNERS[section]
+    lines.extend([
+        "* RPOLY2 Rsh/Weff: user-supplied ENG-182 Rev.6 min/typ/max.",
+        "* WS=max-Rsh, WP=min-Rsh follows C35 corner ordering; confirm against licensed cards.",
+        "* RCONT=45 ohm/cut is an estimate, not a reported POLY2 contact value.",
+        ".subckt RPOLY2_CORE N1 N2 params: W=1e-6 L=1e-6",
+        f"R1 N1 N2 {{{rpoly2_sheet:g}*L/(W-{rpoly2_correction:g}e-6)}}",
+        ".ends RPOLY2_CORE",
+        ".subckt RPOLY2 N1 N2 params: W=1e-6 L=1e-6 RCONT=45",
+        "RCONT1 N1 N2A {RCONT}",
+        "XBODY N2A N2B RPOLY2_CORE W={W} L={L}",
+        "RCONT2 N2B N2 {RCONT}",
+        ".ends RPOLY2",
+        "",
+    ])
+    if section != "ams_c35":
+        return
+    lines.extend([
+        "* VERT10 PNP card: ENG-182 Rev.6, USP thesis Anexo A; typical only.",
+        ".model VERT10 PNP (",
+    ])
+    for name, value in _AMS_C35_VERT10_TYPICAL.items():
+        lines.append(f"+ {name:<5}= {value}")
+    lines.extend(["+ )", ""])
+
+
 def generate_ams_c35() -> int:
     """Emit profiles/ams_c35/models/ams_c35.lib from the ENG-182 REV_6 cards
     transcribed in AMS_C35_CORNERS (source: USP thesis appendix, see header).
@@ -379,6 +464,9 @@ def generate_ams_c35() -> int:
         "* RF models (modnrf/modprf/cvar/...): ENG-188 Rev 5.0 topology contract in",
         "* model_contract.yaml — the RF subcircuit cards are ams HIT-Kit files.",
         "* sections: ams_c35 (typical), ams_c35_ws (worst-speed), ams_c35_wp (worst-power).",
+        "* CPOLY/RPOLYH are source-backed per-corner; RPOLY2 min/typ/max is user-supplied.",
+        "* RPOLY2 WS=max/WP=min mapping is inferred; 45 ohm/cut contact is estimated.",
+        "* VERT10 is source-backed typical only.",
         "* usage:  .lib '<path>/ams_c35.lib' ams_c35",
         "",
     ]
@@ -392,7 +480,8 @@ def generate_ams_c35() -> int:
                 if key.upper() in _AMS_ELDO_STRIP:
                     continue
                 lines.append(f"+ {key:<10}= {params[key]}")
-            lines.append(")")
+            lines.append("+ )")
+        _append_ams_c35_supported_models(lines, sec)
         lines.append(f".endl {sec}")
         lines.append("")
     lines.append(".end")

@@ -102,6 +102,11 @@ def run():
             ("nmos_hv", "hvnChannelTran", "nHVDiff", "nmos_hv", False),
             ("pmos_hv", "hvpChannelTran", "pHVDiff", "pmos_hv", True),
         ]
+    if TECH == "C35B4C3":
+        mos_specs.extend([
+            ("nmosm", "nChannelM", "nDiff", "nmosm", False),
+            ("pmosm", "pChannelM", "pDiff", "pmosm", True),
+        ])
 
     # ---- MOSFETs (Diva extractMOS: W from S/D-butting edges, L = area/W)
     for dev, ch_key, df_key, suffix, is_nwell_bulk in mos_specs:
@@ -160,18 +165,27 @@ def run():
             island = comps[s0][1]
             ad = island.area() * DBU * DBU
             pd = island.perimeter() * DBU
-            model = PREFIX + MODEL_SUFFIX[suffix]
+            if suffix == "nmosm":
+                model = "MODNM"
+            elif suffix == "pmosm":
+                model = "MODPM"
+            else:
+                model = PREFIX + MODEL_SUFFIX[suffix]
             add(dev, f"m{devno} {net_of(s0)} {net_of(g)} {net_of(s1)} "
                     f"{b_net if b_net else 'SUBS'} {model} "
                     f"w={W:.6g} l={L:.6g} ad={ad:.6g} as={ad:.6g} "
                     f"pd={pd:.6g} ps={pd:.6g}")
     # ---- resistors (Diva: W = butting-edge length/2, L = (P-Wtot)/2,
     #      R = Rs*L/W - corner correction (corners not ported, ~0))
-    for key, conn_key, rs_key in (("polyRes", "poly", "poly"),
-                                  ("polySRes", "poly", "sblock"),
-                                  ("elecRes", "elec", "elec"),
-                                  ("elecHighres", "elec", "highres"),
-                                  ("nwellRes", "nBulk", "nwell")):
+    for key, conn_key, rs_key in (
+        ("polyRes", "poly", "poly"),
+        ("polySRes", "poly", "sblock"),
+        ("elecRes", "elec", "elec"),
+        ("elecHighres", "elec", "highres"),
+        ("rdiffnRegion", "nDiff", "n_diff"),
+        ("rdiffpRegion", "pDiff", "p_diff"),
+        ("nwellRes", "nBulk", "nwell"),
+    ):
         region = D.get(key)
         conn = D.get(conn_key)
         if region is None or conn is None or region.is_empty():
@@ -191,7 +205,12 @@ def run():
             W = Wtot / 2.0
             perim = bpoly.perimeter() * DBU
             L = (perim - Wtot) / 2.0
-            Rs = SHEET_RES.get(rs_key, 0.0)
+            Rs = SHEET_RES.get(rs_key)
+            if not isinstance(Rs, (int, float)):
+                warnings.append(
+                    f"{key}: sheet resistance unavailable; numeric resistor not emitted"
+                )
+                continue
             R = Rs * L / W if W > 0 else 0.0
             ends = []
             for e in bedges.each():
@@ -214,7 +233,12 @@ def run():
         if region is None or region.is_empty():
             continue
         cno = 0
-        areaCap = CAP_AREACAP.get(cap_key, 0.0)
+        areaCap = CAP_AREACAP.get(cap_key)
+        if not isinstance(areaCap, (int, float)):
+            warnings.append(
+                f"{key}: area capacitance unavailable; numeric capacitor not emitted"
+            )
+            continue
         for cpoly in region.merge().each():
             cpoly = pya.Polygon(cpoly)
             cno += 1
@@ -249,7 +273,14 @@ def run():
                 continue
             a = dpoly.area() * DBU * DBU
             pj = dpoly.perimeter() * DBU
-            model = PREFIX + MODEL_SUFFIX[suffix]
+            if TECH == "C35B4C3":
+                model = {
+                    "npdiode": "ND",
+                    "pndiode": "PD",
+                    "nwpdiode": "NWD",
+                }[suffix]
+            else:
+                model = PREFIX + MODEL_SUFFIX[suffix]
             add("diode", f"d{dno} {net_of_root(uf.find(plus)) if plus == SUB else net_of(plus)} "
                          f"{net_of(minus)} {model} area={a:.6g} pj={pj:.6g}")
 

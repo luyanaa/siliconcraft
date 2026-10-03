@@ -85,7 +85,85 @@ deviation-from-vertical angle; convert first.
 
 ## 4. Conclusion
 
-Ordinary RCX for C35B4C3 can now be rebuilt by the original methodology:
-the R/C/ε values are recovered and the remaining uncertainty is confined to
-process 3D micro-geometry (passivation thickness, sidewall profile, corner
-rounding) and the implant profile — not R/C/ε themselves.
+The process-level contract is L2 `engineering_extracted` for the supported
+core scope (standard MOS, RPOLY2, RPOLYH, and PiP). This describes an executable
+engineering extraction path; it does not imply calibrated parasitic values,
+full special-device coverage, or foundry signoff.
+
+The retained model evidence includes user-supplied RPOLY2 40/50/60 Ω/□
+corners, thesis-backed CPOLY/RPOLYH data, and a source-backed typical VERT10
+card.
+
+RNWELL, ND/PD/NWD, MIDOX, and LAT2 remain explicitly unsupported model classes,
+not blockers for the supported-core maturity level. VERT10 has a working
+typical simulation card, while physical layout recognition remains
+contract-only. The RPOLY2 contact is still estimated at 45 Ω/cut from the n+
+CONT midpoint, not supplied as POLY2-specific data. Qualified pre/post-layout
+correlation gates calibration and signoff claims only.
+
+## 5. Executable C35B4C3 status
+
+The reference `scripts/run_pcells.py` fixture still covers all declared C35
+PCell geometries; it is not a current licensed AMS/CMC signoff run. The native
+PEX runner's default generated smoke layout selects only `nmos`, `rp2`, and
+`cap_pip`, whose compact models are available.
+
+- `profiles/ams_c35/pex/manifest.yaml` selects the `native_manhattan` backend.
+  Magic `extresist` is not required or invoked.
+- The native graph decomposes supported Manhattan conductor polygons into
+  sheet-resistance paths, uses explicit contact/via elements, and emits
+  estimated area/fringe, same-layer, cross-layer, and vertical-overlap
+  capacitances; intermediate metal shields non-adjacent vertical terms.
+  Unsupported geometry or missing contact topology fails closed.
+- Junction capacitance remains compact-model-owned. Numerical RNWELL JFET,
+  ND/PD/NWD diode, and MIDOX MODNM/MODPM MOS cards are unavailable; native PEX
+  fails closed for layouts that contain those unsupported device classes.
+- `scripts/test_ams_c35_native_pex.py` exercises native GDS extraction,
+  graph-node connectivity, same-/cross-layer coupling, stacked-metal vertical
+  shielding, normalized substrate-bulk labels, unique RPOLY2 names, and
+  surfaced fail-closed geometry diagnostics.
+  Its ngspice checks simulate an extracted resistor branch against the emitted
+  resistance and an extracted PiP branch at 127 °C against the emitted TC1
+  calculation.
+- `scripts/test_ams_c35_native_graph.py`, `scripts/test_ams_c35_passives.py`,
+  and `scripts/test_ams_c35_models.py` cover geometry, independent source-backed
+  passive-card decks, VERT10 typical behavior, and MOS corner behavior.
+- `scripts/run_ams_c35_pex.py` writes extracted SPICE and metadata only when
+  native extraction produces actual R, C, and MOS elements. Reports retain
+  `maturity: estimated`, `calibrated: false`, and `signoff: false` for
+  parasitic-data quality, alongside process maturity `L2 engineering_extracted`.
+- `klayout_native_rcx` is the primary backend. Magic resistance extraction is
+  an optional cross-check marked `disabled_known_failure`; native RCX has no
+  Magic runtime dependency.
+- Unavailable RNWELL JFET, ND/PD/NWD diode, and MIDOX MOS cards fail closed when
+  those classes are present; they are outside the supported-core scope, not
+  blockers for its engineering maturity. VERT10 remains model-only physically.
+- Passing `--signoff` only records the request; it never changes the
+  non-signoff result.
+
+## 6. Supported-core mixed-signal macro
+
+`scripts/test_ams_c35_mixed_signal.py` generates a wired current-mirror
+differential amplifier with C35 MOS, RPOLY2 bias, an RPOLYH output load, and a
+PiP output capacitor. It runs the SPICE schematic deck, public-reference DRC,
+authoritative KLayout/Netgen LVS, estimated native R+C PEX, and post-layout
+ngspice. Its JSON report records operating-point, gain, pole, and 50% step-delay
+deltas at `build/ams_c35_mixed_signal/mixed_signal_report.json`.
+
+The SPICE references follow emitted geometry: RPOLYH's electrical span is
+60 µm (59.3 µm body plus two 0.35 µm gaps), and the 24 µm PiP cell yields a
+21 × 21 µm overlap. Regression assertions compare these values with the
+authoritative LVS/native-PEX outputs. Native area/fringe capacitances terminate
+on the actual named substrate net (`SUBS` when no substrate label is present),
+not unconditionally on SPICE ground.
+
+The regression is part of the runtime gates in `scripts/run_pex_ci.py`. Its
+pre-layout deck is emitted directly as SPICE because Xschem is absent from the
+current LibreLane shell. VERT10 stays in its separate typical-only model
+fixture; no VERT10 geometry enters this macro.
+
+The native RCX still uses estimated, uncalibrated coefficients; DRC/LVS use
+public reference collateral, not a licensed foundry signoff deck. Ngspice
+completes both simulations while reporting ignored/read-only C35 model
+parameters (`fc`, `is`, `n`, `tt`, `wd`, `cbd`, and `cbs`); this is smoke
+evidence, not model-card qualification.

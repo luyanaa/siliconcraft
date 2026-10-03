@@ -39,6 +39,14 @@ EXPECTED_MASKS = {
     "VIA3": (41, 0),
     "MET4": (42, 0),
 }
+EXPECTED_RECOGNITION = {
+    "DIODE": (62, 11),
+    "TUBDEF": (62, 12),
+    "RESDEF": (62, 13),
+    "RESTRM": (62, 14),
+    "ZENER": (62, 10),
+    "CAPDEF": (62, 20),
+}
 
 
 def stream(entry: dict) -> tuple[int, int]:
@@ -60,6 +68,12 @@ def main() -> int:
     masks = {entry["name"]: entry for entry in document["mask_layers"]}
     for name, expected in EXPECTED_MASKS.items():
         assert stream(masks[name]) == expected, (name, stream(masks[name]))
+    recognition = {entry["name"]: entry for entry in document["recognition_layers"]}
+    for name, expected in EXPECTED_RECOGNITION.items():
+        assert stream(recognition[name]) == expected, (
+            name,
+            stream(recognition[name]),
+        )
 
     assert gds_text_stream(profile_dir, "M1", "net") == (61, 22)
     assert gds_text_stream(profile_dir, "M2", "net") == (61, 23)

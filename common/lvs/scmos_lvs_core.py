@@ -10,10 +10,11 @@ Connectivity follows the SCMOS conductor model (divaEXT saveInterconnect):
 diffusion of the same doping as the well joins the well net (nOhmic ->
 nwell, pOhmic -> substrate); junctions (nDiff in psub, pDiff in nwell) stay
 separate nets.  Cuts (cc, via, via2..) bridge conductor layers; wells
-connect only through same-type ohmic diffusion.  Text labels on GDS layer
-64/0 name the nets; the substrate is one common net.
+Text labels on the profile's GDS net-purpose streams name nets; legacy
+profiles fall back to GDS layer 64/0.  The substrate is one common net.
 """
 
+import json
 import os
 
 import pya
@@ -91,12 +92,13 @@ def offset_pt(edge, poly):
 class Nets:
     """SCMOS connectivity result: conductor components + union-find + names."""
 
-    def __init__(self, comps, uf, SUB, net_names, DBU, labels=()):
+    def __init__(self, comps, uf, SUB, net_names, DBU, labels=(), label_points=()):
         self.comps = comps          # [(layer name, Polygon)]
         self.uf = uf                # UnionFind over comps + SUB node
         self.SUB = SUB              # synthetic substrate node index
         self.net_names = net_names  # root id -> label
         self.labels = tuple(labels) # (label, component index)
+        self.label_points = tuple(label_points) # (label, component index, point)
         self.DBU = DBU
 
     @property
@@ -217,23 +219,43 @@ def build_nets(D, L, F, WELL, layout, top, DBU):
             for i in comps_interacting(pya.Region(pya.Polygon(poly))):
                 uf.union(i, SUB)
 
-    # cuts bridge conductor layers (wells connect only via same-type ohmic
-    # diffusion above; the well polygon overlaps every cut inside it)
-    for cut in CUTS:
+    # C35 CONT cuts are classified by destination.  A POLY2 contact placed
+    # inside CPOLY must connect to POLY2 and MET1, never to the overlapping
+    # POLY1 lower plate.
+    if F("elecAvailable"):
+        contact_layers = (
+            ("ca", {"nDiff", "pDiff", "nOhmic", "pOhmic", "metal1"}),
+            ("cp", {"poly", "metal1"}),
+            ("ce", {"elec", "metal1"}),
+        )
+    else:
+        contact_layers = (("cc", None),)
+    for cut, allowed in (*contact_layers, *((name, None) for name in CUTS if name != "cc")):
         if cut not in D or D[cut].is_empty():
             continue
         for cpoly in D[cut].merge().each():
-            touch = [i for i in comps_interacting(pya.Region(pya.Polygon(cpoly)))
-                     if comps[i][0] not in ("nBulk", "pwell", "isoPwell")]
+            touch = [
+                i for i in comps_interacting(pya.Region(pya.Polygon(cpoly)))
+                if (
+                    (allowed is not None or comps[i][0] not in ("nBulk", "pwell", "isoPwell"))
+                    and (allowed is None or comps[i][0] in allowed)
+                )
+            ]
             for a in touch:
                 for b in touch:
                     uf.union(a, b)
 
-    # labels (text layer) name the nets
-    net_names = {}
+    # Resolve labels from each profile-declared net text stream; older
+    # profiles retain the historical 64/0 stream.
+    raw_text_layers = os.environ.get("NET_TEXT_LAYERS")
+    text_layers = json.loads(raw_text_layers) if raw_text_layers else [TEXT_GDS]
     labels = []
-    tidx = layout.find_layer(TEXT_GDS[0], TEXT_GDS[1])
-    if tidx is not None and tidx >= 0:
+    label_points = []
+    net_names = {}
+    for layer, datatype in dict.fromkeys(tuple(pair) for pair in text_layers):
+        tidx = layout.find_layer(int(layer), int(datatype))
+        if tidx is None or tidx < 0:
+            continue
         for shp in top.shapes(tidx).each():
             if shp.is_text():
                 t = shp.text
@@ -241,9 +263,10 @@ def build_nets(D, L, F, WELL, layout, top, DBU):
                 i = comp_at_smallest(pt)
                 if i is not None:
                     labels.append((t.string, i))
+                    label_points.append((t.string, i, pt))
                     net_names[uf.find(i)] = t.string
 
-    return Nets(comps, uf, SUB, net_names, DBU, labels)
+    return Nets(comps, uf, SUB, net_names, DBU, labels, label_points)
 
 
 def emit_spice(devices, counts, net_names, TECH, PREFIX, comment, nets_count):

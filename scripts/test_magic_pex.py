@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
 
 from common.pex.magic import (  # noqa: E402
     assemble_technology,
+    capacitance_to_magic,
     convert_to_magic,
     generate_profile,
     render_profile_extract,
@@ -43,6 +44,8 @@ def main() -> int:
     hp06_ir = load_process("hp06", ROOT)
     ami16_ir = load_process("ami16", ROOT)
     ls1u_ir = load_process("ls1u", ROOT)
+    ams_c35, ams_c35_path = load_manifest("ams_c35")
+    ams_c35_ir = load_process("ams_c35", ROOT)
     assert ami06["source_technology"]["legacy_backend"] == {
         "technology": "scmos-sub",
         "extraction_style": "lambda=0.30",
@@ -104,12 +107,14 @@ def main() -> int:
     assert ami06_ir.parasitic_ownership["diffusion_sheet_resistance"] == "pex"
 
 
-    # Source values must convert to Magic's integer units without importing
-    # a process-specific constant into the renderer.
+    # Source values convert to Magic's units, preserving fractional capacitance
+    # values supported by the extractor rather than rounding small C to zero.
     assert convert_to_magic(0.09, "ohm_per_square", 0.3) == 90
     assert convert_to_magic(93, "af_per_um2", 0.3) == 8
     assert convert_to_magic(798, "af_per_um2", 0.3) == 72
     assert convert_to_magic(77, "af_per_um", 0.3) == 23
+    assert capacitance_to_magic(0.029, "ff_per_um2", 0.2) == "1.16"
+    assert capacitance_to_magic(0.044, "ff_per_um", 0.2) == "8.8"
 
     expected_gds = {
         "CWP": 41,
@@ -147,8 +152,8 @@ def main() -> int:
     assert "areacap " not in none
     assert "device mosfet ami06N" in reference
     assert "resist metal1 90" in reference
-    assert "areacap cap 72" in reference
-    assert "overlap metal2 metal1 3" in reference
+    assert "areacap cap 71.82" in reference
+    assert "overlap metal2 metal1 3.06" in reference
     assert "contact ndc 4 51000" in reference
     assert "contact pdc 4 116000" in reference
     assert "contact pc 4 17700" in reference
@@ -185,7 +190,7 @@ def main() -> int:
     assert "resist metal1 70" in hp_reference
     assert "resist rpoly 130000" in hp_reference
     assert "areacap wcap 207" in hp_reference
-    assert "overlap metal3 metal2 4" in hp_reference
+    assert "overlap metal3 metal2 4.32" in hp_reference
     assert "contact ndc 4 2300" in hp_reference
     assert "contact pdc 4 2000" in hp_reference
     assert "contact pc 4 1800" in hp_reference
@@ -223,11 +228,10 @@ def main() -> int:
     assert "areacap " not in ami16_none
     assert "device mosfet ami16N" in ami16_reference
     assert "resist metal1 50" in ami16_reference
-    assert "resist poly2 25200" in ami16_reference
-    assert "areacap poly2 452" in ami16_reference
-    assert "areacap cap 381" in ami16_reference
-    assert "overlap metal2 metal1 24" in ami16_reference
-    assert "perimc poly ~poly 35" in ami16_reference
+    assert "areacap poly2 451.84" in ami16_reference
+    assert "areacap cap 381.44" in ami16_reference
+    assert "overlap metal2 metal1 24.32" in ami16_reference
+    assert "perimc poly ~poly 35.2" in ami16_reference
     assert "contact ndc 4 65800" in ami16_reference
     assert "contact pdc 4 36300" in ami16_reference
     assert "contact pc 4 25700" in ami16_reference
@@ -282,6 +286,43 @@ def main() -> int:
     assert "calma CMF 48 0" in tr1um_tech
     assert "calma CMS 49 0" in tr1um_tech
 
+    assert ams_c35["default"] == "estimated_rcx"
+    assert ams_c35_ir.collateral_capabilities.pex_runtime is True
+    assert ams_c35_ir.collateral_capabilities.pex_rc == "estimated"
+    ams_c35_tech = assemble_technology(
+        ams_c35, "estimated_rcx", ams_c35_path.parent, ams_c35_ir.device_bindings
+    )
+    ams_c35_extract = extract_section(ams_c35_tech)
+    assert "device mosfet c35N" in ams_c35_extract
+    assert "device mosfet c35P" in ams_c35_extract
+    assert "WARNING: estimated parasitic coefficients" in ams_c35_extract
+    assert "resist metal4 70" in ams_c35_extract
+    assert "areacap metal1 1.16" in ams_c35_extract
+    assert "contact m4c 3 2100" in ams_c35_extract
+    assert "contact m4contact 5 metal3 0 metal4 0" in ams_c35_tech
+    assert "calma M4LABEL 61 25" in ams_c35_tech
+    assert "sidewall metal1 space metal1 space 17.4" in ams_c35_extract
+    assert "calma UNUSED 62 14" in ams_c35_tech
+    assert "metal4 metal4,m4" in ams_c35_tech
+
+    with tempfile.TemporaryDirectory(prefix="siliconcraft-ams-c35-") as temp_dir:
+        temp_root = Path(temp_dir)
+        temp_pex = temp_root / "ams_c35" / "pex"
+        temp_pex.mkdir(parents=True)
+        shutil.copy2(ams_c35_path, temp_pex / "manifest.yaml")
+        shutil.copy2(ams_c35_path.parent / "cifin-ams-c35.gen", temp_pex)
+        (temp_root / "ls1u").symlink_to(
+            ROOT / "profiles" / "ls1u", target_is_directory=True
+        )
+        temp_manifest_path = temp_pex / "manifest.yaml"
+        generated = generate_profile(
+            load(temp_manifest_path.read_text()),
+            temp_manifest_path,
+            "estimated_rcx",
+            ams_c35_ir.device_bindings,
+        )
+        assert generated.name == "estimated_rcx.tech"
+
     print("Generic Magic PEX flow checks: PASS")
     print("  source-unit conversions: PASS")
     print("  AMI06 source map and profile rendering: PASS")
@@ -289,6 +330,7 @@ def main() -> int:
     print("  AMI16 source map, model library, electrode/NPN semantics, and rendering: PASS")
     print("  TR-1um primitive topology, native input streams, and rendering: PASS")
     print("  LS1u compatibility rendering: PASS")
+    print("  AMS C35 estimated RCX coefficients and four-metal technology: PASS")
     return 0
 
 

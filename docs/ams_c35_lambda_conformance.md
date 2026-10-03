@@ -25,10 +25,12 @@ Rules that AGREE with λ values (no override): OD.S.1 (0.6), PO.C.1 (0.2),
 OD.C.2/OD.C.4 (1.2), CO.C.2 (0.4), M2.W.1 (0.6), M3.W.1/M3.S.1 (0.6),
 M4.W.1/M4.S.1 (0.6), M1.E.1-style enclosures, CO.W.1 (0.4 exact).
 
-Variant notes: the thin-M4 values (0.6/0.6) apply to C35B4C3; the thick-metal
-module (MET4 2.5/2.0, R01M4) belongs to C35B4M3/M6 and is NOT modeled here.
-M3.S.1 is 0.5 in the M4 module vs 0.6 in the core — the abstraction uses 0.6
-(conservative).
+Active reference implementation scope is C35B4C3. The historical public
+Calibre runset enables HRES for C3 and disables it in its O1 option branch;
+Europractice's current 2026 process listing describes both C35B4C3 and
+C35B4O1 as HR processes. O1 is deferred until that option conflict is
+reconciled against a current kit. The thick-metal module (MET4 2.5/2.0,
+R01M4) belongs to C35B4M3/M6 and is NOT modeled here.
 
 ## 2. NOT representable in the λ abstraction (must be handled separately)
 
@@ -91,3 +93,78 @@ For a layout artifact, run the same validator inside KLayout with `--gds`.
 `--require-fab-authority` intentionally fails until the profile is replaced or
 overlaid with the current licensed AMS/CMC stream map.  This prevents a public
 historical map from being represented as a tapeout signoff.
+
+## 5. Device contracts and module variants
+
+`profiles/ams_c35/modules.yaml` exposes only the active engineering target,
+`C35B4C3`: 4M/2P with PIP, the 5V gate option, and HRES. `C35B4O1` is
+intentionally deferred; its current public Europractice option row lists HR
+and an ARC photodiode in an EPI layer, while the historical runset disables
+HRES in its O1 branch. Do not infer O1 HRES support from either source alone.
+METCAP/CMIM and `ngatecap` remain disabled for this target; the historical
+runset reports the in-well gate-cap structure as unsupported with no standard
+size.
+
+The public AMS Calibre runset defines these historical terminal contracts:
+
+| Device | Extracted terminals | Recipe / status |
+| --- | --- | --- |
+| VERT10 | C, B, E | Three-terminal PNP; predefined layout, must not change |
+| LAT2 | C, B, E, S, G | Five-terminal PNP; predefined 2 µm × 2 µm emitter, not checked by batch LVS |
+| CVAR | G, S, D, B | Four-terminal MOS varactor; predefined unit layout |
+| ZD2SM24 | POS, NEG, SUB | Fixed programming geometry for qualified zap blocks only |
+| CPOLYRF | POS, NEG, SUB | Three-terminal RF poly capacitor |
+| RDIFFP/RDIFFN | POS, NEG | Two-terminal diffusion resistors |
+| RDIFFP3/RDIFFN3 | POS, NEG, SUB | Three-terminal diffusion resistors |
+| RNWELL | 3-terminal JFET model class | GSA checklist classification; public layout diagram has two contacts, but model terminal geometry/card remain unavailable |
+
+The historical runset maps ND/PD/NWD as parasitic diodes intended for
+reverse-leakage and junction-capacitance simulation, not as active circuit
+elements. ENG-183 depicts a two-contact n-well layout element, while the GSA
+model checklist classifies RNWELL as a three-terminal JFET; the PCell geometry
+is therefore layout-only and does not define the missing JFET pin map. NMOSH
+and NMOSMH layouts are predefined; only W may change. These recipes are not
+generated here.
+
+The historical Calibre terminal names and maps remain metadata in
+`profiles/ams_c35/devices/bindings.yaml`. The executable profile path now uses
+`profiles/ams_c35/pcells.yaml`, `profiles/ams_c35/devices.yaml`, and the shared
+authoritative LVS engine: C35 core/MIDOX MOS, resistor, PIP, and ND/PD/NWD
+recognition are exercised by the generated fixture. The current fixture
+contains 18 PCell variants and passes the public native DRC with zero markers.
+The `diode_pn` PCell marks its full NTUB: extraction emits the PD junction and
+the corresponding full-area NWD substrate parasitic. Neither diode model card
+is present in the public model library.
+The RPOLYH PCell passes this layer-rule DRC and shared-reference LVS smoke,
+but the public PPLUS-to-derived-RPOLYH terminal spacing rule is not proven by
+that layer deck. Do not treat RPOLYH geometry as signoff-validated.
+
+This is reference engineering, not licensed-kit signoff. CPOLY and RPOLYH
+cards are thesis-backed; RPOLY2 corners are user-supplied, with its POLY2
+contact resistance still estimated. VERT10 has a source-backed typical PNP
+card; LAT2, RNWELL JFET, and ND/PD/NWD numerical cards remain unavailable.
+PNP physical-layout recognition remains contract-only, and xschem still
+exposes core n/p MOS only.
+
+The XH035 audit remains bounded to its existing eight MOS/HV/isolated/LDMOS
+bindings; no non-MOS device support was inferred or added.
+
+These sources bound the implementation to historical reference data:
+
+- [CMC AMS Basic](https://www.cmc.ca/ams-350-nm-cmos-basic/) and
+  [CMC AMS Opto](https://www.cmc.ca/ams-350-nm-cmos-opto/) describe C35B4C3
+  and C35B4O1 product scope.
+- [ENG-183 Rev 5.0](https://opencourses.emu.edu.tr/pluginfile.php/31894/mod_resource/content/1/Process%20Design%20Rules.pdf)
+  is a 2005 historical design-rules copy.
+- [AMS-authored public Calibre runset snapshot](https://raw.githubusercontent.com/jjwikner/daisy/c6d8341f36d734a55b9ac0902547744c93cd4cd6/daisy/pdk/ams035/pv/calibre/cac35b4rules_all.run)
+  is a historical 2006.2 rule set, last modified in 2008; it is not the
+  current licensed signoff deck.
+- [CMC kit access requirements](https://www.cmc.ca/ams-0-35-%C2%B5m-design-kits/)
+  require a site license and the current kit for fabrication signoff.
+
+ams states its 2016 iPDK includes characterized models, Calibre/Assura
+verification and extraction runsets, and PyCells
+([announcement](https://ams-osram.com/news/press-releases/ams-releases-interoperable-pdk-for-its-0-35mm-analog-specialty-processes)).
+No non-core model cards were recovered publicly or found in this repository.
+Production PCells, simulation wrappers, and signoff LVS therefore require the
+current licensed kit; historical public metadata is not tapeout authority.

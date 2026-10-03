@@ -1,0 +1,157 @@
+style lambda=0.2(ams_c35_estimated)
+    scalefactor 20 5
+    layer nwell NTUB
+    layer pwell PTUB
+    layer ndiff DIFF
+        and NPLUS
+    layer pdiff DIFF
+        and PPLUS
+    layer nfet POLY1
+        and DIFF
+        and NPLUS
+        and-not NTUB
+        and-not MIDOX
+    layer pfet POLY1
+        and DIFF
+        and PPLUS
+        and NTUB
+        and-not MIDOX
+    layer hvnfet POLY1
+        and DIFF
+        and NPLUS
+        and MIDOX
+    layer hvpfet POLY1
+        and DIFF
+        and PPLUS
+        and NTUB
+        and MIDOX
+    layer poly POLY1
+        labels P1LABEL
+    layer poly2 POLY2
+    layer rpoly HRES
+    layer ndc CONT
+        and DIFF
+        and NPLUS
+        and MET1
+    layer pdc CONT
+        and DIFF
+        and PPLUS
+        and MET1
+    layer pc CONT
+        and POLY1
+        and MET1
+    layer ec CONT
+        and POLY2
+        and MET1
+    layer m2c VIA1
+        and MET1
+        and MET2
+    layer m3c VIA2
+        and MET2
+        and MET3
+    layer m4c VIA3
+        and MET3
+        and MET4
+    layer metal1 MET1
+        labels M1LABEL
+    layer metal2 MET2
+        labels M2LABEL
+    layer metal3 MET3
+        labels M3LABEL
+    layer metal4 MET4
+        labels M4LABEL
+    layer pad PAD
+    layer oxide MIDOX
+    layer oxide UNUSED
+    calma NTUB 5 0
+    calma PTUB 7 0
+    calma DIFF 10 0
+    calma MIDOX 14 0
+    calma POLY1 20 0
+    calma NPLUS 23 0
+    calma PPLUS 24 0
+    calma HRES 29 0
+    calma POLY2 30 0
+    calma CONT 34 0
+    calma MET1 35 0
+    calma VIA1 36 0
+    calma MET2 37 0
+    calma VIA2 38 0
+    calma MET3 39 0
+    calma PAD 40 0
+    calma VIA3 41 0
+    calma MET4 42 0
+    calma P1LABEL 61 1
+    calma P1LABEL 61 21
+    calma M1LABEL 61 2
+    calma M1LABEL 61 22
+    calma M2LABEL 61 3
+    calma M2LABEL 61 23
+    calma M3LABEL 61 4
+    calma M3LABEL 61 24
+    calma M4LABEL 61 5
+    calma M4LABEL 61 25
+    calma UNUSED 3 0
+    calma UNUSED 8 0
+    calma UNUSED 21 0
+    calma UNUSED 31 0
+    calma UNUSED 32 0
+    calma UNUSED 45 0
+    calma UNUSED 46 0
+    calma UNUSED 47 0
+    calma UNUSED 53 0
+    calma UNUSED 55 0
+    calma UNUSED 1 0
+    calma UNUSED 2 0
+    calma UNUSED 11 0
+    calma UNUSED 13 0
+    calma UNUSED 15 0
+    calma UNUSED 16 0
+    calma UNUSED 28 0
+    calma UNUSED 25 0
+    calma UNUSED 27 0
+    calma UNUSED 26 0
+    calma UNUSED 33 0
+    calma UNUSED 35 1
+    calma UNUSED 37 1
+    calma UNUSED 39 1
+    calma UNUSED 42 1
+    calma UNUSED 62 1
+    calma UNUSED 62 2
+    calma UNUSED 62 3
+    calma UNUSED 62 4
+    calma UNUSED 62 5
+    calma UNUSED 62 6
+    calma UNUSED 62 7
+    calma UNUSED 62 10
+    calma UNUSED 62 11
+    calma UNUSED 62 12
+    calma UNUSED 62 13
+    calma UNUSED 62 14
+    calma UNUSED 62 15
+    calma UNUSED 62 20
+    calma UNUSED 62 21
+    calma UNUSED 62 22
+    calma UNUSED 62 24
+    calma UNUSED 62 26
+    calma UNUSED 62 27
+    calma UNUSED 62 28
+    calma UNUSED 62 29
+    calma UNUSED 62 30
+    calma UNUSED 62 31
+    calma UNUSED 62 32
+    calma UNUSED 62 33
+    calma UNUSED 62 34
+    calma UNUSED 62 40
+    calma UNUSED 61 10
+    calma UNUSED 61 30
+    calma UNUSED 61 31
+    calma UNUSED 63 1
+    calma UNUSED 63 2
+    calma UNUSED 63 3
+    calma UNUSED 63 4
+    calma UNUSED 63 21
+    calma UNUSED 63 22
+    calma UNUSED 63 23
+    calma UNUSED 63 24
+end

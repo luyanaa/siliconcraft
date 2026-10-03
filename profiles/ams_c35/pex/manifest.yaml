@@ -1,31 +1,29 @@
-# ams C35 PEX manifest.
-#
-# Ordinary signoff PEX for C35 is RC + coupling-C (xRC, "No Inductance";
-# see docs/ams_c35_pex_field.md).  The open reproduction target is
-# R + C_ground + C_coupling -> DSPF/SPEF via OpenRCX/Magic, calibrated
-# against the reconstructed field-solver stack (profiles/ams_c35/stackup.yaml).
-# No Magic backend or emitted coefficients yet: pex_runtime/pex_rc stay
-# false.  The ENG-188 RF passives are characterized device contracts
-# (docs/ams_c35_rf.md), not PEX products.
+# The estimated_rcx profile uses the native Manhattan graph and source-backed
+# or explicitly estimated RC coefficients. It is never foundry signoff.
+# flow.maturity describes parasitic coefficient quality, separate from process-level engineering maturity.
 schema_version: 2
 profile: ams_c35
-default: none
+default: estimated_rcx
 flow:
-  backend: none
+  backend: native_manhattan
+  primary_backend: klayout_native_rcx
+  optional_crosscheck:
+    magic:
+      resistance: disabled_known_failure
+      reason: "User-reported C35 extresist failure; native RCX does not depend on Magic."
   source_driven: true
+  maturity: estimated
+  signoff: false
   capacitance:
     status: field_solver_estimated
     calibrated: false
-    solver_candidates:
-      - FastCap
-      - FasterCap
-      - Palace
+    solver_candidates: [FastCap, FasterCap]
     source: profiles/ams_c35/c35b4c3_stack.yaml
-    output: research_rc_table
-    consumer: OpenRCX_or_custom_import
+    output: extracted_spice
+    consumer: ngspice
   original_process: C35B4C3
-  ordinary_pex_level: "R + C_ground + C_coupling (no inductance); DSPF/SPEF output"
-  contact_policy: "no extraction backend claimed; ENG-182 coefficient inventory in docs/ams_c35_pex_field.md (CONT 30/60 ohm, VIA1/2 1.2 ohm reported; metal Rsh M1 0.08/M2 0.06/M3 0.05/M4 0.05 ohm/sq; n+/p+ diffusion 70/129 ohm/sq)"
+  ordinary_pex_level: "R + C_ground + C_coupling (no inductance); extracted SPICE"
+  contact_policy: "Use public ranges where available; midpoint/contact estimates are labeled estimated and signoff-disabled."
   parasitic_ownership:
     transistor_intrinsic_capacitance: model
     gate_overlap_capacitance: model
@@ -37,11 +35,43 @@ flow:
 physical:
   lambda_um: 0.2
   grid_um: 0.025
+  magic_lambda_centimicron: 20
+  magic_resistance_unit: milliohm_per_square
+  magic_area_cap_unit: attofarad_per_lambda2
+  magic_edge_cap_unit: attofarad_per_lambda
+source_technology:
+  file: "../../ls1u/reference/magic/pearlriver-scmos.tech"
+  gds_input_map: "cifin-ams-c35.gen"
+  section_extensions:
+    types:
+      - "metal3 m4contact,m4c"
+      - "metal4 metal4,m4"
+      - "oxide oxide"
+    wiring:
+      - "contact m4contact 5 metal3 0 metal4 0"
 technology:
-  description: "ams C35 source-reference PEX contract (ENG-182 coefficients + reconstructed field stack v0.1)"
+  description: "C35B4C3 native estimated RC extraction; not foundry signoff"
 topology:
-  scope: "C35 NMOS/PMOS/PiP; RF device parasitics owned by the ENG-188 model topology"
-  note: "no Magic device class: no Magic extraction backend for ams C35 yet"
+  style: native_manhattan
+  cscale: 1
+  step: 100
+  sidehalo: 8
+  magic_device_class: mosfet
+  magic_terminal_order: "drain,gate,source,bulk"
+  plane_order:
+    - [active, 0]
+    - [well, 1]
+    - [implant, 2]
+    - [metal1, 3]
+    - [metal2, 4]
+    - [metal3, 5]
+    - [metal4, 6]
+    - [oxide, 7]
+  devices:
+    nmos: {}
+    pmos:
+      substrate_node: Vdd!
+  scope: "C35B4C3 standard MOS, diffusion, resistor, and four-metal interconnect parasitics; no RF macro extraction"
 profiles:
   none:
     generated: true
@@ -73,3 +103,81 @@ profiles:
       - scaled_width_spacing_2x
       - scaled_width_spacing_4x
     output: {format: research_rc_table, consumer: OpenRCX_or_custom_import}
+  estimated_rcx:
+    generated: true
+    status: engineering_estimate
+    maturity: estimated
+    calibrated: false
+    output: {format: ngspice_spice, signoff: false}
+    description: "Native Manhattan graph extraction using ENG-182 coefficients and explicitly estimated missing values."
+    warning: "Estimated/un-calibrated parasitics are unsuitable for foundry signoff; use the current AMS/CMC kit for tapeout."
+    estimation_policy:
+      metal_sheet_resistance: "Midpoint of ENG-182 published min/max for each layer."
+      via_contact_resistance: "Midpoint of reported ranges; Rev.2-only values retain low confidence."
+      missing_poly_sheet_resistance: "Engineering estimate for POLY1 only; RPOLY2 typical Rsh is user-supplied as 50 ohm/sq (min/typ/max 40/50/60)."
+      area_capacitance: "Published vertical coefficients plus series-stack estimates from the public dielectric stack."
+      fringe_and_coupling: "Published minimum-width/spacing coefficients applied as fixed geometry estimates."
+    native_rc:
+      resistor_width_correction_um:
+        rp2: {value: 0.4, source: "User-supplied ENG-182 Rev.6 RPOLY2 typical Weff correction."}
+        highres: {value: 0.2022, source: "USP thesis appendix RPOLYH typical card."}
+      conductor_width_correction_um:
+        metal2: {value: 0.1, source: "ENG-182 Rev.6 M2 effective-width correction."}
+        metal3: {value: 0.1, source: "ENG-182 Rev.6 M3 effective-width correction."}
+      pip_capacitance:
+        c35_pip: {area_ff_per_um2: 0.860, perimeter_ff_per_um: 0.086, tc1_per_c: 3.0e-5, source: "USP thesis CPOLY typical card; SI area/perimeter coefficients converted to fF/um2 and fF/um; TC1=3e-5."}
+      same_layer_coupling_min_spacing_um:
+        poly: 0.45
+        metal1: 0.45
+        metal2: 0.50
+        metal3: 0.50
+        metal4: 0.60
+    # Coefficients use the shared legacy schema; the native backend consumes these
+    # values directly. This does not invoke Magic or require extresist.
+    magic_directives:
+      - {kind: resist, layers: metal1, value: 0.095, unit: ohm_per_square, source: "Estimate: midpoint of ENG-182 M1 0.07–0.12 ohm/sq."}
+      - {kind: resist, layers: metal2, value: 0.095, unit: ohm_per_square, source: "Estimate: midpoint of ENG-182 M2 0.07–0.12 ohm/sq."}
+      - {kind: resist, layers: metal3, value: 0.095, unit: ohm_per_square, source: "Estimate: midpoint of ENG-182 M3 0.07–0.12 ohm/sq for thin-M4."}
+      - {kind: resist, layers: metal4, value: 0.07, unit: ohm_per_square, source: "Estimate: midpoint of ENG-182 M4 0.04–0.10 ohm/sq."}
+      - {kind: resist, layers: nwell, value: 1000, unit: ohm_per_square, source: "Estimate: midpoint of ENG-182 n-well 900–1100 ohm/sq range."}
+      - {kind: resist, layers: ndiff, value: 70, unit: ohm_per_square, source: "ENG-182 c35N diffusion RSH typical."}
+      - {kind: resist, layers: pdiff, value: 129, unit: ohm_per_square, source: "ENG-182 c35P diffusion RSH typical."}
+      - {kind: resist, layers: poly, value: 25, unit: ohm_per_square, source: "Estimate: silicided POLY1 sheet resistance; no C35 public coefficient."}
+      - {kind: resist, layers: poly2, value: 50, unit: ohm_per_square, source: "User-supplied ENG-182 Rev.6 RPOLY2 typical; min/typ/max 40/50/60 ohm/sq. Effective-width correction is 0.40 um typical."}
+      - {kind: resist, layers: rpoly, value: 1204, unit: ohm_per_square, source: "ENG-182 HRES resistor RSH typical."}
+      - {kind: contact, contact_type: ndc, min_size: 1, value: 45, unit: ohm_per_contact, source: "Estimate: midpoint of Rev.2-reported CONT n+ 30–60 ohm/cut."}
+      - {kind: contact, contact_type: pdc, min_size: 1, value: 75, unit: ohm_per_contact, source: "Estimate: midpoint of Rev.2-reported CONT p+ 60–90 ohm/cut."}
+      - {kind: contact, contact_type: pc, min_size: 1, value: 45, unit: ohm_per_contact, source: "Estimate: POLY1 contact assigned n+ CONT midpoint; no C35 coefficient."}
+      - {kind: contact, contact_type: ec, min_size: 1, value: 45, unit: ohm_per_contact, source: "Estimate: POLY2 contact assigned n+ CONT midpoint; no C35 coefficient."}
+      - {kind: contact, contact_type: m2c, min_size: 3, value: 2.1, unit: ohm_per_contact, source: "Estimate: midpoint of VIA1 1.2–3 ohm range; Rev.2-reported, re-verify."}
+      - {kind: contact, contact_type: m3c, min_size: 3, value: 2.1, unit: ohm_per_contact, source: "Estimate: midpoint of VIA2 1.2–3 ohm range; Rev.2-reported, re-verify."}
+      - {kind: contact, contact_type: m4c, min_size: 3, value: 2.1, unit: ohm_per_contact, source: "Estimate: midpoint of VIA3 1.2–3 ohm range; ENG-182 Rev.6."}
+      - {kind: areacap, layers: poly, value: 0.119, unit: ff_per_um2, source: "Estimate: eps0*3.9/0.290um using ENG-182 FOX thickness/epsilon."}
+      - {kind: areacap, layers: metal1, value: 0.029, unit: ff_per_um2, source: "ENG-182 vertical M1-to-WELL field area capacitance."}
+      - {kind: areacap, layers: metal2, value: 0.016, unit: ff_per_um2, source: "Estimate: series combination of ENG-182 M2-to-M1 0.036 and M1-to-WELL 0.029 fF/um2."}
+      - {kind: areacap, layers: metal3, value: 0.011, unit: ff_per_um2, source: "Estimate: series stack of ENG-182 M3-to-M2, M2-to-M1, and M1-to-WELL area coefficients."}
+      - {kind: areacap, layers: metal4, value: 0.006, unit: ff_per_um2, source: "ENG-182 M4-to-WELL field area capacitance."}
+      - {kind: overlap, upper: metal2, lower: metal1, value: 0.036, unit: ff_per_um2, source: "ENG-182 M2-to-M1 vertical area capacitance."}
+      - {kind: overlap, upper: metal3, lower: metal2, value: 0.036, unit: ff_per_um2, source: "ENG-182 M3-to-M2 vertical area capacitance."}
+      - {kind: overlap, upper: metal4, lower: metal3, value: 0.036, unit: ff_per_um2, source: "ENG-182 M4-to-M3 vertical area capacitance."}
+      - {kind: overlap, upper: metal4, lower: metal2, value: 0.014, unit: ff_per_um2, source: "ENG-182 M4-to-M2 vertical area capacitance."}
+      - {kind: overlap, upper: metal4, lower: metal1, value: 0.008, unit: ff_per_um2, source: "ENG-182 M4-to-M1 vertical area capacitance."}
+      - {kind: overlap, upper: metal1, lower: "nwell,pwell", value: 0.029, unit: ff_per_um2, source: "ENG-182 M1-to-WELL field area coefficient."}
+      - {kind: overlap, upper: metal2, lower: "nwell,pwell", value: 0.016, unit: ff_per_um2, source: "Estimate: series-stack metal2-to-well area coefficient."}
+      - {kind: overlap, upper: metal3, lower: "nwell,pwell", value: 0.011, unit: ff_per_um2, source: "Estimate: series-stack metal3-to-well area coefficient."}
+      - {kind: overlap, upper: metal4, lower: "nwell,pwell", value: 0.006, unit: ff_per_um2, source: "ENG-182 M4-to-WELL field area coefficient."}
+      - {kind: perimc, layers: poly, outside: "~poly", value: 0.044, unit: ff_per_um, source: "Estimate: use M1-to-WELL fringe as POLY1 field-edge proxy."}
+      - {kind: perimc, layers: metal1, outside: "~metal1", value: 0.044, unit: ff_per_um, source: "ENG-182 M1-to-WELL field fringe coefficient."}
+      - {kind: perimc, layers: metal2, outside: "~metal2", value: 0.048, unit: ff_per_um, source: "Estimate: ENG-182 M2-to-M1 fringe used as ground-edge proxy."}
+      - {kind: perimc, layers: metal3, outside: "~metal3", value: 0.048, unit: ff_per_um, source: "Estimate: ENG-182 M3-to-M2 fringe used as ground-edge proxy."}
+      - {kind: perimc, layers: metal4, outside: "~metal4", value: 0.029, unit: ff_per_um, source: "ENG-182 M4-to-WELL field fringe coefficient."}
+      - {kind: sidewall, upper: poly, outside_upper: space, outside_lower: poly, lower: space, value: 0.039, unit: ff_per_um, source: "ENG-182 POLY1 same-layer coupling at minimum width/spacing; fixed-spacing estimate."}
+      - {kind: sidewall, upper: metal1, outside_upper: space, outside_lower: metal1, lower: space, value: 0.087, unit: ff_per_um, source: "ENG-182 M1 same-layer coupling at minimum width/spacing; fixed-spacing estimate."}
+      - {kind: sidewall, upper: metal2, outside_upper: space, outside_lower: metal2, lower: space, value: 0.084, unit: ff_per_um, source: "ENG-182 M2 same-layer coupling at minimum width/spacing; fixed-spacing estimate."}
+      - {kind: sidewall, upper: metal3, outside_upper: space, outside_lower: metal3, lower: space, value: 0.085, unit: ff_per_um, source: "ENG-182 M3 same-layer coupling at minimum width/spacing; fixed-spacing estimate."}
+      - {kind: sidewall, upper: metal4, outside_upper: space, outside_lower: metal4, lower: space, value: 0.097, unit: ff_per_um, source: "ENG-182 M4 same-layer coupling at minimum width/spacing; fixed-spacing estimate."}
+      - {kind: sideoverlap, upper: metal2, edge: "space,nwell,pwell", lower: metal1, value: 0.048, unit: ff_per_um, source: "ENG-182 M2-to-M1 fringe coefficient; geometry-independent estimate."}
+      - {kind: sideoverlap, upper: metal3, edge: "space,nwell,pwell", lower: metal2, value: 0.048, unit: ff_per_um, source: "ENG-182 M3-to-M2 fringe coefficient; geometry-independent estimate."}
+      - {kind: sideoverlap, upper: metal4, edge: "space,nwell,pwell", lower: metal3, value: 0.053, unit: ff_per_um, source: "ENG-182 M4-to-M3 fringe coefficient; geometry-independent estimate."}
+      - {kind: sideoverlap, upper: metal4, edge: "space,nwell,pwell", lower: metal2, value: 0.039, unit: ff_per_um, source: "ENG-182 M4-to-M2 fringe coefficient; geometry-independent estimate."}
+      - {kind: sideoverlap, upper: metal4, edge: "space,nwell,pwell", lower: metal1, value: 0.033, unit: ff_per_um, source: "ENG-182 M4-to-M1 fringe coefficient; geometry-independent estimate."}

@@ -2,7 +2,8 @@
 
 Parses exactly the shape emitted by siliconcraft generators (and the
 hand-written official/manifest.yaml): indent-based block mappings and
-sequences, quoted/plain scalars, booleans, null, ints, floats.
+sequences, inline flow mappings/sequences, quoted/plain scalars, booleans, null,
+ints, and floats.
 Comments (`#`) and blank lines are ignored.  Anything else fails loudly --
 this is intentionally NOT a general YAML parser.
 """
@@ -13,8 +14,8 @@ class YamlishError(ValueError):
 
 
 def _split_flow(s):
-    """Split a flow-map body on commas not inside quotes."""
-    parts, cur, q = [], "", None
+    """Split a flow-map or flow-sequence body at top-level commas."""
+    parts, cur, q, depth = [], "", None, 0
     for ch in s:
         if q:
             cur += ch
@@ -23,7 +24,13 @@ def _split_flow(s):
         elif ch in "\"'":
             q = ch
             cur += ch
-        elif ch == ",":
+        elif ch in "[{":
+            depth += 1
+            cur += ch
+        elif ch in "]}":
+            depth -= 1
+            cur += ch
+        elif ch == "," and depth == 0:
             parts.append(cur)
             cur = ""
         else:
@@ -45,8 +52,18 @@ def _flow_map(tok):
     return out
 
 
+def _flow_seq(tok):
+    """Parse an inline flow sequence, including nested sequences and maps."""
+    inner = tok[1:-1].strip()
+    if not inner:
+        return []
+    return [_scalar(part) for part in _split_flow(inner)]
+
+
 def _scalar(tok):
     tok = tok.strip()
+    if tok.startswith("[") and tok.endswith("]"):
+        return _flow_seq(tok)
     if tok.startswith("{") and tok.endswith("}"):
         return _flow_map(tok)
     if tok.startswith('"') and tok.endswith('"') and len(tok) >= 2:

@@ -33,6 +33,29 @@ pcells:
       m: {type: int, default: 1, min: 1}
       w_um: {type: float, default: 1.5, min: 0.6}
       l_um: {type: float, default: 0.6, min: 0.4}
+
+  nmosm:
+    kind: mos4
+    polarity: n
+    canonical_device: nmos_m
+    geometry: {midox_enclosure_um: 0.6}
+    terminals: [D, G, S, B]
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 1.5, min: 0.6}
+      l_um: {type: float, default: 0.5, min: 0.5}
+  pmosm:
+    kind: mos4
+    polarity: p
+    geometry: {midox_enclosure_um: 0.6}
+    canonical_device: pmos_m
+    terminals: [D, G, S, B]
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 1.5, min: 0.6}
+      l_um: {type: float, default: 0.5, min: 0.5}
   ntap:
     kind: tap
     polarity: n
@@ -73,13 +96,107 @@ pcells:
     parameters:
       rows: {type: int, default: 1, min: 1}
       columns: {type: int, default: 1, min: 1}
-  cap_elec:
+  cap_pip:
     kind: capacitor
     top: elec
     bottom: poly
-    terminals:
-      - TOP
-      - BOTTOM
+    terminals: [TOP, BOTTOM]
+    geometry:
+      poly2_inset_um: 2.0
+      terminal_inset_um: 1.0
     parameters:
-      width_um: {type: float, default: 3.0, min: 3.0}
-      height_um: {type: float, default: 3.0, min: 3.0}
+      width_um: {type: float, default: 8.0, min: 5.3}
+      height_um: {type: float, default: 8.0, min: 5.3}
+
+  rp2:
+    kind: resistor
+    material: poly2
+    canonical_device: rpoly2
+    terminals: [P, N]
+    geometry:
+      contact_enclosure_um: 0.25
+      terminal_length_um: 1.2
+    parameters:
+      length_um: {type: float, default: 10.0, min: 3.25}
+      width_um: {type: float, default: 1.0, min: 0.65}
+  rph:
+    kind: resistor
+    material: high_resistive_poly
+    canonical_device: rpolyh
+    terminals: [P, N]
+    geometry:
+      hres_enclosure_um: 3.0
+      terminal_gap_um: 0.35
+      terminal_length_um: 1.6
+    parameters:
+      length_um: {type: float, default: 10.0, min: 4.0}
+      width_um: {type: float, default: 1.0, min: 0.8}
+  diode_np:
+    kind: diode
+    junction: np_substrate
+    canonical_device: subdiode
+    terminals: [SUBSTRATE, NDIFF]
+    parameters:
+      width_um: {type: float, default: 4.0, min: 1.2}
+      height_um: {type: float, default: 4.0, min: 1.2}
+  diode_pn:
+    kind: diode
+    junction: pplus_nwell
+    canonical_device: welldiode
+    terminals: [PDIFF, NWELL]
+    geometry:
+      nwell_enclosure_um: 1.2
+      well_tap_enclosure_um: 0.2
+      tap_spacing_um: 1.2
+    parameters:
+      width_um: {type: float, default: 4.0, min: 1.2}
+      height_um: {type: float, default: 4.0, min: 1.2}
+  diode_nw:
+    kind: diode
+    junction: nwell_substrate
+    canonical_device: nwd
+    terminals: [SUBSTRATE, NWELL]
+    geometry:
+      well_tap_enclosure_um: 0.2
+    parameters:
+      width_um: {type: float, default: 6.0, min: 1.7}
+      height_um: {type: float, default: 6.0, min: 1.7}
+  rdiffn:
+    kind: resistor
+    material: n_diffusion
+    canonical_device: rdiffn
+    terminals: [P, N]
+    geometry:
+      contact_enclosure_um: 0.4
+      select_enclosure_um: 0.45
+      terminal_length_um: 1.2
+    parameters:
+      length_um: {type: float, default: 10.0, min: 0.025}
+      width_um: {type: float, default: 1.0, min: 0.3}
+  rdiffp:
+    kind: resistor
+    material: p_diffusion
+    canonical_device: rdiffp
+    terminals: [P, N]
+    geometry:
+      contact_enclosure_um: 0.4
+      nwell_enclosure_um: 1.2
+      select_enclosure_um: 0.45
+      terminal_length_um: 1.2
+    parameters:
+      length_um: {type: float, default: 10.0, min: 0.025}
+      width_um: {type: float, default: 1.0, min: 0.3}
+  # Layout-only legacy two-contact geometry; RNWELL's model class is a three-terminal JFET.
+  rnwell:
+    kind: resistor
+    material: nwell
+    canonical_device: rnwell
+    terminals: [P, N]
+    geometry:
+      contact_enclosure_um: 0.15
+      select_enclosure_um: 0.45
+      terminal_length_um: 1.2
+      well_active_enclosure_um: 0.2
+    parameters:
+      length_um: {type: float, default: 12.0, min: 0.025}
+      width_um: {type: float, default: 2.4, min: 2.4}

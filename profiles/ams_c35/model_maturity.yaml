@@ -1,4 +1,49 @@
 # profiles/ams_c35/model_maturity.yaml — C35 standard model evidence.
+process_maturity:
+  level: L2
+  status: engineering_extracted
+  scope: "C35B4C3 supported core: MOS, RPOLY2, RPOLYH, and PiP; estimated coefficients remain non-signoff."
+  structural:
+    status: complete
+    scope: supported_core_pcell_set
+    limitations:
+      - "VERT10 has a functional model card, but physical PCell recognition remains contract-only."
+  lvs:
+    status: functional
+    scope: supported_core_device_extraction
+    circuit_level_comparison: pending_mixed_signal_regression
+  pex:
+    status: engineering_extracted
+    backend: klayout_native_rcx
+    coefficient_quality: estimated
+    calibrated: false
+    signoff: false
+  simulation:
+    core_mos: functional
+    rpoly2: functional_typical
+    rpolyh: functional_typical
+    pip_capacitor: functional_typical
+    vert10: functional_typical_model_only
+  physical_layout_limitations:
+    VERT10: contract_only
+  unsupported_devices:
+    - RNWELL_JFET
+    - ND_DIODE
+    - PD_DIODE
+    - NWD_DIODE
+    - MIDOX_MODNM
+    - MIDOX_MODPM
+    - LAT2
+  estimated_parameters:
+    rpoly2_contact:
+      value: 45
+      unit: ohm_per_cut
+      status: estimated
+      provenance: "n+ CONT midpoint assigned in profiles/ams_c35/pex/manifest.yaml; not a supplied POLY2-specific value."
+  external_validation:
+    qualified_ams_pre_post_correlation: unavailable
+    foundry_signoff: unavailable
+
 models:
   c35N:
     simulator: ngspice
@@ -9,7 +54,7 @@ models:
       - ams_c35_ws
       - ams_c35_wp
     mismatch: false
-    evidence: "ams BSIM3v3 card family; ELDO dialect mapped to ngspice LEVEL 49 (VERSION 3.3, ELDO-only parameters dropped); verified with ngspice inverter OP (0 V -> 3.30 V, 3.3 V -> ~0 V)"
+    evidence: "ngspice LEVEL 49 regression in scripts/test_ams_c35_models.py sweeps Id-Vd and Id-Vg, estimates gm, and compares inverter TPHL/TPLH across typical, worst-speed, and worst-power sections"
     fit_status: published_reference
     limitation: "ngspice numeric equivalence with the original ELDO runs is not revalidated"
   c35P:
@@ -21,8 +66,74 @@ models:
       - ams_c35_ws
       - ams_c35_wp
     mismatch: false
-    evidence: "same treatment as c35N; VTH0(typ) = -0.6915 V matches the ams 0.35um PMOS family"
+    evidence: "same ngspice corner regression as c35N; VTH0(typ) = -0.6915 V matches the ams 0.35um PMOS family"
     fit_status: published_reference
+  CPOLY:
+    simulator: ngspice
+    representation: subckt
+    source: "ENG-182 Rev.4.1 and USP 2014 thesis Anexo A; typical/worst-speed/worst-power area and perimeter coefficients"
+    corners: [ams_c35, ams_c35_ws, ams_c35_wp]
+    mismatch: false
+    evidence: "scripts/test_ams_c35_passives.py checks typical area/perimeter behavior at 27C and TC1 at 127C; scripts/test_ams_c35_native_pex.py simulates native extracted PiP TC1 at 127C"
+    fit_status: published_reference
+    limitation: "Area/perimeter SI coefficients are translated; only typical TC1=3e-5 is recovered and applied. WP/WS TC1 values are not established. No foundry signoff or silicon correlation."
+  RPOLYH:
+    simulator: ngspice
+    representation: subckt
+    source: "ENG-182 Rev.5.0 plus USP 2014 thesis Anexo A/B; RSH, Weff, voltage dependence, and TC1/TC2"
+    corners: [ams_c35, ams_c35_ws, ams_c35_wp]
+    mismatch: false
+    evidence: "scripts/test_ams_c35_passives.py checks the typical voltage-dependent resistance at 0.1V and 27C"
+    fit_status: published_reference
+    limitation: "Terminal contact resistance remains a separate estimated PEX term; no foundry signoff or silicon correlation."
+  RPOLY2:
+    simulator: ngspice
+    representation: subckt
+    source: "User-supplied ENG-182 Rev.6 RSH 40/50/60 ohm/sq and Weff corrections 0.30/0.40/0.50um"
+    corners: [ams_c35, ams_c35_ws, ams_c35_wp]
+    mismatch: false
+    evidence: "scripts/test_ams_c35_passives.py checks typical RSH/Weff and the separately represented two-contact estimate"
+    fit_status: user_supplied_parameters
+    limitation: "WS=max-Rsh/WP=min-Rsh assignment follows existing corner order and requires licensed-card confirmation; 45ohm/cut is an estimate, not a supplied POLY2 contact value."
+  VERT10:
+    simulator: ngspice
+    representation: primitive
+    source: "USP 2014 thesis Anexo A; ENG-182 Rev.6 vertical GP level-1 PNP"
+    corners: [ams_c35]
+    mismatch: false
+    evidence: "scripts/test_ams_c35_passives.py exercises a forward-biased typical PNP junction"
+    fit_status: published_reference
+    limitation: "Typical card only; physical-layout recognition remains contract-only."
+  LAT2:
+    simulator: null
+    representation: contract_only
+    source: "ENG-183 Rev.5.0 and GSA C35 model checklist: fixed 2um x 2um emitter, five-terminal GP level-1 PNP"
+    evidence: "Model class and topology are public; no numerical LAT2 card recovered."
+    fit_status: unavailable
+  RNWELL:
+    simulator: null
+    representation: contract_only
+    source: "GSA C35 model checklist identifies RNWELL as a three-terminal JFET."
+    evidence: "Terminal class is recorded; no numerical JFET card or curve was recovered."
+    fit_status: unavailable
+  ND:
+    simulator: null
+    representation: contract_only
+    source: "GSA C35 model checklist identifies the Berkeley level-5 substrate diode."
+    evidence: "Model class is public; numerical junction card parameters are unavailable."
+    fit_status: unavailable
+  PD:
+    simulator: null
+    representation: contract_only
+    source: "GSA C35 model checklist identifies the Berkeley level-5 well diode."
+    evidence: "Model class is public; numerical junction card parameters are unavailable."
+    fit_status: unavailable
+  NWD:
+    simulator: null
+    representation: contract_only
+    source: "GSA C35 model checklist identifies the Berkeley level-5 n-well diode."
+    evidence: "Model class is public; numerical junction card parameters are unavailable."
+    fit_status: unavailable
   cvar:
     simulator: null
     representation: contract_only

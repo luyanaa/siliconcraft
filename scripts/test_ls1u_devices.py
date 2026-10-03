@@ -53,7 +53,7 @@ def main() -> int:
     pmos = maturity["models"]["pmos_core"]
     assert pmos["fit"]["parameters"]["vth0_v"] == -0.6
     assert pmos["fit"]["parameters"]["u0_cm2_per_v_s"] == 83.0
-    assert pmos["fit"]["fit_window_vsg_v"] == "[1.5, 5.0]"
+    assert pmos["fit"]["fit_window_vsg_v"] == [1.5, 5.0]
     assert pmos["maturity"]["signoff"] is False
     assert maturity["models"]["nmos_core"]["evidence_status"] == "insufficient_for_fit"
 

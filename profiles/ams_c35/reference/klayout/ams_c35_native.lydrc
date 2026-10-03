@@ -58,6 +58,13 @@ VIA3   = input(41, 0)
 MET4   = input(42, 0)
 POLY2  = input(30, 0)
 HRES   = input(29, 0)
+MIDOX  = input(14, 0)
+DIODID = input(62, 11)
+TUBDEF = input(62, 12)
+RESDEF = input(62, 13)
+RESTRM = input(62, 14)
+CAPDEF = input(62, 20)
+ZENER = input(62, 10)
 
 # derived layers (ENG-183 &quot;Definition Layers&quot; / &quot;Structures&quot;)
 GATE     = DIFF &amp; POLY1
@@ -68,9 +75,15 @@ PDIFF    = DIFF &amp; PPLUS
 DIFFCON  = CONT &amp; DIFF
 NDIFFCON = DIFFCON &amp; NPLUS
 PDIFFCON = DIFFCON &amp; PPLUS
-POLY1CON = CONT &amp; POLY1
+POLY1CON = (CONT &amp; POLY1) - POLY2
 POLY2CON = CONT &amp; POLY2
 CPOLY    = POLY1 &amp; POLY2
+RPOLY2 = (POLY2 &amp; RESDEF) - HRES - CPOLY
+RPOLY2 = RPOLY2 - RESTRM
+RPOLYH = POLY2 &amp; HRES
+RDIFFN = (NDIFF &amp; RESDEF) - RESTRM
+RDIFFP = (PDIFF &amp; RESDEF) - RESTRM
+RNWELL = (NTUB &amp; TUBDEF) - RESTRM
 
 ########################
 # off-grid 0.025um
@@ -91,6 +104,13 @@ VIA3.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: VIA3&quot;)
 MET4.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: MET4&quot;)
 POLY2.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: POLY2&quot;)
 HRES.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: HRES&quot;)
+MIDOX.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: MIDOX&quot;)
+DIODID.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: DIODE&quot;)
+TUBDEF.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: TUBDEF&quot;)
+RESDEF.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: RESDEF&quot;)
+RESTRM.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: RESTRM&quot;)
+CAPDEF.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: CAPDEF&quot;)
+ZENER.ongrid(GRID).output(&quot;OG&quot;, &quot;off-grid: ZENER&quot;)
 
 ########################
 # 4.1.1 NTUB
@@ -248,10 +268,31 @@ HRES.isolated(0.6, euclidian).output(&quot;HR.S.1&quot;, &quot;HR.S.1: HRES spac
 HRES.separation(POLY1, 0.35, euclidian).output(&quot;S1HRP1&quot;, &quot;S1HRP1: HRES to POLY1 spacing &lt; 0.35um&quot;)
 HRES.separation(POLY2, 3.0, euclidian).output(&quot;S1HRP2&quot;, &quot;S1HRP2: HRES to POLY2 spacing &lt; 3um&quot;)
 HRES.separation(DIFF, 0.35, euclidian).output(&quot;S1DFHR&quot;, &quot;S1DFHR: HRES to DIFF spacing &lt; 0.35um&quot;)
-POLY2.enclosing(HRES, 3.0, euclidian).output(&quot;E1HRP2&quot;, &quot;E1HRP2: HRES enclosure of POLY2 &lt; 3um&quot;)
+HRES.enclosing(POLY2, 3.0, euclidian).output(&quot;E1HRP2&quot;, &quot;E1HRP2: HRES enclosure of POLY2 &lt; 3um&quot;)
 (HRES &amp; DIFF).output(&quot;BAD1HR&quot;, &quot;BAD1HR: HRES over DIFF not allowed&quot;)
 (HRES &amp; NPLUS).output(&quot;BAD2HR&quot;, &quot;BAD2HR: HRES over NPLUS not allowed&quot;)
 (HRES &amp; POLY1).output(&quot;BAD3HR&quot;, &quot;BAD3HR: HRES over POLY1 not allowed&quot;)
+
+########################
+# 4.3.1 5V MIDOX gate module
+########################
+MIDOX.width(0.6, euclidian).output(&quot;W1XM&quot;, &quot;W1XM: MIDOX width &lt; 0.6um&quot;)
+MIDOX.isolated(0.6, euclidian).output(&quot;OD2.S.1&quot;, &quot;OD2.S.1: MIDOX spacing &lt; 0.6um&quot;)
+MIDOX.enclosing(DIFF, 0.6, euclidian).output(&quot;OD2.E.1&quot;, &quot;OD2.E.1: MIDOX enclosure of DIFF &lt; 0.6um&quot;)
+MIDOX.separation(DIFF - MIDOX, 0.6, euclidian).output(&quot;OD2.C.1&quot;, &quot;OD2.C.1: MIDOX to unrelated DIFF spacing &lt; 0.6um&quot;)
+MIDOX.enclosing(GATE, 0.0, euclidian).output(&quot;BAD1XM&quot;, &quot;BAD1XM: MIDOX does not enclose a gate&quot;)
+
+########################
+# C35 resistor modules
+########################
+RPOLY2.width(0.65, euclidian).output(&quot;PO2.W.2&quot;, &quot;PO2.W.2: RPOLY2 width &lt; 0.65um&quot;)
+RPOLYH.width(0.8, euclidian).output(&quot;PO2.W.3&quot;, &quot;PO2.W.3: RPOLYH width &lt; 0.8um&quot;)
+RPOLYH.isolated(0.75, euclidian).output(&quot;PO2.S.3&quot;, &quot;PO2.S.3: RPOLYH spacing &lt; 0.75um&quot;)
+RDIFFN.width(0.3, euclidian).output(&quot;OD.W.2&quot;, &quot;OD.W.2: RDIFFN width &lt; 0.3um&quot;)
+RDIFFP.width(0.3, euclidian).output(&quot;OD.W.2&quot;, &quot;OD.W.2: RDIFFP width &lt; 0.3um&quot;)
+RNWELL.width(1.7, euclidian).output(&quot;NW.W.1&quot;, &quot;NW.W.1: RNWELL width &lt; 1.7um&quot;)
+PPLUS.enclosing(POLY2CON, 0.6, euclidian).output(&quot;E1IPCT&quot;, &quot;E1IPCT: RPOLYH PPLUS terminal enclosure &lt; 0.6um&quot;)
+RPOLYH.separation(PPLUS, 0.35, euclidian).output(&quot;S1IPP2&quot;, &quot;S1IPP2: RPOLYH to PPLUS spacing &lt; 0.35um&quot;)
 
 </text>
 </klayout-macro>

@@ -38,9 +38,9 @@ class ProfileError(ValueError):
 class Profile:
     """Loaded profile data plus the small geometry contract used by PCells."""
 
-    def __init__(self, profile_dir: Path):
+    def __init__(self, profile_dir: Path, variant: str | None = None):
         self.profile_dir = Path(profile_dir)
-        self.ir = load_process(self.profile_dir)
+        self.ir = load_process(self.profile_dir, variant=variant)
         self.layers_doc = self.ir.layers_doc
         self.rules_doc = self.ir.rules_doc
         self.pcells_doc = self.ir.pcells_doc
@@ -291,11 +291,21 @@ class _BasePCell(_PCellDeclarationHelper):
 
 
 class MosPCell(_BasePCell):
-    def __init__(self, tech: Technology, polarity: str):
+    def __init__(
+        self,
+        tech: Technology,
+        polarity: str,
+        pcell_name: str | None = None,
+    ):
         super().__init__(tech)
         self.polarity = polarity
-        name = "nmos" if polarity == "n" else "pmos"
-        self.tech.profile.validate_pcell(name, "mos4")
+        self.pcell_name = pcell_name or ("nmos" if polarity == "n" else "pmos")
+        self.midox = self.pcell_name in {"nmosm", "pmosm"}
+        geometry = self.tech.profile.pcells[self.pcell_name].get("geometry", {})
+        self.midox_enclosure_um = float(geometry.get("midox_enclosure_um", 0.6))
+        self.tech.profile.validate_pcell(self.pcell_name, "mos4")
+        if self.midox and not tech.profile.has_feature("midoxAvailable"):
+            raise ProfileError(f"{self.pcell_name} requires midoxAvailable")
         self.param("nf", self.TypeInt, "Physical gate fingers", default=1)
         self.param("m", self.TypeInt, "Electrical multiplier", default=1)
         self.param("w_um", self.TypeDouble, "Channel width per finger (um)", default=1.5)
@@ -303,23 +313,34 @@ class MosPCell(_BasePCell):
         self.param("left_contact", self.TypeBoolean, "Keep left diffusion contact", default=True)
         self.param("right_contact", self.TypeBoolean, "Keep right diffusion contact", default=True)
 
+    def _minimum(self, name: str, fallback: float) -> float:
+        params = self.tech.profile.pcells[self.pcell_name].get("parameters", {})
+        return float(params.get(name, {}).get("min", fallback))
+
     def display_text_impl(self):
-        name = "nmos" if self.polarity == "n" else "pmos"
         return (
-            f"{name}(W={self.w_um:g},L={self.l_um:g},nf={self.nf},m={self.m},"
+            f"{self.pcell_name}(W={self.w_um:g},L={self.l_um:g},nf={self.nf},m={self.m},"
             f"left_contact={self.left_contact},right_contact={self.right_contact})"
         )
 
     def coerce_parameters_impl(self):
         self.nf = max(1, int(round(self.nf)))
         self.m = max(1, int(round(self.m)))
-        self.w_um = self.tech.snap(max(float(self.w_um), self.tech.active_min))
-        self.l_um = self.tech.snap(max(float(self.l_um), self.tech.poly_min))
+        self.w_um = self.tech.snap(
+            max(float(self.w_um), self._minimum("w_um", self.tech.active_min))
+        )
+        self.l_um = self.tech.snap(
+            max(float(self.l_um), self._minimum("l_um", self.tech.poly_min))
+        )
 
     def produce_impl(self):
         f = self._positive_int("nf", self.nf)
-        w = self.tech.snap(max(float(self.w_um), self.tech.active_min))
-        l = self.tech.snap(max(float(self.l_um), self.tech.poly_min))
+        w = self.tech.snap(
+            max(float(self.w_um), self._minimum("w_um", self.tech.active_min))
+        )
+        l = self.tech.snap(
+            max(float(self.l_um), self._minimum("l_um", self.tech.poly_min))
+        )
         poly_pitch = l + self.tech.poly_spacing
         poly_edge = (
             self.tech.poly_contact_spacing
@@ -374,6 +395,14 @@ class MosPCell(_BasePCell):
                 left + l,
                 active_top + gate_extension,
             )
+        if self.midox:
+            self._rect(
+                "midox",
+                active_left - self.midox_enclosure_um,
+                active_bottom - self.midox_enclosure_um,
+                active_right + self.midox_enclosure_um,
+                active_top + self.midox_enclosure_um,
+            )
 
         contact_count = max(
             1,
@@ -421,6 +450,410 @@ class MosPCell(_BasePCell):
                 x + self.tech.contact_size + self.tech.metal_contact_enc,
                 contact_bottom + contact_height + self.tech.metal_contact_enc,
             )
+
+
+class ResistorPCell(_BasePCell):
+    """Two-terminal C35 resistor layouts using the documented marker scheme."""
+
+    def __init__(self, tech: Technology, name: str):
+        super().__init__(tech)
+        self.pcell_name = name
+        self.spec = tech.profile.validate_pcell(name, "resistor")
+        params = self.spec.get("parameters", {})
+        self.param(
+            "length_um",
+            self.TypeDouble,
+            "Resistor body length (um)",
+            default=float(params.get("length_um", {}).get("default", 10.0)),
+        )
+        self.param(
+            "width_um",
+            self.TypeDouble,
+            "Resistor body width (um)",
+            default=float(params.get("width_um", {}).get("default", 1.0)),
+        )
+
+    def _effective_dimensions(self):
+        length = self.tech.snap(max(float(self.length_um), self._minimum("length_um")))
+        width = self.tech.snap(max(float(self.width_um), self._minimum("width_um")))
+        if self.spec["material"] in {"poly2", "high_resistive_poly", "nwell"}:
+            length = self.tech.snap(max(length, 5 * width))
+        return length, width
+
+    def _minimum(self, name: str) -> float:
+        params = self.spec.get("parameters", {})
+        return float(params.get(name, {}).get("min", 0.0))
+
+    def _layout_value(self, name: str, fallback: float) -> float:
+        return float(self.spec.get("geometry", {}).get(name, fallback))
+
+    def display_text_impl(self):
+        return f"{self.pcell_name}(L={self.length_um:g},W={self.width_um:g})"
+
+    def coerce_parameters_impl(self):
+        self.length_um, self.width_um = self._effective_dimensions()
+
+    def produce_impl(self):
+        length, width = self._effective_dimensions()
+        contact = self.tech.contact_size
+        contact_enc = self._layout_value("contact_enclosure_um", 0.25)
+        metal_enc = self.tech.metal_contact_enc
+        kind = self.spec["material"]
+
+        if kind == "high_resistive_poly":
+            terminal_width = max(width, contact + 2 * 0.6)
+            terminal_length = self._layout_value("terminal_length_um", 1.6)
+            gap = self._layout_value("terminal_gap_um", 0.35)
+            body_length = length - 2 * gap
+            if body_length <= 0:
+                raise ProfileError(f"{self.pcell_name}: length is below terminal gaps")
+            outer_length = body_length + 2 * (terminal_length + gap)
+            left, right = -outer_length / 2.0, outer_length / 2.0
+            body_left, body_right = -body_length / 2.0, body_length / 2.0
+            left_terminal_right = left + terminal_length
+            right_terminal_left = right - terminal_length
+            self._rect(
+                "elec",
+                body_left,
+                -width / 2,
+                body_right,
+                width / 2,
+            )
+            self._rect(
+                "elec",
+                left_terminal_right,
+                -width / 2,
+                body_left,
+                width / 2,
+            )
+            self._rect(
+                "elec",
+                body_right,
+                -width / 2,
+                right_terminal_left,
+                width / 2,
+            )
+            self._rect(
+                "elec",
+                left,
+                -terminal_width / 2,
+                left_terminal_right,
+                terminal_width / 2,
+            )
+            self._rect(
+                "elec",
+                right_terminal_left,
+                -terminal_width / 2,
+                right,
+                terminal_width / 2,
+            )
+            hres_enc = self._layout_value("hres_enclosure_um", 3.0)
+            self._rect(
+                "highres",
+                left - hres_enc,
+                -terminal_width / 2 - hres_enc,
+                right + hres_enc,
+                terminal_width / 2 + hres_enc,
+            )
+            for x1, x2 in ((left, left + terminal_length), (right - terminal_length, right)):
+                self._rect(
+                    "pselect",
+                    x1,
+                    -terminal_width / 2 - 0.6,
+                    x2,
+                    terminal_width / 2 + 0.6,
+                )
+                cx = (x1 + x2) / 2.0
+                self._rect(
+                    "cc",
+                    cx - contact / 2,
+                    -contact / 2,
+                    cx + contact / 2,
+                    contact / 2,
+                )
+                self._rect(
+                    "metal1",
+                    cx - contact / 2 - metal_enc,
+                    -contact / 2 - metal_enc,
+                    cx + contact / 2 + metal_enc,
+                    contact / 2 + metal_enc,
+                )
+            return
+
+        if kind == "nwell":
+            terminal_length = self._layout_value("terminal_length_um", 1.2)
+            terminal_width = contact + 2 * self._layout_value("contact_enclosure_um", 0.15)
+            outer_length = length + 2 * terminal_length
+            left, right = -outer_length / 2.0, outer_length / 2.0
+            well_width = width
+            well_enc = self._layout_value("well_active_enclosure_um", 0.2)
+            well_left, well_right = left - well_enc, right + well_enc
+            self._rect("nwell", well_left, -well_width / 2, well_right, well_width / 2)
+            self._rect("tubdef", well_left, -well_width / 2, well_right, well_width / 2)
+            active_enc = self._layout_value("select_enclosure_um", 0.45)
+            terminals = (
+                (left, left + terminal_length, True, False),
+                (right - terminal_length, right, False, True),
+            )
+            for x1, x2, outer_left, outer_right in terminals:
+                rest_left = x1 - well_enc if outer_left else x1
+                rest_right = x2 + well_enc if outer_right else x2
+                self._rect("restdm", rest_left, -well_width / 2, rest_right, well_width / 2)
+                self._rect("active", x1, -terminal_width / 2, x2, terminal_width / 2)
+                self._rect(
+                    "nselect",
+                    x1 - active_enc,
+                    -terminal_width / 2 - active_enc,
+                    x2 + active_enc,
+                    terminal_width / 2 + active_enc,
+                )
+                cx = (x1 + x2) / 2.0
+                self._rect(
+                    "cc",
+                    cx - contact / 2,
+                    -contact / 2,
+                    cx + contact / 2,
+                    contact / 2,
+                )
+                self._rect(
+                    "metal1",
+                    cx - contact / 2 - metal_enc,
+                    -contact / 2 - metal_enc,
+                    cx + contact / 2 + metal_enc,
+                    contact / 2 + metal_enc,
+                )
+            return
+
+        if kind not in {"poly2", "n_diffusion", "p_diffusion"}:
+            raise ProfileError(f"{self.pcell_name}: unsupported C35 resistor material {kind}")
+        terminal_width = max(width, contact + 2 * contact_enc)
+        terminal_length = self._layout_value("terminal_length_um", 1.2)
+        outer_length = length + 2 * terminal_length
+        left, right = -outer_length / 2.0, outer_length / 2.0
+        material_layer = "elec" if kind == "poly2" else "active"
+        self._rect(material_layer, left, -width / 2, right, width / 2)
+        self._rect("res_id", left, -width / 2, right, width / 2)
+        if kind == "p_diffusion":
+            well_enc = self._layout_value("nwell_enclosure_um", 1.2)
+            self._rect(
+                "nwell",
+                left - well_enc,
+                -terminal_width / 2 - well_enc,
+                right + well_enc,
+                terminal_width / 2 + well_enc,
+            )
+        self._rect("restdm", left, -terminal_width / 2, left + terminal_length, terminal_width / 2)
+        self._rect("restdm", right - terminal_length, -terminal_width / 2, right, terminal_width / 2)
+        if kind != "poly2":
+            select = "nselect" if kind == "n_diffusion" else "pselect"
+            select_enc = self._layout_value("select_enclosure_um", 0.45)
+            self._rect(
+                select,
+                left - select_enc,
+                -terminal_width / 2 - select_enc,
+                right + select_enc,
+                terminal_width / 2 + select_enc,
+            )
+        for x1, x2 in ((left, left + terminal_length), (right - terminal_length, right)):
+            if terminal_width > width:
+                self._rect(material_layer, x1, -terminal_width / 2, x2, terminal_width / 2)
+            cx = (x1 + x2) / 2.0
+            self._rect(
+                "cc",
+                cx - contact / 2,
+                -contact / 2,
+                cx + contact / 2,
+                contact / 2,
+            )
+            self._rect(
+                "metal1",
+                cx - contact / 2 - metal_enc,
+                -contact / 2 - metal_enc,
+                cx + contact / 2 + metal_enc,
+                contact / 2 + metal_enc,
+            )
+
+
+class PiPCapPCell(_BasePCell):
+    """Geometry-only POLY1/POLY2 overlap capacitor; C density is not assumed."""
+
+    def __init__(self, tech: Technology):
+        super().__init__(tech)
+        self.spec = tech.profile.validate_pcell("cap_pip", "capacitor")
+        self.param("width_um", self.TypeDouble, "POLY1 plate width (um)", default=8.0)
+        self.param("height_um", self.TypeDouble, "POLY1 plate height (um)", default=8.0)
+
+    def _minimum(self, name: str) -> float:
+        return float(self.spec.get("parameters", {}).get(name, {}).get("min", 0.0))
+
+    def coerce_parameters_impl(self):
+        self.width_um = self.tech.snap(max(float(self.width_um), self._minimum("width_um")))
+        self.height_um = self.tech.snap(max(float(self.height_um), self._minimum("height_um")))
+
+    def produce_impl(self):
+        width = self.tech.snap(max(float(self.width_um), self._minimum("width_um")))
+        height = self.tech.snap(max(float(self.height_um), self._minimum("height_um")))
+        left, right = -width / 2.0, width / 2.0
+        bottom, top = -height / 2.0, height / 2.0
+        overlap_inset = float(self.spec["geometry"]["poly2_inset_um"])
+        terminal_inset = float(self.spec["geometry"]["terminal_inset_um"])
+        contact = self.tech.contact_size
+        self._rect("poly", left, bottom, right, top)
+        self._rect(
+            "elec",
+            left + overlap_inset,
+            bottom + overlap_inset,
+            right - terminal_inset,
+            top - terminal_inset,
+        )
+
+        # Poly1 contact occupies the lower-left plate extension; the poly2
+        # contact sits inside CPOLY with the documented 0.6um enclosure.
+        bottom_x, bottom_y = left + contact / 2 + 0.25, bottom + contact / 2 + 0.25
+        top_x = (left + overlap_inset + right - terminal_inset) / 2.0
+        top_y = (bottom + overlap_inset + top - terminal_inset) / 2.0
+        for x, y in ((bottom_x, bottom_y), (top_x, top_y)):
+            self._rect(
+                "cc", x - contact / 2, y - contact / 2,
+                x + contact / 2, y + contact / 2,
+            )
+            self._rect(
+                "metal1",
+                x - contact / 2 - self.tech.metal_contact_enc,
+                y - contact / 2 - self.tech.metal_contact_enc,
+                x + contact / 2 + self.tech.metal_contact_enc,
+                y + contact / 2 + self.tech.metal_contact_enc,
+            )
+
+class JunctionDiodePCell(_BasePCell):
+    """Parametric C35 junction-diode geometry from the ENG-183 element masks."""
+
+    def __init__(self, tech: Technology, name: str):
+        super().__init__(tech)
+        self.pcell_name = name
+        self.spec = tech.profile.validate_pcell(name, "diode")
+        params = self.spec.get("parameters", {})
+        self.param(
+            "width_um",
+            self.TypeDouble,
+            "Junction width (um)",
+            default=float(params.get("width_um", {}).get("default", 4.0)),
+        )
+        self.param(
+            "height_um",
+            self.TypeDouble,
+            "Junction height (um)",
+            default=float(params.get("height_um", {}).get("default", 4.0)),
+        )
+
+    def _minimum(self, name: str) -> float:
+        return float(self.spec.get("parameters", {}).get(name, {}).get("min", 0.0))
+
+    def _dimensions(self):
+        return (
+            self.tech.snap(max(float(self.width_um), self._minimum("width_um"))),
+            self.tech.snap(max(float(self.height_um), self._minimum("height_um"))),
+        )
+
+    def coerce_parameters_impl(self):
+        self.width_um, self.height_um = self._dimensions()
+
+    def _active_terminal(self, bounds, select: str, center_x: float, center_y: float):
+        left, bottom, right, top = bounds
+        self._rect("active", left, bottom, right, top)
+        select_enc = self.tech.select_active_enc
+        self._rect(
+            select,
+            left - select_enc,
+            bottom - select_enc,
+            right + select_enc,
+            top + select_enc,
+        )
+        contact = self.tech.contact_size
+        metal_enc = self.tech.metal_contact_enc
+        self._rect(
+            "cc",
+            center_x - contact / 2,
+            center_y - contact / 2,
+            center_x + contact / 2,
+            center_y + contact / 2,
+        )
+        self._rect(
+            "metal1",
+            center_x - contact / 2 - metal_enc,
+            center_y - contact / 2 - metal_enc,
+            center_x + contact / 2 + metal_enc,
+            center_y + contact / 2 + metal_enc,
+        )
+
+    def produce_impl(self):
+        width, height = self._dimensions()
+        junction = self.spec["junction"]
+        contact = self.tech.contact_size
+        active_enc = self.tech.active_contact_enc
+        terminal_size = contact + 2 * active_enc
+        left, right = -width / 2, width / 2
+        bottom, top = -height / 2, height / 2
+
+        if junction == "np_substrate":
+            self._active_terminal(
+                (left, bottom, right, top), "nselect", 0.0, 0.0
+            )
+            self._rect("dio_id", left, bottom, right, top)
+            return
+
+        if junction == "pplus_nwell":
+            pactive = (left, bottom, right, top)
+            self._active_terminal(pactive, "pselect", 0.0, 0.0)
+
+            well_enc = float(self.spec["geometry"]["nwell_enclosure_um"])
+            tap_enc = float(self.spec["geometry"]["well_tap_enclosure_um"])
+            tap_spacing = float(self.spec["geometry"]["tap_spacing_um"])
+            tap_left = right + tap_spacing
+            tap_right = tap_left + terminal_size
+            tap_bottom, tap_top = -terminal_size / 2, terminal_size / 2
+            self._active_terminal(
+                (tap_left, tap_bottom, tap_right, tap_top),
+                "nselect",
+                (tap_left + tap_right) / 2,
+                0.0,
+            )
+            well_bounds = (
+                left - well_enc,
+                min(bottom - well_enc, tap_bottom - tap_enc),
+                tap_right + tap_enc,
+                max(top + well_enc, tap_top + tap_enc),
+            )
+            self._rect("nwell", *well_bounds)
+            # C35's DIODE marker selects the p+/nwell junction and the
+            # well/substrate parasitic represented by the same marked well.
+            self._rect("dio_id", *well_bounds)
+            return
+
+        if junction == "nwell_substrate":
+            tap_enc = float(self.spec["geometry"]["well_tap_enclosure_um"])
+            well_left = min(left, -terminal_size / 2 - tap_enc)
+            well_bottom = min(bottom, -terminal_size / 2 - tap_enc)
+            well_right = max(right, terminal_size / 2 + tap_enc)
+            well_top = max(top, terminal_size / 2 + tap_enc)
+            self._rect("nwell", well_left, well_bottom, well_right, well_top)
+            self._active_terminal(
+                (
+                    -terminal_size / 2,
+                    -terminal_size / 2,
+                    terminal_size / 2,
+                    terminal_size / 2,
+                ),
+                "nselect",
+                0.0,
+                0.0,
+            )
+            self._rect("dio_id", well_left, well_bottom, well_right, well_top)
+            return
+
+        raise ProfileError(
+            f"{self.pcell_name}: unsupported junction type {junction}"
+        )
 
 
 class TapPCell(_BasePCell):
@@ -621,14 +1054,23 @@ class ElectricalCapPCell(_BasePCell):
 class SiliconcraftLibrary(_Library):
     """Register the PCells for one siliconcraft profile."""
 
-    def __init__(self, profile_dir: Path, library_name: str | None = None):
+    def __init__(
+        self,
+        profile_dir: Path,
+        library_name: str | None = None,
+        variant: str | None = None,
+    ):
         super().__init__()
-        self.profile = Profile(profile_dir)
+        self.profile = Profile(profile_dir, variant=variant)
         self.tech = Technology(self.profile)
         profile_name = self.profile.profile_dir.name
-        self.description = f"siliconcraft {profile_name} analog PCells"
+        suffix = f"_{variant}" if variant is not None else ""
+        self.description = f"siliconcraft {profile_name}{suffix} analog PCells"
         self.layout().register_pcell("nmos", MosPCell(self.tech, "n"))
         self.layout().register_pcell("pmos", MosPCell(self.tech, "p"))
+        for name, polarity in (("nmosm", "n"), ("pmosm", "p")):
+            if name in self.profile.pcells:
+                self.layout().register_pcell(name, MosPCell(self.tech, polarity, name))
         self.layout().register_pcell("ntap", TapPCell(self.tech, "n"))
         self.layout().register_pcell("ptap", TapPCell(self.tech, "p"))
         if self.profile.has_feature("metal3Available"):
@@ -636,13 +1078,29 @@ class SiliconcraftLibrary(_Library):
             self.layout().register_pcell("via23", ViaPCell(self.tech, "via23"))
         if self.profile.has_feature("metal4Available"):
             self.layout().register_pcell("via34", ViaPCell(self.tech, "via34"))
-        if self.profile.has_feature("elecAvailable"):
+        for name in ("rp2", "rph", "rdiffn", "rdiffp", "rnwell"):
+            if name in self.profile.pcells:
+                self.layout().register_pcell(name, ResistorPCell(self.tech, name))
+        for name, spec in self.profile.pcells.items():
+            if spec.get("kind") == "diode":
+                self.layout().register_pcell(
+                    name, JunctionDiodePCell(self.tech, name)
+                )
+        if "cap_pip" in self.profile.pcells:
+            self.layout().register_pcell("cap_pip", PiPCapPCell(self.tech))
+        elif "cap_elec" in self.profile.pcells and self.profile.has_feature("elecAvailable"):
             self.layout().register_pcell("cap_elec", ElectricalCapPCell(self.tech))
-        self.register(library_name or f"siliconcraft_{profile_name}")
+        self.register(
+            library_name or f"siliconcraft_{profile_name}{suffix}"
+        )
 
 
-def register_profile(profile_dir: Path, library_name: str | None = None):
-    """Register and return a profile's KLayout library."""
+def register_profile(
+    profile_dir: Path,
+    library_name: str | None = None,
+    variant: str | None = None,
+):
+    """Register and return a profile's PCell library, optionally for a variant."""
     if pya is None:
         raise RuntimeError("common/pcells/scmos.py must run inside KLayout")
-    return SiliconcraftLibrary(Path(profile_dir), library_name)
+    return SiliconcraftLibrary(Path(profile_dir), library_name, variant=variant)

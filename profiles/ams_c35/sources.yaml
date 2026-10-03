@@ -16,6 +16,14 @@ ams_documents:
     title: "0.35 um CMOS C35 Process Parameters"
     url: "https://studyres.com/doc/6790365/0.35%C2%B5m-cmos-c35-process-parameters-document"
     note: "BSIM3v3 transistor models and process parameters; company confidential"
+  gsa_spice_checklist_c35:
+    title: "GSA SPICE Model Checklist, 0.35um CMOS process (C35)"
+    version: "1.4"
+    date: "2015-04"
+    url: "https://dtsheet.com/doc/1405033/spice-model-checklist-0.35%C2%B5m-cmos-process--c35-"
+    retrieval: "Indexed full text retrieved via Exa search; direct host access may be bot-gated."
+    scope: "Pages 3-4 identify VERT10/LAT2 GP PNP model classes and terminal counts, ND/PD/NWD Berkeley diode models, RNWELL as a 3-terminal JFET, and the available passive model files. It is not a numerical parameter-card source."
+    caveat: "The checklist disclaims accuracy of contributed entries; use it for model inventory/contracts only."
   eng_228:
     title: "0.35 um CMOS C35 Matching Parameters"
     note: "matching parameters reference (not redistributed)"
@@ -26,7 +34,7 @@ references:
     institution: "EESC/USP"
     year: 2014
     url: "https://www.teses.usp.br/teses/disponiveis/18/18155/tde-24072014-165540/publico/Eder.pdf"
-    role: "source of the ENG-182 REV_6 BSIM3v3 cards (Anexos A-D); thesis license permits reproduction for study/research with citation"
+    role: "Source of ENG-182 Rev.6 BSIM3v3 cards, CPOLY/RPOLYH formulas, and the typical VERT10 PNP card (Anexos A/B); thesis license permits reproduction for study/research with citation."
   leblebici_appendix_c:
     title: "Fundamentals of High-Frequency CMOS Analog Integrated Circuits, Appendix C (BSIM3v3 parameters of ams 0.35um NMOS/PMOS)"
     author: "Leblebici, A."
@@ -47,7 +55,9 @@ references:
       area-C formula eps0*eps_r/t, SCAP FEM methodology, Weff corrections,
       substrate rho 14/19/24 ohm-cm non-epi, XJNW 3.5 um (Rev.3 corrected),
       n-well Rsh 0.9/1.0/1.1 kohm/sq, SIMS/SRS junction extraction note,
-      MOS NSUB is not a wafer profile (Note 12)
+      MOS NSUB is not a wafer profile (Note 12). User-supplied RPOLY2
+      40/50/60 ohm/sq and 0.30/0.40/0.50 um corrections are attributed to
+      Rev.6 but were not independently recovered from this mirror.
   eng182_rev2_note:
     title: "ENG-182 Rev.2 summary values (superseded)"
     url: "https://studyres.com/doc/6790365/0.35%C2%B5m-cmos-c35-process-parameters-document"

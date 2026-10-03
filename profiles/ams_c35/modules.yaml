@@ -1,0 +1,66 @@
+# Active engineering target: C35B4C3 (4M/2P/PIP/VG5/HIRES).
+# C35B4O1 is deferred; current public listings and the historical runset
+# disagree on its HRES option, so no O1 module contract is exposed.
+# Current licensed collateral remains the final tapeout/signoff oracle.
+schema_version: 1
+profile: ams_c35
+default_variant: C35B4C3
+module_catalog:
+  core_mos_3v3:
+    status: requested
+    source: user_provided_shuttle_scope
+  five_volt_mos:
+    status: active_engineering_target
+    source: ENG-183 Rev 5.0; current Europractice C35B4C3 process listing
+  pnp:
+    status: requested
+    source: user_provided_shuttle_scope
+  junction_diodes:
+    status: requested
+    source: user_provided_shuttle_scope
+  zener:
+    status: requested
+    source: user_provided_shuttle_scope
+  resistors:
+    status: active_engineering_target
+    source: ENG-183 Rev 5.0; C35B4C3 module selection
+  high_resistive_poly:
+    status: active_engineering_target
+    source: ENG-183 Rev 5.0; current Europractice C35B4C3 process listing
+  pip_capacitor:
+    status: active_engineering_target
+    source: ENG-183 Rev 5.0 C35B4C3 module matrix
+  ngate_capacitor:
+    status: not_supported_by_historical_lvs
+    source: historical AMS runset warns unsupported gate cap with no standard size
+  cvar:
+    status: requested
+    source: ENG-183 Rev 5.0; C35B4C3/C35B4O1 module selection
+  rf_mos:
+    status: contract_only
+    source: ENG-188 Rev 5.0
+  rf_passives:
+    status: contract_only
+    source: ENG-188 Rev 5.0
+  four_metal_inductors:
+    status: contract_only
+    source: ENG-188 Rev 5.0; historical AMS Calibre runset
+  cmim:
+    status: not_in_scheduled_variants
+    source: C35B4C3/C35B4O1 disable METCAP in historical AMS runset
+variants:
+  C35B4C3:
+    process: C35B4C3
+    modules:
+      - core_mos_3v3
+      - five_volt_mos
+      - pnp
+      - junction_diodes
+      - zener
+      - resistors
+      - high_resistive_poly
+      - pip_capacitor
+      - cvar
+      - rf_mos
+      - rf_passives
+      - four_metal_inductors

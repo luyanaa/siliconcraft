@@ -12,6 +12,9 @@
 * RF models (modnrf/modprf/cvar/...): ENG-188 Rev 5.0 topology contract in
 * model_contract.yaml — the RF subcircuit cards are ams HIT-Kit files.
 * sections: ams_c35 (typical), ams_c35_ws (worst-speed), ams_c35_wp (worst-power).
+* CPOLY/RPOLYH are source-backed per-corner; RPOLY2 min/typ/max is user-supplied.
+* RPOLY2 WS=max/WP=min mapping is inferred; 45 ohm/cut contact is estimated.
+* VERT10 is source-backed typical only.
 * usage:  .lib '<path>/ams_c35.lib' ams_c35
 
 .lib ams_c35
@@ -129,7 +132,7 @@
 + XPART     = 1.000e+00
 + XTI       = 2.026e+00
 + XW        = 0.000e+00
-)
++ )
 .MODEL c35P PMOS (
 + LEVEL   = 49            VERSION = 3.3
 + A0        = 5.850e-01
@@ -244,7 +247,63 @@
 + XPART     = 1.000e+00
 + XTI       = 1.973e+00
 + XW        = 0.000e+00
-)
++ )
+* CPOLY card: ENG-182 Rev.4.1, USP thesis Anexo A; AREA in m^2, PERI in m; typical TC1=3e-5.
+.subckt CPOLY N1 N2 params: AREA=0 PERI=0
+C1 N1 N2 {0.00086*AREA+8.6e-11*PERI} TC1=3e-5
+.ends CPOLY
+
+* RPOLYH card: ENG-182 Rev.5.0, USP thesis Anexo A/B; W and L in m.
+.subckt RPOLYH N1 N2 params: W=1e-6 L=1e-6 TEMP_C=27
+B1 N1 N2 I={V(N1,N2)/(1204*L/(W-2.022e-07)*(1+7.745e-05*(-7.468e-4)*W*(V(N1,N2)/L)*(V(N1,N2)/L)*(1/(1+exp(log(50)*((29.8e-6-L)*1e6))))*(1/(1+exp(log(50)*(4.8-L/W)))))*(1-7.468e-4*(TEMP_C-27)+3.821e-6*(TEMP_C-27)*(TEMP_C-27)))}
+.ends RPOLYH
+
+* RPOLY2 Rsh/Weff: user-supplied ENG-182 Rev.6 min/typ/max.
+* WS=max-Rsh, WP=min-Rsh follows C35 corner ordering; confirm against licensed cards.
+* RCONT=45 ohm/cut is an estimate, not a reported POLY2 contact value.
+.subckt RPOLY2_CORE N1 N2 params: W=1e-6 L=1e-6
+R1 N1 N2 {50*L/(W-0.4e-6)}
+.ends RPOLY2_CORE
+.subckt RPOLY2 N1 N2 params: W=1e-6 L=1e-6 RCONT=45
+RCONT1 N1 N2A {RCONT}
+XBODY N2A N2B RPOLY2_CORE W={W} L={L}
+RCONT2 N2B N2 {RCONT}
+.ends RPOLY2
+
+* VERT10 PNP card: ENG-182 Rev.6, USP thesis Anexo A; typical only.
+.model VERT10 PNP (
++ IS   = 2.3330e-17
++ IRB  = 4.3770e-06
++ IKF  = 1.3760e-03
++ BF   = 5.9810e+00
++ NF   = 9.9250e-01
++ ISE  = 6.5290e-16
++ NE   = 1.7760e+00
++ VAF  = 1.9420e+02
++ IKR  = 1.9410e-04
++ BR   = 9.8740e-02
++ NR   = 9.9470e-01
++ ISC  = 2.8430e-14
++ NC   = 1.1490e+00
++ VAR  = 1.0320e+01
++ RBM  = 1.0000e+00
++ RB   = 2.1380e+02
++ RE   = 9.7360e+00
++ AF   = 1.3000e+00
++ RC   = 4.5400e+01
++ KF   = 9.1000e-15
++ TF   = 6.4800e-10
++ EG   = 1.1150e+00
++ XTI  = 5.5300e+00
++ XTB  = 2.2500e+00
++ CJE  = 1.4880e-13
++ VJE  = 1.0200e+00
++ MJE  = 5.4882e-01
++ CJC  = 4.3387e-14
++ VJC  = 5.3000e-01
++ MJC  = 3.1214e-01
++ )
+
 .endl ams_c35
 
 .lib ams_c35_ws
@@ -362,7 +421,7 @@
 + XPART     = 1.000e+00
 + XTI       = 2.026e+00
 + XW        = -1.000e-07
-)
++ )
 .MODEL c35P PMOS (
 + LEVEL   = 49            VERSION = 3.3
 + A0        = 5.850e-01
@@ -477,7 +536,29 @@
 + XPART     = 1.000e+00
 + XTI       = 1.973e+00
 + XW        = -0.700e-07
-)
++ )
+* CPOLY card: ENG-182 Rev.4.1, USP thesis Anexo A; AREA in m^2, PERI in m; typical TC1=3e-5.
+.subckt CPOLY N1 N2 params: AREA=0 PERI=0
+C1 N1 N2 {0.00096*AREA+8.9e-11*PERI}
+.ends CPOLY
+
+* RPOLYH card: ENG-182 Rev.5.0, USP thesis Anexo A/B; W and L in m.
+.subckt RPOLYH N1 N2 params: W=1e-6 L=1e-6 TEMP_C=27
+B1 N1 N2 I={V(N1,N2)/(1400*L/(W-3e-07)*(1+7.745e-05*(-7.468e-4)*W*(V(N1,N2)/L)*(V(N1,N2)/L)*(1/(1+exp(log(50)*((29.8e-6-L)*1e6))))*(1/(1+exp(log(50)*(4.8-L/W)))))*(1-7.468e-4*(TEMP_C-27)+3.821e-6*(TEMP_C-27)*(TEMP_C-27)))}
+.ends RPOLYH
+
+* RPOLY2 Rsh/Weff: user-supplied ENG-182 Rev.6 min/typ/max.
+* WS=max-Rsh, WP=min-Rsh follows C35 corner ordering; confirm against licensed cards.
+* RCONT=45 ohm/cut is an estimate, not a reported POLY2 contact value.
+.subckt RPOLY2_CORE N1 N2 params: W=1e-6 L=1e-6
+R1 N1 N2 {60*L/(W-0.5e-6)}
+.ends RPOLY2_CORE
+.subckt RPOLY2 N1 N2 params: W=1e-6 L=1e-6 RCONT=45
+RCONT1 N1 N2A {RCONT}
+XBODY N2A N2B RPOLY2_CORE W={W} L={L}
+RCONT2 N2B N2 {RCONT}
+.ends RPOLY2
+
 .endl ams_c35_ws
 
 .lib ams_c35_wp
@@ -595,7 +676,7 @@
 + XPART     = 1.000e+00
 + XTI       = 2.026e+00
 + XW        = 0.500e-07
-)
++ )
 .MODEL c35P PMOS (
 + LEVEL   = 49            VERSION = 3.3
 + A0        = 5.850e-01
@@ -710,7 +791,29 @@
 + XPART     = 1.000e+00
 + XTI       = 1.973e+00
 + XW        = 0.800e-07
-)
++ )
+* CPOLY card: ENG-182 Rev.4.1, USP thesis Anexo A; AREA in m^2, PERI in m; typical TC1=3e-5.
+.subckt CPOLY N1 N2 params: AREA=0 PERI=0
+C1 N1 N2 {0.00078*AREA+8.3e-11*PERI}
+.ends CPOLY
+
+* RPOLYH card: ENG-182 Rev.5.0, USP thesis Anexo A/B; W and L in m.
+.subckt RPOLYH N1 N2 params: W=1e-6 L=1e-6 TEMP_C=27
+B1 N1 N2 I={V(N1,N2)/(1000*L/(W-1e-07)*(1+7.745e-05*(-7.468e-4)*W*(V(N1,N2)/L)*(V(N1,N2)/L)*(1/(1+exp(log(50)*((29.8e-6-L)*1e6))))*(1/(1+exp(log(50)*(4.8-L/W)))))*(1-7.468e-4*(TEMP_C-27)+3.821e-6*(TEMP_C-27)*(TEMP_C-27)))}
+.ends RPOLYH
+
+* RPOLY2 Rsh/Weff: user-supplied ENG-182 Rev.6 min/typ/max.
+* WS=max-Rsh, WP=min-Rsh follows C35 corner ordering; confirm against licensed cards.
+* RCONT=45 ohm/cut is an estimate, not a reported POLY2 contact value.
+.subckt RPOLY2_CORE N1 N2 params: W=1e-6 L=1e-6
+R1 N1 N2 {40*L/(W-0.3e-6)}
+.ends RPOLY2_CORE
+.subckt RPOLY2 N1 N2 params: W=1e-6 L=1e-6 RCONT=45
+RCONT1 N1 N2A {RCONT}
+XBODY N2A N2B RPOLY2_CORE W={W} L={L}
+RCONT2 N2B N2 {RCONT}
+.ends RPOLY2
+
 .endl ams_c35_wp
 
 .end

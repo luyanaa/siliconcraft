@@ -76,7 +76,21 @@ def main() -> int:
         assert process.bound_device_families <= {
             "mos4",
             "asymmetric_mos4",
+            "bjt",
+            "diode",
+            "resistor",
+            "capacitor",
+            "varactor",
+            "rf_mos4",
+            "inductor",
+            "coupled_inductor",
+            "jfet",
         }
+        if name == "tr1um":
+            assert (
+                process.devices_doc["devices"]["parasitic_bjt"]["status"]
+                == "reference_only"
+            )
         if process.device_bindings:
             nmos = next(
                 binding

@@ -32,6 +32,7 @@ meta:
     elecAvailable: true
     polycapAvailable: true
     highresAvailable: true
+    midoxAvailable: true
     metal3Available: true
     metal4Available: true
     metalcapAvailable: false
@@ -171,3 +172,52 @@ layers:
       - {layer: 40, datatype: 0}
     role: misc
     note: "ams PAD aliased as SCMOS glass (pad opening); metal enclosure of pad >= 5um"
+  -
+    name: midox
+    purpose: drawing
+    gds:
+      - {layer: 14, datatype: 0}
+    role: oxide_option
+    note: "ams MIDOX; 5V mid-oxide gate option, 0.6um width/spacing"
+  -
+    name: dio_id
+    purpose: recognition
+    gds:
+      - {layer: 62, datatype: 11}
+    role: device_marker
+    note: "ams DIODE; parasitic substrate, well, and N-well diode recognition"
+  -
+    name: tubdef
+    purpose: recognition
+    gds:
+      - {layer: 62, datatype: 12}
+    role: device_marker
+    note: "ams TUBDEF; N-well resistor definition"
+  -
+    name: res_id
+    purpose: recognition
+    gds:
+      - {layer: 62, datatype: 13}
+    role: device_marker
+    note: "ams RESDEF; diffusion and poly resistor definition"
+  -
+    name: restdm
+    purpose: recognition
+    gds:
+      - {layer: 62, datatype: 14}
+    role: device_marker
+    note: "ams RESTRM; resistor terminal regions removed from RESDEF/TUBDEF"
+  -
+    name: cap_id
+    purpose: recognition
+    gds:
+      - {layer: 62, datatype: 20}
+    role: device_marker
+    note: "ams CAPDEF; sandwich capacitor recognition"
+  -
+    name: zener_id
+    purpose: recognition
+    gds:
+      - {layer: 62, datatype: 10}
+    role: device_marker
+    note: "ams ZENER; fixed programming-zener recognition only"

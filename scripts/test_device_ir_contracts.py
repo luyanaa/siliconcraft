@@ -9,6 +9,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+import yamlish  # noqa: E402
 
 from common.devices.netlist import NetlistContract  # noqa: E402
 from common.process_ir import (  # noqa: E402
@@ -216,6 +217,91 @@ def check_typed_netlist() -> None:
     assert "l" not in lvs_normalized
 
 
+def check_ams_c35_module_variants() -> None:
+    c3 = load_process("ams_c35", ROOT)
+    requested = {
+        "nmos_h", "nmos_m", "pmos_m", "nmos_mh",
+        "pnp_vert10", "pnp_lat2", "subdiode", "welldiode", "nwd",
+        "zener_zd2sm24", "rpoly2", "rpolyh", "rdiffp", "rdiffn",
+        "rdiffp3", "rdiffn3", "rnwell", "cpoly", "cvar",
+        "modnrf", "modprf", "cpolyrf", "rpoly2rf", "rpolyhrf",
+        "spiral_inductor_4m", "differential_inductor",
+    }
+    assert requested <= set(c3.device_bindings)
+    assert "arc_photodiode" not in c3.device_bindings
+    assert "ngatecap" not in c3.device_bindings
+    assert "rpolyh" in c3.device_bindings
+    assert "rpolyhrf" in c3.device_bindings
+    assert "cmim" not in c3.device_bindings
+    assert "cmimrf" not in c3.device_bindings
+    assert c3.process_variant == "C35B4C3"
+    for deferred_variant in ("C35B4O1", "C35B4MISSING"):
+        try:
+            load_process("ams_c35", ROOT, variant=deferred_variant)
+        except ProcessIRError as exc:
+            assert "unknown process variant" in str(exc)
+        else:
+            raise AssertionError(
+                f"deferred or unknown variant was accepted: {deferred_variant}"
+            )
+
+    assert c3.device("nmos_core").simulation_representation == "primitive"
+    assert c3.device("nmos_m").voltage_class == "5v"
+    assert c3.device("pnp_vert10").canonical_family == "bjt"
+    assert c3.device("pnp_vert10").canonical_terminal_order == ("c", "b", "e")
+    assert c3.device("pnp_vert10").lvs_terminal_order == ("C", "B", "E")
+    assert c3.device("pnp_vert10").simulation_representation == "primitive"
+    assert c3.device("pnp_lat2").canonical_terminal_order == (
+        "c", "b", "e", "substrate", "gate"
+    )
+    assert c3.device("pnp_lat2").lvs_terminal_order == (
+        "C", "B", "E", "S", "G"
+    )
+    assert c3.device("pnp_lat2").lvs["batch_lvs_status"] == "not_checked"
+    assert c3.device("nmos_h").lvs_terminal_order == ("D", "G", "S", "B")
+    assert c3.device("welldiode").layout["source_identity"] == "pd"
+    assert c3.device("welldiode").canonical_attributes["origin"] == "parasitic"
+    assert c3.device("zener_zd2sm24").canonical_terminal_order == (
+        "p", "n", "body"
+    )
+    assert c3.device("rnwell").canonical_family == "jfet"
+    assert c3.device("rnwell").canonical_terminal_order == ("d", "g", "s")
+    assert c3.device("rnwell").simulation_representation == "contract_only"
+    assert c3.device("rpoly2").simulation_representation == "subckt"
+    assert c3.device("rpolyh").simulation_representation == "subckt"
+    assert c3.device("cpoly").simulation_representation == "subckt"
+    assert c3.device("cvar").canonical_terminal_order == (
+        "gate", "source", "drain", "body"
+    )
+    assert c3.device("cvar").lvs_terminal_order == ("G", "S", "D", "B")
+    assert c3.device("cpolyrf").canonical_terminal_order == (
+        "top", "bottom", "shield"
+    )
+    assert c3.device("cpolyrf").lvs_terminal_order == (
+        "POS", "NEG", "SUB"
+    )
+    assert c3.device("rpolyhrf").lvs_terminal_order == (
+        "POS", "NEG", "SUB"
+    )
+    assert c3.device("differential_inductor").canonical_family == "coupled_inductor"
+    assert c3.device("differential_inductor").canonical_terminal_order == (
+        "primary_p", "primary_n", "secondary_p", "secondary_n"
+    )
+    assert c3.device("differential_inductor").lvs["public_runset_recognition"] == "absent"
+
+    xh035 = load_process("xh035", ROOT)
+    assert xh035.process_variant is None
+    assert xh035.enabled_modules is None
+    assert set(xh035.device_bindings) == {
+        "nmos_core", "pmos_core", "nmos_hv", "pmos_hv",
+        "nmos_isolated", "pmos_isolated", "nldmos", "pldmos",
+    }
+
+    assert yamlish.load("groups: [[d, s], [a, b]]") == {
+        "groups": [["d", "s"], ["a", "b"]]
+    }
+
+
 def check_catalog_and_schema() -> None:
     processes = [load_process(name, ROOT) for name in profile_names(ROOT)]
     assert processes
@@ -223,20 +309,25 @@ def check_catalog_and_schema() -> None:
         assert process.device_inventory == process.devices
         assert process.canonical_catalog is not process.canonical_doc
         assert "resistor3" in process.canonical_catalog["families"]["resistor"]["variants"]
+        assert "jfet3" in process.canonical_catalog["families"]["jfet"]["variants"]
         assert "power_device" not in process.canonical_catalog["families"]
         for binding in process.device_bindings.values():
-            assert binding.geometry_mode in {"scalable", None}
+            assert binding.geometry_mode in {"scalable", "fixed", None}
     schema = json.loads((ROOT / "schema/pdk.yaml.schema").read_text())
     properties = schema["properties"]
     assert {"device_inventory", "device_bindings", "canonical_catalog"} <= set(properties)
     assert schema["$defs"]["parameter_transform"]["properties"]["operation"]["enum"] == [
         "rename", "scale", "multiply", "divide", "derive", "ignore"
     ]
+    assert {"coupled_inductor", "coupled_inductor4", "bjt5", "varactor4"} <= set(
+        schema["$defs"]["device_kind"]["enum"]
+    )
 
 
 def main() -> int:
     check_binding_override()
     check_typed_netlist()
+    check_ams_c35_module_variants()
     check_catalog_and_schema()
     print("Device IR contract checks: PASS (families + bindings + netlist normalization)")
     return 0

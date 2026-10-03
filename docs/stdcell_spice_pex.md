@@ -21,7 +21,7 @@ is not a signoff library view.
 | `ami16` | Primitive MOS4 | `ami16N`, `ami16P` | Nominal only in `ami16` section | xschem/ngspice smoke and native PEX output simulate; stdcell candidate gates remain non-signoff |
 | `hp06` | Primitive MOS4 | `hp14tbN`, `hp14tbP` | Nominal only in `hp06` section | xschem/ngspice smoke and native PEX output simulate; stdcell candidate gates remain non-signoff |
 | `cnm25` | Primitive MOS4 | `cnm25modN`, `cnm25modP` | Nominal only in `cnm25` section | xschem/ngspice smoke; FastCap/FastHenry field-solver bridge; no Magic runtime PEX |
-| `ams_c35` | Primitive MOS4 | `c35N`, `c35P` | Nominal only in `ams_c35` section | xschem/ngspice smoke; ENG-182 field-stack reconstruction; no Magic runtime PEX |
+| `ams_c35` | Primitive MOS4 | `c35N`, `c35P` | Nominal only in `ams_c35` section | xschem/ngspice smoke; native Manhattan extracted R+C smoke is estimated/non-signoff; full layouts using unavailable diode/JFET cards fail closed |
 | `tr1um` | Primitive MOS4 | `NMOS_mst`, `PMOS_mst` (`MNE_mst`, `MPE_mst` for HV) | Nominal engineering cards only in `tr1um` section | ngspice/xschem smoke; native DRC/LVS/KLayout and engineering Magic PEX; signoff blocked |
 | `ls1u` | `LV1UNMOS` / `LV1UPMOS` subcircuits | `LV1UNMOS`, `LV1UPMOS` | No process-corner contract; partial characterization | xschem/ngspice and native Magic MOS smoke pass |
 | `openrule1um` | Primitive model contract | `or1_nmos`, `or1_pmos` plus passive variants | No corner contract | xschem/ngspice measured-card smoke; PEX explicitly deferred |
@@ -263,13 +263,15 @@ rules fail closed. The stdcell adapter uses the diffusion-contact-to-gate
 spacing rule (`6.4`) rather than assuming the analog PCell adapter's optional
 poly-contact rule (`5.5.b`). No lambda-derived rule fallback is used.
 
-AMI06, AMI16, HP06, CNM25, and AMS C35 now have generated authoritative
+AMI06, AMI16, HP06, CNM25, and AMS C35 have generated authoritative
 geometry/connectivity INV smoke gates. AMI06 also covers NAND2/NOR2; AMI16
 and HP06 additionally pass Magic PEX plus ngspice operating-point smoke.
-CNM25 and AMS C35 remain DRC/LVS/LEF-only because their runtime PEX
-backends are intentionally absent. Public native DRC macro decks for CNM25
-and AMS C35 did not produce a report in this KLayout batch environment, so
-they are not promoted to native signoff evidence.
+AMS C35 adds native estimated Manhattan R+C extraction and an ngspice smoke
+for a supported MOS/passive fixture; unsupported diode/JFET cards still block
+full-layout PEX. CNM25 remains DRC/LVS/LEF-only because its runtime PEX backend
+is intentionally absent. Public native DRC macro decks for CNM25 and AMS C35
+did not produce a report in this KLayout batch environment, so neither is
+promoted to native signoff evidence.
 
 The larger `nor2.spice` sizing fixture remains useful for folding/search
 coverage. `--beam-width N` retains local and global geometry-Pareto fronts

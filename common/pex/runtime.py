@@ -26,6 +26,7 @@ def run_magic_extract(
     style: str,
     ignored_fatal_markers: tuple[str, ...] = (),
     top_cell: str | None = None,
+    extract_resistance: bool = False,
 ) -> tuple[str, str]:
     """Run the existing layout -> Magic -> ext2spice PEX flow.
 
@@ -33,9 +34,9 @@ def run_magic_extract(
     enforces the same fatal-log and output-file checks used by the PEX smoke
     gates.  A legacy technology may legitimately report unsupported optional
     GDS layers; those markers can be explicitly ignored while the caller still
-    requires the expected extracted devices.
+    requires the expected extracted devices.  Resistance extraction is
+    opt-in because most existing profile smokes only exercise MOS/C behavior.
     """
-
     cell = top_cell or layout.stem
     if layout.suffix.lower() == ".mag":
         commands = [
@@ -48,20 +49,51 @@ def run_magic_extract(
             f"load {cell}",
             "select top cell",
         ]
+    extract_path = workdir / "extfiles"
+    if extract_resistance:
+        extract_path.mkdir(parents=True, exist_ok=True)
+        flat_cell = f"{cell}_pex_flat"
+        commands.extend(
+            [
+                f"flatten {flat_cell}",
+                f"load {flat_cell}",
+                f"cellname delete {cell}",
+                f"cellname rename {flat_cell} {cell}",
+                "select top cell",
+                f"extract path {extract_path}",
+            ]
+        )
     commands.extend(
         [
             f"extract style {style}",
             "extract do capacitance",
             "extract do coupling",
-            "extract all",
+        ]
+    )
+    if extract_resistance:
+        commands.extend(
+            [
+                "extract do unique",
+                "extresist threshold 10000",
+            ]
+        )
+    commands.append("extract all")
+    if extract_resistance:
+        commands.append("extresist all")
+    commands.extend(
+        [
             "ext2spice format ngspice",
             "ext2spice subcircuit top on",
             "ext2spice cthresh 0",
             "ext2spice rthresh 0",
-            f"ext2spice -o {output}",
-            "quit -noprompt",
         ]
     )
+    if extract_resistance:
+        commands.append("ext2spice extresist on")
+        commands.append(f"ext2spice -p {extract_path} -o {output}")
+    else:
+        commands.append(f"ext2spice -o {output}")
+    commands.append("quit -noprompt")
     proc = subprocess.run(
         [magic, "-dnull", "-noconsole", "-T", str(technology)],
         input="\n".join(commands) + "\n",

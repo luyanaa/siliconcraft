@@ -25,8 +25,11 @@ drc:
   note: "Oracle deck for the SCMOS_SUBM abstraction; grid 0.025um."
 
 lvs:
-  available: false
-  note: "ams C35 LVS uses the shared SCMOS extractor driven by devices.yaml (generated/lvs/run.py); CONT is the single contact layer bound to `cc`."
+  available: true
+  format: klayout-pya
+  file: ../../../common/lvs/scmos_reference_lvs.py
+  source: "shared SCMOS reference extractor, adapted to the public C35 device contracts; not an AMS Calibre deck"
+  note: "Use lvs_conformance.py to compare the reference extractor with generated/lvs/run.py; this is not a foundry LVS oracle."
 
 decision:
   layout_drc_lvs_engine: klayout

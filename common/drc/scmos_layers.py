@@ -234,6 +234,12 @@ def derive(L, F, WELL, TECH, LAMBDA, DBU_, UNIVERSE):
         pDiff = andnot(pNotOhmic, or_(poly, elec))
         nChannel = outside(and_(nNotOhmic, poly), elec)
         pChannel = outside(and_(pNotOhmic, poly), elec)
+        if F("midoxAvailable"):
+            midox = andnot(L("midox"), L("nodrc"))
+            nChannelM = and_(nChannel, midox)
+            pChannelM = and_(pChannel, midox)
+            nChannel = andnot(nChannel, nChannelM)
+            pChannel = andnot(pChannel, pChannelM)
         nElecChannel = outside(and_(nNotOhmic, elec), poly)
         pElecChannel = outside(and_(pNotOhmic, elec), poly)
         nElecChannelTran = butting(nElecChannel, nDiff, 2)
@@ -302,10 +308,23 @@ def derive(L, F, WELL, TECH, LAMBDA, DBU_, UNIVERSE):
             via4metalcap = and_(via4, metalcapBottom)
             via4 = andnot(via4, via4metalcap)
 
-    NPdiode = and_(L("dio_id"), outside(nNotOhmic, poly))
-    PNdiode = and_(L("dio_id"), outside(pNotOhmic, poly))
-    if not (WELL == "P" or WELL == "E"):
-        NwPdiode = and_(L("dio_id"), outside(nwell, pNotOhmic))
+    if F("midoxAvailable"):
+        diode_marker = andnot(L("dio_id"), L("nodrc"))
+        diode_trans = or_(nChannelTranBase, pChannelTranBase)
+        NPdiode = and_(
+            andnot(nDiff, nwell),
+            diode_marker,
+        ).not_interacting(diode_trans)
+        PNdiode = and_(
+            and_(pDiff, nwell),
+            diode_marker,
+        ).not_interacting(diode_trans)
+        NwPdiode = and_(nwell, diode_marker)
+    else:
+        NPdiode = and_(L("dio_id"), outside(nNotOhmic, poly))
+        PNdiode = and_(L("dio_id"), outside(pNotOhmic, poly))
+        if not (WELL == "P" or WELL == "E"):
+            NwPdiode = and_(L("dio_id"), outside(nwell, pNotOhmic))
 
     if F("elecAvailable"):
         elecGate = and_(or_(nNotOhmic, pNotOhmic), elec)
@@ -343,30 +362,55 @@ def derive(L, F, WELL, TECH, LAMBDA, DBU_, UNIVERSE):
         lcContact = and_(ca, lcDiff)
         lcCap = and_(poly, and_(lcDiff, active))
 
-    # resistors
-    if F("sblockAvailable"):
-        sblockPoly = and_(sblock, poly)
-        fieldPoly = andnot(fieldPoly, or_(sblock, L("res_id")))
-        polySRes = butting(sblockPoly, fieldPoly, 2)
-        poly = andnot(poly, or_(sblock, L("res_id")))
+    # C35 uses explicit process markers for resistor bodies and terminal
+    # cutouts.  Cut only the resistive body from the conductor graph; the
+    # terminal strips remain separate nets for authoritative extraction.
+    if F("midoxAvailable"):
+        restdm = andnot(L("restdm"), L("nodrc"))
+        resdef = andnot(L("res_id"), L("nodrc"))
+        tubdef = andnot(L("tubdef"), L("nodrc"))
+        rp2Region = andnot(and_(elec, resdef), or_(highres, and_(poly, elec), restdm))
+        rphRegion = and_(elec, highres)
+        if TECH == "C35B4C3":
+            # ENG-183 defines RPOLYH as POLY2 & HRES & not PPLUS.
+            rphRegion = andnot(rphRegion, pselect)
+        rdiffnRegion = andnot(and_(and_(active, nselect), resdef), restdm)
+        rdiffpRegion = andnot(and_(and_(active, pselect), resdef), restdm)
+        rnwellRegion = andnot(and_(nwell, tubdef), restdm)
+        rnwellRegion = andnot(rnwellRegion, or_(rdiffnRegion, rdiffpRegion))
+        elecRes = rp2Region
+        elecHighres = rphRegion
+        polyRes = pya.Region()
+        nwellRes = rnwellRegion
+        nDiff = andnot(nDiff, rdiffnRegion)
+        pDiff = andnot(pDiff, rdiffpRegion)
+        nBulk = andnot(nBulk, rnwellRegion)
+        nwell = andnot(nwell, rnwellRegion)
+        elec = andnot(elec, or_(rp2Region, rphRegion))
     else:
-        fieldPoly = andnot(fieldPoly, L("res_id"))
-        polyRes = butting(and_(L("res_id"), poly), fieldPoly, 2)
-        poly = andnot(poly, L("res_id"))
-
-    if F("elecAvailable"):
-        if F("highresAvailable"):
-            fieldElec = andnot(fieldElec, or_(L("res_id"), highres))
-            elecRes = butting(and_(L("res_id"), elec), fieldElec, 2)
-            elecHighres = butting(and_(highres, elec), fieldElec, 2)
-            elec = andnot(elec, or_(L("res_id"), highres))
+        if F("sblockAvailable"):
+            sblockPoly = and_(sblock, poly)
+            fieldPoly = andnot(fieldPoly, or_(sblock, L("res_id")))
+            polySRes = butting(sblockPoly, fieldPoly, 2)
+            poly = andnot(poly, or_(sblock, L("res_id")))
         else:
-            fieldElec = andnot(fieldElec, L("res_id"))
-            elecRes = butting(and_(L("res_id"), elec), fieldElec, 2)
-            elec = andnot(elec, L("res_id"))
+            fieldPoly = andnot(fieldPoly, L("res_id"))
+            polyRes = butting(and_(L("res_id"), poly), fieldPoly, 2)
+            poly = andnot(poly, L("res_id"))
 
-    nBulk = andnot(nBulk, L("res_id"))
-    nwellRes = butting(and_(L("res_id"), nwell), nBulk, 2)
-    nwell = andnot(nwell, L("res_id"))
+        if F("elecAvailable"):
+            if F("highresAvailable"):
+                fieldElec = andnot(fieldElec, or_(L("res_id"), highres))
+                elecRes = butting(and_(L("res_id"), elec), fieldElec, 2)
+                elecHighres = butting(and_(highres, elec), fieldElec, 2)
+                elec = andnot(elec, or_(L("res_id"), highres))
+            else:
+                fieldElec = andnot(fieldElec, L("res_id"))
+                elecRes = butting(and_(L("res_id"), elec), fieldElec, 2)
+                elec = andnot(elec, L("res_id"))
+
+        nBulk = andnot(nBulk, L("res_id"))
+        nwellRes = butting(and_(L("res_id"), nwell), nBulk, 2)
+        nwell = andnot(nwell, L("res_id"))
 
     return {k: v for k, v in locals().items() if isinstance(v, pya.Region)}

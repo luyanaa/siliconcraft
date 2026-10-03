@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Run the non-signoff Magic PEX contract and runtime gates.
+"""Run non-signoff native and Magic PEX contract and runtime gates.
 
-The suite deliberately covers the current PEX boundary rather than claiming
-calibrated extraction: generated topology/source-reference technologies must
-render consistently, load in Magic, extract the expected primitive MOS models,
-and simulate against the profile model libraries.
+Generated topology/source-reference technologies must render consistently,
+load in their native extractors, and simulate against profile model libraries.
+AMS C35 uses its estimated native Manhattan backend and supported-core
+mixed-signal regression; other profiles retain the Magic PEX smoke.
 
 Usage:
   python3 scripts/run_pex_ci.py
@@ -37,12 +37,14 @@ def capability_profiles(capability: str) -> tuple[str, ...]:
 PEX_PROFILES = capability_profiles("pex_runtime")
 STATIC_GATES = (
     "test_process_ir.py",
+    "test_ams_c35_maturity.py",
     "test_profile_collateral_matrix.py",
     "test_field_solver_contracts.py",
     "test_magic_pex.py",
     "test_ls1u_pex.py",
     "test_ls1u_devices.py",
     "test_ls1u_contracts.py",
+    "test_ams_c35_native_graph.py",
 )
 
 
@@ -58,12 +60,12 @@ def main() -> int:
     mode.add_argument(
         "--static-only",
         action="store_true",
-        help="run manifest/rendering contracts without native Magic/ngspice",
+        help="run manifest/rendering contracts without native Magic/KLayout/ngspice",
     )
     mode.add_argument(
         "--runtime-only",
         action="store_true",
-        help="run native Magic/ngspice extraction smokes only",
+        help="run native Magic/KLayout/ngspice extraction smokes only",
     )
     args = parser.parse_args()
 
@@ -75,7 +77,13 @@ def main() -> int:
 
     if not args.static_only:
         for profile in PEX_PROFILES:
-            run("run_magic_pex_smoke.py", "--profile", profile)
+            if profile == "ams_c35":
+                run("test_ams_c35_passives.py")
+                run("test_ams_c35_models.py")
+                run("test_ams_c35_native_pex.py")
+                run("test_ams_c35_mixed_signal.py")
+            else:
+                run("run_magic_pex_smoke.py", "--profile", profile)
         run("run_scmos_legacy_check.py")
         run("run_scmos_well_route_check.py")
         run("run_ls1u_magic_smoke.py")

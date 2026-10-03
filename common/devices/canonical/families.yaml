@@ -166,6 +166,37 @@ families:
           shield: optional electrostatic shield or substrate terminal
         topology: shielded_three_terminal
         symmetry_groups: []
+  jfet:
+    device:
+      id: jfet
+      kind: jfet
+      geometry:
+        mode: fixed
+        required: []
+        optional: [area, w, l]
+        parameter_units:
+          area: um2
+          w: um
+          l: um
+      attributes:
+        channel_type: profile_defined
+        origin: [intentional, parasitic]
+        extraction_level: [none, lumped, distributed, field_solver]
+      parasitics:
+        junction_capacitance: model_or_pex
+        channel_conductance: model_or_pex
+    variants:
+      jfet3:
+        id: jfet3
+        kind: jfet3
+        terminals: [d, g, s]
+        terminal_order: [d, g, s]
+        terminal_semantics:
+          d: drain terminal
+          g: junction gate terminal
+          s: source terminal
+        topology: junction_gate_three_terminal
+        symmetry_groups: []
   bjt:
     device:
       id: bjt
@@ -204,6 +235,16 @@ families:
         terminal_semantics:
           substrate: substrate terminal distinct from emitter
         topology: bipolar_four_terminal
+        symmetry_groups: []
+      bjt5:
+        id: bjt5
+        kind: bjt5
+        terminals: [c, b, e, substrate, gate]
+        terminal_order: [c, b, e, substrate, gate]
+        terminal_semantics:
+          substrate: substrate terminal distinct from emitter
+          gate: lateral-device gate terminal
+        topology: bipolar_lateral_five_terminal
         symmetry_groups: []
   hbt:
     device:
@@ -281,6 +322,18 @@ families:
         terminal_semantics:
           body: body or substrate terminal
         topology: body_tied_voltage_tunable_three_terminal
+        symmetry_groups: []
+      varactor4:
+        id: varactor4
+        kind: varactor4
+        terminals: [gate, source, drain, body]
+        terminal_order: [gate, source, drain, body]
+        terminal_semantics:
+          gate: accumulation-mode tuning terminal
+          source: MOS source diffusion terminal
+          drain: MOS drain diffusion terminal
+          body: substrate or body terminal
+        topology: accumulation_mos_varactor_four_terminal
         symmetry_groups: []
       svaricap4:
         id: svaricap4
@@ -464,3 +517,41 @@ families:
     variants:
       default:
         topology: symmetric
+  coupled_inductor:
+    device:
+      id: coupled_inductor
+      kind: coupled_inductor
+      geometry:
+        mode: scalable
+        required: [primary_length, secondary_length]
+        optional: [primary_turns, secondary_turns, width, spacing, area]
+        parameter_units:
+          primary_length: um
+          secondary_length: um
+          primary_turns: count
+          secondary_turns: count
+          width: um
+          spacing: um
+          area: um2
+      attributes:
+        conductor: profile_defined
+        substrate_stack: profile_defined
+        coupling_model: profile_defined
+        extraction_level: [none, lumped, distributed, field_solver]
+      parasitics:
+        self_inductance: field_solver_or_model
+        mutual_inductance: field_solver_or_model
+        substrate_coupling: field_solver_or_model
+    variants:
+      coupled_inductor4:
+        id: coupled_inductor4
+        kind: coupled_inductor4
+        terminals: [primary_p, primary_n, secondary_p, secondary_n]
+        terminal_order: [primary_p, primary_n, secondary_p, secondary_n]
+        terminal_semantics:
+          primary_p: positive primary winding terminal
+          primary_n: negative primary winding terminal
+          secondary_p: positive secondary winding terminal
+          secondary_n: negative secondary winding terminal
+        topology: coupled_two_port
+        symmetry_groups: []

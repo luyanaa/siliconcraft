@@ -334,8 +334,9 @@ not disabled.
 The active AMI06, HP06, AMI16, CNM25, AMS C35, and TR-1um DRC/PEX
 contracts retain their source-driven, process-specific limits and coefficients
 where declared. AMI06/HP06/AMI16 carry the `pearlriver-scmos.tech` Magic
-carrier; CNM25 and AMS C35 are DRC/LVS-first profiles with external
-field-solver contracts but no Magic backend, while TR-1um uses its copied
+carrier; CNM25 remains DRC/LVS-first with an external field-solver contract
+and no runtime PEX. AMS C35 provides estimated native Manhattan R+C
+extraction, not Magic `extresist` or signoff. TR-1um uses its copied
 native `TR-1um.tech` Magic carrier. Native decks live under
 `profiles/<name>/reference/` where provided. Each manifest also declares a
 matched legacy SCMOS backend where applicable for geometry/connectivity

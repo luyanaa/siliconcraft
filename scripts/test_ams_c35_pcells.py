@@ -25,19 +25,19 @@ library_name = "siliconcraft_ams_c35_test"
 register_profile(profile_dir, library_name)
 layout = pya.Layout()
 layout.dbu = 0.001
-variants = {{
-    "nmos": {{"nf": 1, "m": 1, "w_um": 1.5, "l_um": 0.6}},
-    "pmos": {{"nf": 1, "m": 1, "w_um": 1.5, "l_um": 0.6}},
-    "ntap": {{"rows": 1, "columns": 1}},
-    "ptap": {{"rows": 1, "columns": 1}},
-    "via12": {{"rows": 2, "columns": 2}},
-    "via23": {{"rows": 2, "columns": 2}},
-    "via34": {{"rows": 2, "columns": 2}},
-    "cap_elec": {{"width_um": 3.0, "height_um": 3.0}},
-}}
-logical_layers = (
-    "nwell", "active", "poly", "elec", "nselect", "pselect", "cc",
-    "metal1", "via", "metal2", "via2", "metal3", "via3", "metal4",
+variants = {{}}
+for name, spec in profile.pcells.items():
+    params = spec.get("parameters", {{}})
+    defaults = {{
+        key: value.get("default")
+        for key, value in params.items()
+        if isinstance(value, dict) and "default" in value
+    }}
+    if spec.get("kind") == "via":
+        defaults = {{"rows": 2, "columns": 2}}
+    variants[name] = defaults
+logical_layers = tuple(
+    name for name, spec in profile.layers.items() if spec.get("gds")
 )
 out = {{}}
 for name, params in variants.items():
@@ -48,6 +48,15 @@ for name, params in variants.items():
     for logical in logical_layers:
         layer = layout.layer(profile.layer_info(logical))
         out[name][logical] = cell.shapes(layer).size()
+    for logical in ("elec", "highres"):
+        if out[name][logical]:
+            box = cell.bbox(layout.layer(profile.layer_info(logical)))
+            out[name][f"bbox_{{logical}}"] = [
+                box.left * layout.dbu,
+                box.bottom * layout.dbu,
+                box.right * layout.dbu,
+                box.top * layout.dbu,
+            ]
 with open(os.environ["AMS_C35_PCELL_JSON"], "w") as fh:
     json.dump(out, fh)
 """
@@ -88,7 +97,12 @@ def run() -> dict:
 
 def main() -> None:
     data = run()
-    required = {"nmos", "pmos", "ntap", "ptap", "via12", "via23", "via34", "cap_elec"}
+    required = {
+        "nmos", "pmos", "nmosm", "pmosm", "ntap", "ptap",
+        "via12", "via23", "via34", "cap_pip",
+        "rp2", "rph", "rdiffn", "rdiffp", "rnwell",
+        "diode_np", "diode_pn", "diode_nw",
+    }
     if set(data) != required:
         raise AssertionError(f"unexpected PCell set: {sorted(data)}")
 
@@ -98,9 +112,11 @@ def main() -> None:
                 raise AssertionError(f"{cell}: expected geometry on {layer}")
 
     require("nmos", "active", "poly", "nselect", "cc", "metal1")
-    if data["nmos"]["nwell"]:
-        raise AssertionError("nmos: unexpected nwell")
+    if data["nmos"]["nwell"] or data["nmos"]["midox"]:
+        raise AssertionError("nmos: unexpected well or MIDOX")
     require("pmos", "active", "poly", "pselect", "nwell", "cc", "metal1")
+    require("nmosm", "active", "poly", "nselect", "midox", "cc", "metal1")
+    require("pmosm", "active", "poly", "pselect", "nwell", "midox", "cc", "metal1")
     require("ntap", "active", "nselect", "nwell", "cc", "metal1")
     require("ptap", "active", "pselect", "cc", "metal1")
     if data["ptap"]["nwell"]:
@@ -108,8 +124,31 @@ def main() -> None:
     require("via12", "via", "metal1", "metal2")
     require("via23", "via2", "metal2", "metal3")
     require("via34", "via3", "metal3", "metal4")
-    require("cap_elec", "poly", "elec")
-    print("AMS C35 KLayout PCells: PASS (8 variants, 4-metal path checked)")
+    require("cap_pip", "poly", "elec", "cc", "metal1")
+    require("rp2", "elec", "res_id", "restdm", "cc", "metal1")
+    require("rph", "elec", "highres", "pselect", "cc", "metal1")
+    elec_box = data["rph"]["bbox_elec"]
+    highres_box = data["rph"]["bbox_highres"]
+    enclosure = [
+        round(elec_box[0] - highres_box[0], 3),
+        round(elec_box[1] - highres_box[1], 3),
+        round(highres_box[2] - elec_box[2], 3),
+        round(highres_box[3] - elec_box[3], 3),
+    ]
+    if enclosure != [3.0, 3.0, 3.0, 3.0]:
+        raise AssertionError(f"rph: expected 3um HRES enclosure, got {enclosure}")
+    require("rdiffn", "active", "nselect", "res_id", "restdm", "cc", "metal1")
+    require("rdiffp", "active", "pselect", "res_id", "restdm", "cc", "metal1")
+    require("rnwell", "nwell", "tubdef", "restdm", "active", "nselect", "cc", "metal1")
+    require("diode_np", "active", "nselect", "dio_id", "cc", "metal1")
+    require(
+        "diode_pn", "active", "pselect", "nwell", "nselect",
+        "dio_id", "cc", "metal1",
+    )
+    require("diode_nw", "nwell", "active", "nselect", "dio_id", "cc", "metal1")
+    if data["diode_np"]["nwell"] or data["diode_nw"]["pselect"]:
+        raise AssertionError("diode PCells: unexpected well or implant geometry")
+    print("AMS C35 KLayout PCells: PASS (18 variants, including MIDOX, passives, diodes)")
 
 
 if __name__ == "__main__":
