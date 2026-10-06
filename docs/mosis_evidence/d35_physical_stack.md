@@ -73,8 +73,9 @@ fit_parameters:
 * the permittivity is a **fitted parameter** — the deck states none, and assuming
   SiO₂ 3.9 is recorded as an assumption, not a measurement;
 * substrate effective permittivity is a research placeholder only;
-* `fit_target` is the **measured** T2AF coupling matrix, cross-checked against the
-  local N88Y matrix, with a 15 % acceptance band.
+* `fit_target` is the local first-hand **T02F (4M/2P)** coupling matrix from the
+  NCSU CDK techfile, cross-checked against the local N88Y matrix, with a 15 %
+  acceptance band.
 
 The fit is a **plausibility reconstruction**, not a calibration:
 `calibrated: false`, `signoff.foundry_qrc: false`,

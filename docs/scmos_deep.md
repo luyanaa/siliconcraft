@@ -4,14 +4,26 @@ Siliconcraft has two explicit SCMOS_DEEP profiles:
 
 | Profile | CDK source | MOSIS option | λ (µm) | grid (µm) | minimum L/W (µm) | metal stack |
 | --- | --- | --- | ---: | ---: | ---: | --- |
-| `tsmc025_deep` | `TSMC_CMOS025_DEEP` / `tsmc_03d.tf` | `SCN5M_DEEP` | 0.12 | 0.06 | 0.24 / 0.36 | 5M, DEEP_N_WELL |
-| `tsmc018_deep` | `TSMC_CMOS018_DEEP` / `tsmc_02d.tf` | `SCN6M_DEEP` | 0.09 | 0.045 | 0.18 / 0.27 | 6M, DEEP_N_WELL |
+| `tsmc025_deep` | `TSMC_CMOS025_DEEP` / `tsmc_03d.tf` | `SCN5M_DEEP` | 0.12 | 0.06 | 0.24 / 0.36 | 5M |
+| `tsmc018_deep` | `TSMC_CMOS018_DEEP` / `tsmc_02d.tf` | `SCN6M_DEEP` | 0.09 | 0.045 | 0.18 / 0.27 | 6M |
 
 The profile metadata is sourced from the NCSU CDK `globalData.il`, technology files,
-`divaDRC.rul`, public model cards, and the SCMOS stream/layer tables. The generated
-layer contracts preserve the MOSIS physical name `DEEP_N_WELL`; the DRC/LVS runner
-also exposes the lower-case semantic alias `deep_nwell` required by the shared
-reference extractor.
+`divaDRC.rul`, public model cards, and the SCMOS stream/layer tables. "DEEP" in this
+CDK denotes a MOSIS **rule family** (`deepRules`), not a layer: `skill/globalData.il`
+documents it as "the process uses the MOSIS DEEP (deep submicron) rules", and
+`skill/pcells/nmos.il` branches on the technology *name* string to change gate
+extension geometry. No deep n-well drawing layer exists in the CDK stream map.
+
+An earlier revision of these profiles injected a synthetic `DEEP_N_WELL` layer at GDS
+38 with `cif: CDNW`; that was unsourced and has been withdrawn. `pipo/streamInLayermap`
+contains no layer 38 and no deep n-well entry, `CDNW` appears nowhere in the CDK, and
+38 is `polycap`'s Cadence tech-layer ID in `techfile/layerDefinitions.tf` (and Magic's
+`ndop`/`pdop` internal number). Deep n-well isolation therefore has no public GDS
+authority here, and the profiles no longer claim one. This does **not** assert that
+the silicon lacks deep n-well; it records that no stream number is available. The
+DRC/LVS runner still maps an upper-case `DEEP_N_WELL` to the lower-case `deep_nwell`
+semantic alias if a future source-backed profile supplies one; with no such layer the
+alias resolves to an empty region and the DEEP isolation rules are vacuous.
 
 ## What is implemented
 
@@ -19,7 +31,9 @@ reference extractor.
   MOSIS identifier cannot be loaded as ordinary `scmos_subm`, and `scmos_deep`
   cannot be used without a DEEP identifier.
 - The shared reference DRC implements the DEEP rule deltas in the source deck,
-  including the 5M/6M backend branches, stacked vias, and DEEP_N_WELL layer.
+  including the 5M/6M backend branches and stacked vias. Deep n-well isolation
+  rules exist in the shared extractor but have no layer to bind to, so they are
+  vacuous for these profiles.
 - Optional metal-cap and wide-metal rule sections that are absent from the
   source reference implementation are not claimed. Foundry density, antenna,
   fill, and signoff checks are also outside this profile contract.

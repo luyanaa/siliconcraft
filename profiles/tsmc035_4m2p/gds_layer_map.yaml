@@ -93,7 +93,6 @@ layers:
   - {logical_name: metal6,       gds_layer: 37, cif: CM6,  role: metal,  status: unavailable_this_option}
   - {logical_name: via4,         gds_layer: 32, cif: [CVQ, CV4], role: cut, status: unavailable_this_option}
   - {logical_name: via5,         gds_layer: 36, cif: CV5,  role: cut,    status: unavailable_this_option}
-  - {logical_name: DEEP_N_WELL,  gds_layer: 38, cif: CDNW, role: well,   status: scn4m_shared_capability}
 
 # The SCMOS spec defines dedicated contact layers that a unified CONTACT layer
 # may replace.  The CDK stream map folds all four onto one Cadence layer `cc`;
@@ -127,6 +126,24 @@ tsmc_specific_semantics:
     semantics: 'The CDK Diva deck records the MOSIS statement that TSMC 0.35u poly2 can build capacitors "but not transistors", and adds a TSMC_CMOS035_4M2P-only DBM check that active and elec may not overlap.'
     role: "Capacitor/electrode layer, not a second gate."
     evidence_class: local_first_hand_source_file
+
+# Withdrawn: a synthetic `DEEP_N_WELL` entry at GDS 38 / cif CDNW was removed.
+# The NCSU CDK stream map (pipo/streamInLayermap) defines no layer 38 and no deep
+# n-well layer; `CDNW` appears nowhere in the CDK; 38 is `polycap`'s Cadence
+# tech-layer ID in techfile/layerDefinitions.tf (and Magic's `ndop`/`pdop`
+# internal number).  The CDK's "DEEP" is a MOSIS rule family (skill/globalData.il
+# `deepRules`) plus a pcell gate-extension branch, not a layer.  No public GDS
+# authority exists, so this profile no longer claims one.  See
+# schema/scmos_process_matrix.yaml (deep_n_well_layer_authority) and
+# scripts/parse_cdk_layers.py.
+withdrawn_layers:
+  - logical_name: DEEP_N_WELL
+    withdrawn_gds_layer: 38
+    withdrawn_cif: CDNW
+    status: unsourced_withdrawn
+    tapeout_eligible: false
+    evidence_class: internal_negative_finding
+    note: "No independent MOSIS/TSMC source establishes a stream number.  This is not an assertion that deep n-well is physically absent from the process."
 
 # Current TSRI/foundry-direct map: not published.  Recorded explicitly so that
 # no consumer mistakes the historical map above for a foundry stream map.

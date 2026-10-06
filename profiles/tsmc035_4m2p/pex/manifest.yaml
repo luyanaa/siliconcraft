@@ -101,7 +101,7 @@ profiles:
     maturity: historical_measured
     calibrated_to_current_d35: false
     reference_data: tsmc035_wat_reference.yaml
-    coefficient_set: t2af_mm_epi_4m
+    coefficient_set: t02f_ncsu_4m2p
     cross_check_set: n88y_scn035h_3m
     formulas:
       resistance: "R_ohm = R_sheet_ohm_per_square * length_um / width_um + n_contact * R_contact_ohm + n_via * R_via_ohm"

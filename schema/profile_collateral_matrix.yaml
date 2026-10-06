@@ -92,10 +92,11 @@ profiles:
         - c35P
       corners:
         - nominal
-    extraction: {route: field_solver, manifest: profiles/ams_c35/pex/manifest.yaml, profile: field_solver_estimated, status: source_reference_partial, topology: true, runtime: false, rc: estimated}
+    extraction: {route: field_solver, manifest: profiles/ams_c35/pex/manifest.yaml, profile: field_solver_estimated, status: source_reference_partial, topology: true, runtime: klayout_native_rcx, rc: estimated}
+    native_rcx: {backend: native_manhattan, primary_backend: klayout_native_rcx, profile: estimated_rcx, generated: true, calibrated: false, signoff: false, manifest: profiles/ams_c35/pex/manifest.yaml}
     field_solver: {status: field_solver_estimated, calibrated: false, source: profiles/ams_c35/c35b4c3_stack.yaml}
     blockers:
-      - no_open_runtime_pex_backend
+      - field_solver_not_run_locally
       - no_signoff_calibration
   cnm25:
     promotion: blocked
@@ -255,6 +256,7 @@ profiles:
     promotion: blocked
     sources:
       - NCSU_CDK_1.6.0
+      - NCSU_CDK_TSMC_CMOS035_4M2P_T02F_techfile
       - MOSIS_N88Y_report
       - MOSIS_SCN035_WAT_external_reference
       - TSMC035_field_stack
@@ -270,7 +272,7 @@ profiles:
         - tsmc35P
       corners:
         - nominal
-    extraction: {route: wat_analytical_rc, manifest: profiles/tsmc035_4m2p/pex/manifest.yaml, profile: mosis_wat_rc, status: historical_measured_research, topology: false, runtime: false, rc: historical_measured_rc}
+    extraction: {route: wat_analytical_rc, manifest: profiles/tsmc035_4m2p/pex/manifest.yaml, profile: mosis_wat_rc, coefficient_set: t02f_ncsu_4m2p, status: historical_measured_research, topology: false, runtime: false, rc: historical_measured_rc}
     field_solver: {status: field_solver_estimated, calibrated: false, source: profiles/tsmc035_4m2p/pex/tsmc035_beol_public_fit.yaml}
     blockers:
       - historical_wat_not_current_d35_signoff

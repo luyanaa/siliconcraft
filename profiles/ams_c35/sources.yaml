@@ -86,14 +86,6 @@ references:
       - "Europractice: QRC listed as C35 parasitic extraction tool"
     role: "reference hierarchy for the open PEX level (R+Cg+Cc -> DSPF/SPEF)"
     doc: "docs/ams_c35_pex_field.md"
-  ordinary_pex_flow:
-    notes:
-      - "NUS Analog IC Design Manual: xRC, Transistor Level, R + C + CC, No Inductance"
-      - "Cambridge C35 lab manual: C + CC, DSPF output (nor2x.pex.c+cc.dspf)"
-      - "Rostock AMS HIT-Kit tutorial: QRC c35b4c3 Typical; coupled vs decoupled C"
-      - "Europractice: QRC listed as C35 parasitic extraction tool"
-    role: "reference hierarchy for the open PEX level (R+Cg+Cc -> DSPF/SPEF)"
-    doc: "docs/ams_c35_pex_field.md"
   rf_models:
     doc: "docs/ams_c35_rf.md"
     note: "ENG-188 Rev 5.0 RF architecture: modnrf/modprf wrapper, validity envelope, fT/fmax, cvar, passives, model revisions"

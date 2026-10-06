@@ -444,11 +444,19 @@ profiles:
       limitation: "cards transcribed from the USP thesis appendix (ENG-182 REV_6); ELDO dialect mapped to ngspice LEVEL 49; Monte-Carlo cards are ELDO-only; RF models (ENG-188) remain a contract"
     pex:
       manifest: profiles/ams_c35/pex/manifest.yaml
-      profile: none
-      status: topology_only
+      # The native Manhattan / KLayout-native-RCX backend is a real runtime path:
+      # manifest flow.backend = native_manhattan, flow.primary_backend =
+      # klayout_native_rcx, profiles.estimated_rcx.generated = true.  It does not
+      # depend on Magic, whose extresist is disabled for C35 (known failure) --
+      # which is why the no_magic_extraction_backend blocker below still stands.
+      # This entry previously said profile: none / runtime: false / rc: false,
+      # which predated the native-RCX work.
+      profile: estimated_rcx
+      status: engineering_estimate
       topology: true
-      runtime: false
-      rc: false
+      runtime: true
+      rc: estimated
+      native_backend: klayout_native_rcx
       model_owned_terms:
         - transistor_intrinsic_capacitance
         - gate_overlap_capacitance
@@ -460,10 +468,9 @@ profiles:
         - metal_interconnect_rc
       withheld_terms:
         - contact_and_via_resistance
-        - metal_interconnect_rc
         - direct_junction_and_substrate_capacitance_mapping
     readiness:
-      characterization_level: topology_only
+      characterization_level: partial_rc
       signoff: blocked
       blockers:
         - no_ams_model_card_redistribution

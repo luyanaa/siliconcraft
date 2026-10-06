@@ -58,8 +58,9 @@ documents to verified status.
 **The premise "2002/2005 WAT numbers must not be claimed as 2026 D35 signoff
 parameters" is correct and is now enforced in code**, not just documented: every
 PEX report carries `calibrated_to_current_d35: false` and `signoff: false`, and a
-coefficient set whose provenance is not `verified_local_report` is labelled
-`external_unverified` (§8).
+coefficient set is labelled with its actual verification status: the locally
+verified ones report `verified_local_report` or `verified_local_techfile`, and
+everything else reports `external_unverified` (§8).
 
 ---
 
@@ -102,8 +103,8 @@ tagged `COMMENTS: SMSCN3ME04`** — i.e. the mixed-signal epi option family
 line, which is precisely the lineage the premise asserts.
 
 Note the repository already declares `tsmc035_4m2p` and `tsmc035_4m2` in
-`schema/scmos_process_matrix.yaml` (with `deep_n_well_layer DEEP_N_WELL` and
-`rule_family scmos_subm`), so the process matrix anticipated this profile; what
+`schema/scmos_process_matrix.yaml` (with `rule_family scmos_subm`), so the
+process matrix anticipated this profile; what
 was missing was the materialised profile itself (§9).
 
 ### 2.3 "BEOL / basic-CMOS abstraction highly related"
@@ -248,18 +249,32 @@ a capacitor/electrode layer; the profile records `tsmc035_poly2_cap` as
 
 ### 2.10 WAT sheet resistance, contacts and vias
 
-Full tables in [`d35_wat_pex_data.md`](mosis_evidence/d35_wat_pex_data.md) §2 and
-§4. Key points:
+Full tables in [`d35_wat_pex_data.md`](mosis_evidence/d35_wat_pex_data.md) §1.2,
+§2 and §4. Key points:
 
 * The local N88Y report gives N+ 79.1, P+ 153.4, poly 7.4, poly2 47.4,
   M1 0.07, M2 0.07, M3 0.04 Ω/□, N-well 1011 Ω/□; contacts 54.8 / 118.5 / 5.6 /
   31.4 Ω; vias 1.31 / 1.42 Ω; gate oxide 76 Å; a 31-stage ring oscillator at
   196.17 MHz / 5.83 µW/MHz/gate.
+* **A second local first-hand source exists and is native to the 4M/2P option:**
+  the NCSU CDK `techfile/layerDefinitions.tf` block for `TSMC_CMOS035_4M2P`
+  (run **T02F**, 2000-05-17; the block itself is labelled "TSMC035 0.35um
+  (4M/2P option)"). It gives poly 8.5, N-well 1048, M1/M2/M3 0.07, M4 0.04 Ω/□;
+  `ca`/`ce`/`cp` 118.0/6.8/6.8 Ω; via/via2/via3 1.50/1.27/1.16 Ω; and a complete
+  4-metal coupling matrix (M1–M2 36/52, M1–M3 14/38, M1–M4 9/28, M2–M3 38/58,
+  M2–M4 14/37, M3–M4 34/55). Against N88Y it agrees **exactly** on metal sheet
+  resistance and within ~10 % on coupling, while poly sheet (14.9 %) and poly
+  contact (21.4 %) show lot-to-lot spread — the same pattern seen against T2AF.
+  It is a Cadence techfile, not a WAT report, so it has no device rows and no
+  n⁺/p⁺ split; where the model needs those it borrows them from N88Y with
+  per-quantity provenance recorded (`per_quantity_provenance.borrowed`).
+  It is the **default 4-metal D35 reference**.
 * The reported T2AF MM_EPI values agree on M1/M2 (0.07 both), poly2 (−0.6 %),
   N-well (−1.1 %) and N+/P+ active (+0.4 %), and differ on poly (+17.6 %) and
   contacts (+12 to +29 %).
 * **Top-metal tier mapping:** N88Y's 3-metal top tier (MTL3 = 0.04 Ω/□) equals the
-  4-metal option's M4 (0.04 Ω/□), while N88Y M1/M2 (0.07) equal T2AF/T59N
+  4-metal option's M4 (0.04 Ω/□) — now confirmed against **both** the local T02F
+  techfile and external T2AF/T59N — while N88Y M1/M2 (0.07) equal T2AF/T59N
   M1/M2/M3 (0.07). This independently corroborates the official cross-section,
   in which M4 (0.925 µm) is the thick tier.
 
@@ -267,10 +282,14 @@ Full tables in [`d35_wat_pex_data.md`](mosis_evidence/d35_wat_pex_data.md) §2 a
 
 The reported MM_EPI 4-metal coupling matrix (M1–M2 38/58, M1–M3 14/37,
 M1–M4 9/29, M2–M3 39/53, M2–M4 14/38, M3–M4 39/65) agrees with the local N88Y
-3-metal matrix on the three overlapping pairs within ~8 % (§6). The 4-metal-only
-pairs (M1–M4, M2–M4, M3–M4) have **no local counterpart** — N88Y is a 3-metal
-run — so they remain external_reported only. That is stated explicitly rather
-than papered over.
+3-metal matrix on the three overlapping pairs within ~8 % (§6).
+
+The 4-metal-only pairs (M1–M4, M2–M4, M3–M4) have no counterpart in N88Y — it is
+a 3-metal run — but they **do** have a local counterpart in the T02F techfile
+(9/28, 14/37, 34/55). T02F's values sit inside the same spread as T2AF/T19P
+(T2AF 9/29, 14/38, 39/65; T19P 9/27, 14/35, 36/59) and are now the default
+source for those pairs, so the 4-metal top-tier capacitance no longer rests on
+`external_reported` data alone.
 
 ### 2.12 LO_EPI vs MM_EPI — a likely silicide confound (open question)
 
@@ -285,8 +304,9 @@ T27K run (N+ 3.3 Ω/□) on exactly that basis.
 **Conclusion:** the LO_EPI/MM_EPI distinction as reported is confounded with
 silicide/no-silicide. Recorded as an **open question**, not resolved. Practical
 consequences implemented: the two classes are kept in separate coefficient sets
-with a `capability_separation.rule` forbidding blending, and MM_EPI is the D35
-4-metal default (matching "mixed-signal, 4-metal").
+with a `capability_separation.rule` forbidding blending, and the default D35
+4-metal reference is the **local first-hand T02F 4M/2P techfile**, not an epi
+option at all (matching "mixed-signal, 4-metal, 2-poly").
 
 ### 2.13 SPICE model cards
 
@@ -358,7 +378,7 @@ must be re-validated against the acceptance band before any number is quoted.
 | `profiles/tsmc035_4m2p/gds_layer_map.yaml` | provenance-aware historical SCMOS stream map |
 | `profiles/tsmc035_4m2p/sources.yaml` | process identity + full provenance chain |
 | `profiles/tsmc035_4m2p/pex/manifest.yaml` | PEX v0 + v1 contract |
-| `profiles/tsmc035_4m2p/pex/tsmc035_wat_reference.yaml` | 4 coefficient sets + recorded cross-check |
+| `profiles/tsmc035_4m2p/pex/tsmc035_wat_reference.yaml` | 5 coefficient sets + recorded local and external cross-checks |
 | `profiles/tsmc035_4m2p/pex/tsmc035_beol_public_fit.yaml` | parameterised BEOL reconstruction |
 | `common/pex/wat_rc.py` | **PEX v0 engine** (analytical R/C, provenance-enforcing) |
 | `scripts/run_wat_pex.py` | PEX v0 CLI |

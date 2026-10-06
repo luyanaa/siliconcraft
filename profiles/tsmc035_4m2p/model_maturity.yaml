@@ -87,6 +87,15 @@ models:
   tsmc035_poly2_cap:
     simulator: null
     representation: contract_only
-    source: "elec / POLY2 GDS 56; CDK divaDRC.rul records the MOSIS statement that TSMC 0.35u poly2 builds capacitors but not transistors"
-    evidence: "Capacitor-class layer is public; no numerical POLY2 capacitor card was recovered."
+    source: "elec / POLY2 GDS 56; CDK divaDRC.rul records the MOSIS statement that TSMC 0.35u poly2 builds capacitors but not transistors; NCSU CDK techfile/layerDefinitions.tf TSMC_CMOS035_4M2P block (run T02F, 2000-05-17) supplies elec/poly areaCap 865 aF/um2"
+    evidence: "Capacitor-class layer is public and one first-hand local area capacitance exists (elec/poly 865 aF/um2), but the techfile documents that value as an average of several runs and no POLY2 capacitor compact-model card, fringe term, or voltage dependence was recovered."
     fit_status: unavailable
+    geometrical_pex_capacitance:
+      status: historical_reference
+      area_aF_per_um2: 865
+      authority: local_first_hand
+      source: "NCSU CDK techfile/layerDefinitions.tf, TSMC_CMOS035_4M2P block (T02F, 2000-05-17): techSetTwoLayerProp elec poly areaCap 865"
+      caveat: "Geometrical area capacitance only.  No perimeter/fringe term, no voltage or geometry dependence, no compact model.  Documented as an average of several runs."
+    compact_model:
+      status: unavailable
+      reason: "No public TSMC 0.35 poly2 capacitor model card was recovered."

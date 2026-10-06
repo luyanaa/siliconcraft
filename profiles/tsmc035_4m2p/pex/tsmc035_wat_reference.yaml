@@ -9,18 +9,23 @@
 #   `verified_local_report` is NEVER used as the default 4M reference and is
 #   NEVER presented as signoff data.
 #
-# TWO AUTHORITIES, NEVER MERGED
-#   1. n88y_scn035h_3m  — first-hand LOCAL report, verified in this repository.
-#   2. t2af_mm_epi_4m / t59n_mm_epi_4m / t19p_lo_epi_4m — historical MOSIS
+# THREE AUTHORITIES, NEVER MERGED
+#   1. n88y_scn035h_3m  — first-hand LOCAL MOSIS report, verified in this repo.
+#   2. t02f_ncsu_4m2p   — first-hand LOCAL Cadence techfile block that is native
+#      to the 4M/2P option (run T02F, 2000-05-17), i.e. the D35 option class.
+#      It is the default 4-metal BEOL reference; where it lacks a coefficient
+#      (the n+/p+ active split) the value is BORROWED from set 1 and recorded
+#      per quantity under `per_quantity_provenance.borrowed`.
+#   3. t2af_mm_epi_4m / t59n_mm_epi_4m / t19p_lo_epi_4m — historical MOSIS
 #      reports cited by the requester.  The port was produced offline, so these
 #      were not re-fetched; they are labelled `not_reverified_offline` and are
-#      cross-checked against the local N88Y report where quantities overlap.
+#      cross-checked against the local reports where quantities overlap.
 schema_version: 1
 profile: tsmc035_4m2p
 kind: mosis_wat_reference
 process_family: TSMC_SCN035
-d35_reference_set: t2af_mm_epi_4m
-d35_reference_rationale: 'The TSRI D35 marketing name is "TSMC 0.35um Mixed-Signal 2P4M Polycide 3.3/5V": mixed-signal and 4-metal.  The MM_EPI 4-metal sets therefore match the option class more closely than the 3-metal SCN035H N88Y run or the LO_EPI set, so T2AF is the default 4M reference.  N88Y remains the first-hand verified anchor.'
+d35_reference_set: t02f_ncsu_4m2p
+d35_reference_rationale: 'The TSRI D35 marketing name is "TSMC 0.35um Mixed-Signal 2P4M Polycide 3.3/5V": mixed-signal, 4-metal, 2-poly.  The NCSU CDK techfile block for TSMC_CMOS035_4M2P is the only source in this repository that is both first-hand local AND native to that exact option (run T02F, 4M/2P), and it covers all four metals plus via3, so it is the default 4-metal reference.  It cannot supply the n+/p+ active split, so those coefficients are explicitly borrowed from the local N88Y report and recorded per quantity.  T2AF/T59N/T19P remain external cross-checks; T19P (LO_EPI) is never selectable.'
 capability_separation:
   rule: "LO_EPI and MM_EPI coefficients must never be blended."
   note: "The FEOL sheet resistance of the LO_EPI set differs from the MM_EPI/N88Y sets by more than an order of magnitude (N+ ~3.6 vs ~79 ohm/sq).  That gap is far larger than the metal/CBEOL spread and is more consistent with a silicided-vs-non-silicided source/drain difference than with epi resistivity alone.  The repository's own process audit already separates the non-silicided N88Y run from the silicided T27K run, so this is flagged as an open question rather than resolved.  See docs/d35_subm_deep_audit.md."
@@ -89,6 +94,98 @@ coefficient_sets:
       version: "3.1"
       models: [CMOSN, CMOSP]
       materialized_as: "profiles/tsmc035_4m2p/models/tsmc035_4m2p.lib (sections: tsmc035_4m2p)"
+
+  # ------------------------------- local, NATIVE to the 4M/2P option (D35 class)
+  t02f_ncsu_4m2p:
+    provenance:
+      authority: local_first_hand
+      verification_status: verified_local_techfile
+      run: T02F
+      date: "2000-05-17"
+      vendor: TSMC
+      mosis_technology: SCN4ME_SUBM
+      process_option: TSMC_CMOS035_4M2P
+      feature_size_um: 0.35
+      metals: 4
+      poly_layers: 2
+      file: "../ncsu-cdk-1.6.0/techfile/layerDefinitions.tf"
+      file_block: '( ("TSMC_CMOS035_4M2P") ... )'
+      nature: "Cadence techfile two-layer and layer properties shipped in the NCSU CDK mirror; the block is labelled 'TSMC035 0.35um (4M/2P option)' and 'run T02F (May 17, 2000)'"
+      caveat: "Cadence tech-layer properties, not a MOSIS WAT report: no device or benchmark rows, no nactive/pactive split, and the elec-poly capacitance is documented as 'an average of several runs'."
+    sheet_resistance_ohm_sq:
+      nactive: 79.1
+      pactive: 153.4
+      poly: 8.5
+      elec: 47.4
+      metal1: 0.07
+      metal2: 0.07
+      metal3: 0.07
+      metal4: 0.04
+      nwell: 1048
+    contact_resistance_ohm:
+      nactive: 54.8
+      pactive: 118.5
+      poly: 6.8
+      elec: 6.8
+    via_resistance_ohm:
+      via: 1.50
+      via2: 1.27
+      via3: 1.16
+    capacitance_aF:
+      units: {area: aF_per_um2, fringe: aF_per_um}
+      coupling:
+        poly-metal1:   {area: 47, fringe: 61}
+        poly-metal2:   {area: 15, fringe: 37}
+        poly-metal3:   {area: 9,  fringe: 28}
+        poly-metal4:   {area: 7,  fringe: 24}
+        metal1-metal2: {area: 36, fringe: 52}
+        metal1-metal3: {area: 14, fringe: 38}
+        metal1-metal4: {area: 9,  fringe: 28}
+        metal2-metal3: {area: 38, fringe: 58}
+        metal2-metal4: {area: 14, fringe: 37}
+        metal3-metal4: {area: 34, fringe: 55}
+      to_substrate:
+        active: {area: 1391, fringe: 377}
+        poly:   {area: 111,  fringe: null}
+        metal1: {area: 27, fringe: 45}
+        metal2: {area: 14, fringe: 44}
+        metal3: {area: 7,  fringe: 51}
+        metal4: {area: 11, fringe: 40}
+      poly2_cap:
+        elec-poly: {area: 865}
+    per_quantity_provenance:
+      native:
+        - "sheet_resistance_ohm_sq.poly"
+        - "sheet_resistance_ohm_sq.metal1"
+        - "sheet_resistance_ohm_sq.metal2"
+        - "sheet_resistance_ohm_sq.metal3"
+        - "sheet_resistance_ohm_sq.metal4"
+        - "sheet_resistance_ohm_sq.nwell"
+        - "contact_resistance_ohm.poly"
+        - "contact_resistance_ohm.elec"
+        - "via_resistance_ohm.via"
+        - "via_resistance_ohm.via2"
+        - "via_resistance_ohm.via3"
+        - "capacitance_aF.coupling"
+        - "capacitance_aF.to_substrate"
+        - "capacitance_aF.poly2_cap.elec-poly"
+      borrowed:
+        sheet_resistance_ohm_sq:
+          nactive: {value: 79.1, source_set: n88y_scn035h_3m, rationale: "T02F defines a single `active` layer, not an n+/p+ split, so it cannot supply nactive."}
+          pactive: {value: 153.4, source_set: n88y_scn035h_3m, rationale: "Same: the T02F techfile block has no p+/n+ split."}
+          elec: {value: 47.4, source_set: n88y_scn035h_3m, rationale: "T02F defines no elec sheetResistance."}
+        contact_resistance_ohm:
+          nactive: {value: 54.8, source_set: n88y_scn035h_3m, rationale: "T02F's active-contact layer `ca` (118.0) is documented as the average of m1-n+ and m1-p+; it cannot be split into n+/p+."}
+          pactive: {value: 118.5, source_set: n88y_scn035h_3m, rationale: "Same unsplit `ca`; the local WAT report supplies the per-type split."}
+      unsplit_in_source:
+        capacitance_aF.to_substrate.active: {area: 1391, fringe: 377, note: "T02F gives one `active` layer (areaCap 1391 / perimeterCap 377) without saying whether it is n+ or p+.  The local N88Y report has nactive 921/299 and pactive 1408/385, so 1391/377 is close to the p+ value, but the source does not state it.  Recorded under the source's own key and NOT assigned to nactive or pactive."}
+      open_questions:
+        - "T02F `ca` contactResistance 118.0 is documented in the techfile as 'average of m1-n+ and m1-p+', yet it matches the local N88Y pactive contact 118.5 almost exactly and is far from the mean of 54.8 and 118.5 (86.65).  Whether `ca` is a true average or the p+ value is unresolved; it is therefore never split."
+      absent:
+        - "capacitance_aF.gate_overlap.nactive-poly"
+        - "capacitance_aF.gate_overlap.pactive-poly"
+        - "device_and_benchmark"
+      fill_rule: "A coefficient absent from T02F is taken only from a set named in `borrowed`, and its value is duplicated there so the two can be compared.  Never silently blended."
 
   # --------------------------------------------------- requester-supplied 4M
   t2af_mm_epi_4m:
@@ -212,10 +309,29 @@ cross_check:
     confidence: high
   assessment: "CBEOL quantities (M1/M2 sheet resistance, M1-M2 / M1-M3 / M2-M3 coupling capacitance) agree within ~10%, and the top-metal tier mapping is exact.  FEOL quantities agree for N+/P+ active (~0.4%) but show real lot-to-lot spread on poly (17.6%) and on contact resistance (12-29%).  That spread is the reason a historical WAT set may be used as a research reference but never as a signoff parameter set."
 
+# Cross-check between the two first-hand LOCAL sources.  Deltas are
+# (T02F - N88Y) / N88Y, in percent.
+local_cross_check:
+  basis: "T02F (local CDK techfile, 4M/2P native, 2000) vs N88Y (local MOSIS WAT report, 3M SCN035H, 1998)"
+  deltas_percent:
+    sheet_resistance_ohm_sq:
+      poly: 14.9
+      metal1: 0.0
+      metal2: 0.0
+      nwell: 3.7
+    contact_resistance_ohm:
+      poly: 21.4
+    capacitance_coupling:
+      metal1-metal2: {area: 0.0, fringe: -7.1}
+      metal1-metal3: {area: 7.7, fringe: 8.6}
+      metal2-metal3: {area: 5.6, fringe: 9.4}
+  assessment: "Two independent first-hand local sources for the same 0.35 um generation agree exactly on metal sheet resistance and within ~10% on coupling capacitance, while poly sheet resistance (14.9%) and poly contact resistance (21.4%) show the same lot-to-lot spread seen against T2AF.  This is the strongest local corroboration available offline, and it is why T02F can serve as the 4-metal BEOL default while remaining a research reference rather than signoff data."
+
 caveats:
   - "Historical WAT numbers (1998-2005) are not calibrated to the current TSRI D35 revision."
   - "T2AF/T59N/T19P were supplied by citation only; the port was produced without network access and did not re-fetch them."
   - "LO_EPI and MM_EPI coefficients are kept in separate sets and must not be blended."
-  - "N88Y supplies no M4 and no via3; the 4-metal reference must come from the MM_EPI set for those quantities."
+  - "T02F is a Cadence techfile block, not a MOSIS WAT report: it has no device or benchmark rows and no n+/p+ active split.  The nactive/pactive sheet and contact resistances in t02f_ncsu_4m2p are borrowed from n88y_scn035h_3m and are listed under per_quantity_provenance.borrowed."
+  - "N88Y supplies no M4 and no via3; the 4-metal reference comes from t02f_ncsu_4m2p for those quantities."
   - "No temperature coefficients are materialized; no temperature correction is applied."
   - "Contact and via resistance are per-cut values; the caller owns the cut count."

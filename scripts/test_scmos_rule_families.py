@@ -60,7 +60,7 @@ def main() -> int:
         assert entry["lambda_um"] == lam
         assert entry["techfile"] == techfile
         assert entry["rule_family"] == "scmos_subm"
-        assert entry["deep_n_well_layer"] == "DEEP_N_WELL"
+        assert entry["deep_n_well_layer"] is None
         assert "DEEP" not in source
         assert "DEEP" not in mosis
         assert "d.tf" not in techfile
@@ -73,7 +73,7 @@ def main() -> int:
         assert entry["techfile"] == techfile
         assert entry["model_prefix"] == prefix
         assert entry["rule_family"] == "scmos_deep"
-        assert entry["deep_n_well_layer"] == "DEEP_N_WELL"
+        assert entry["deep_n_well_layer"] is None
         assert entry["pex_status"] == "deferred"
 
     forbidden = matrix["forbidden"]
@@ -111,9 +111,9 @@ def main() -> int:
         {"nwell": [(42, 0)]},
         {"nwell": ["CWN"]},
     )
-    deep_well = next(layer for layer in parsed["layers"] if layer["name"] == "DEEP_N_WELL")
-    assert deep_well["gds"] == [{"layer": 38, "datatype": 0}]
-    assert deep_well["cif"] == ["CDNW"]
+    # Regression guard: GDS 38 / DEEP_N_WELL was injected without a source and
+    # must not return. See scripts/parse_cdk_layers.py for the evidence.
+    assert not [layer for layer in parsed["layers"] if layer["name"] == "DEEP_N_WELL"]
     assert parsed["meta"]["rule_family"] == "scmos_subm"
     deep_parsed = build_profile(
         "tsmc025_deep",
@@ -133,7 +133,7 @@ def main() -> int:
         {"nwell": ["CWN"]},
     )
     assert deep_parsed["meta"]["rule_family"] == "scmos_deep"
-    assert next(layer for layer in deep_parsed["layers"] if layer["name"] == "DEEP_N_WELL")["gds"] == [{"layer": 38, "datatype": 0}]
+    assert not [layer for layer in deep_parsed["layers"] if layer["name"] == "DEEP_N_WELL"]
     assert rule_family_for({"deepRules": True}, "TSMC_CMOS025_DEEP") == "scmos_deep"
     validate_rule_family(
         {

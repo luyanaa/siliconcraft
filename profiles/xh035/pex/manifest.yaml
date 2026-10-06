@@ -97,8 +97,9 @@ substrate_extraction:
     - deep_nwell
     - hv_nwell
   preserve_distributed_network: true
-  source: "X-FAB active substrate parasitic extraction methodology; public flow description only"
-  limitation: "Public methodology establishes active/distributed substrate extraction; calibrated coefficients, substrate stack, and current backend are not in this repository."
+  source: "Generic X-FAB active-substrate parasitic extraction methodology (automotive HV CMOS); the same URL is cited by xh018 and it is not an XH035-specific document"
+  source_evidence_class: generic_foundry_methodology_not_process_specific
+  limitation: "The cited paper is generic X-FAB automotive-HV-CMOS flow literature, not an XH035 document, and it is cited identically in the XH018 profile. It establishes that active/distributed substrate extraction is a required flow step -- it does not establish any XH035 substrate coefficient, stack, or backend. Calibrated coefficients, substrate stack, and current backend are not in this repository."
 profiles:
   public_r_only:
     generated: false

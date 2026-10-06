@@ -28,7 +28,7 @@ verified.
 
 ---
 
-## 1. Local first-hand anchor — MOSIS run N88Y
+## 1. Local first-hand sources — N88Y (WAT report) and T02F (4M/2P techfile)
 
 Source: `../ncsu-cdk-1.6.0/models/MOSIS_reports/n88y-params.txt`
 (official MOSIS parametric report bundled in the NCSU CDK mirror).
@@ -130,6 +130,57 @@ shipped `tsmc35N`/`tsmc35P` cards are the N88Y run.
 **Limitation:** N88Y is a **3-metal** run (MTL1..MTL3 only). It supplies no M4
 and no Via3, so it cannot by itself define the 4-metal option's top tier.
 
+### 1.2 T02F — first-hand local 4M/2P techfile (the 4-metal BEOL default)
+
+`../ncsu-cdk-1.6.0/techfile/layerDefinitions.tf` contains a Cadence property
+block for the exact option class named in the D35 description:
+
+```
+( ("TSMC_CMOS035_4M2P")
+    ; TSMC035 0.35um (4M/2P option)
+    ; run T02F (May 17, 2000)
+    ; elec-poly cap is an average of several runs
+```
+
+This is **first-hand local** data (shipped in the same CDK mirror the profiles
+are generated from) and it is **native to 4M/2P** — the only such source
+available offline. It supplies all four metals, via3, and the full 4-metal
+coupling matrix.
+
+| quantity | value |
+|---|---|
+| Rsheet poly / nwell | 8.5 / 1048 Ω/□ |
+| Rsheet M1 / M2 / M3 / M4 | 0.07 / 0.07 / 0.07 / 0.04 Ω/□ |
+| contact `ca` / `ce` / `cp` | 118.0 / 6.8 / 6.8 Ω |
+| via / via2 / via3 | 1.50 / 1.27 / 1.16 Ω |
+
+| pair | area (aF/µm²) | fringe (aF/µm) |
+|---|---|---|
+| metal1–metal2 | 36 | 52 |
+| metal1–metal3 | 14 | 38 |
+| metal1–metal4 | 9 | 28 |
+| metal2–metal3 | 38 | 58 |
+| metal2–metal4 | 14 | 37 |
+| metal3–metal4 | 34 | 55 |
+
+To-substrate area/fringe: active 1391/377, poly 111/—, M1 27/45, M2 14/44,
+M3 7/51, M4 11/40. Electrically: `elec`–`poly` areaCap **865 aF/µm²**
+(documented in the source as "an average of several runs").
+
+**Limitations — recorded, not papered over:**
+
+* It is a **techfile**, not a MOSIS WAT report: it has no device or benchmark rows.
+* It defines a single `active` layer, so it **cannot supply an n⁺/p⁺ split**. The
+  `nactive`/`pactive` sheet and contact resistances in the set are therefore
+  **borrowed from N88Y**, and each is recorded individually under
+  `per_quantity_provenance.borrowed` with its source set and rationale. The
+  engine refuses unknown coefficients; the borrowings exist so the set is
+  complete for the declared model keys, not to hide a gap.
+* `ca` = 118.0 Ω is documented as "average of m1-n+ and m1-p+", yet it matches
+  N88Y's **p⁺** contact (118.5) almost exactly and is nowhere near the mean of
+  54.8 and 118.5 (86.65). Whether `ca` is a true average or the p⁺ value is
+  unresolved, so it is never split. Recorded as an open question in the data file.
+
 ---
 
 ## 2. Requester-supplied external sets
@@ -176,18 +227,23 @@ M1/M2/M3 = 0.07 Ω/□, M4 = 0.04 Ω/□, N-well ≈ 998 Ω/□.
 
 ---
 
-## 3. Why T2AF is the 4-metal D35 reference
+## 3. Why T02F is the 4-metal D35 reference
 
 The D35 marketing name is "TSMC 0.35 µm **Mixed-Signal** 2P4M Polycide
-3.3/5 V": mixed-signal **and** 4-metal. Among the available sets:
+3.3/5 V": mixed-signal, **4-metal, 2-poly**. Among the available sets:
 
+* **T02F** — local first-hand, **native to the exact `TSMC_CMOS035_4M2P` option**
+  (4M/2P), covers M1–M4 and via3 → the only source that is both local *and*
+  option-native;
 * N88Y — local, verified, but **3-metal** and tagged SCN3ME;
-* T2AF / T59N — **MM_EPI**, **4-metal** → closest option match;
+* T2AF / T59N — **MM_EPI**, **4-metal**, but external and not re-verified offline;
 * T19P — **LO_EPI**, 4-metal, but a different FEOL class (§5).
 
-`d35_reference_set: t2af_mm_epi_4m` is therefore the default, with N88Y retained
-as the verified cross-check anchor. `capability_separation.rule` in the data file
-forbids blending LO_EPI and MM_EPI coefficients.
+`d35_reference_set: t02f_ncsu_4m2p` is therefore the default. N88Y remains the
+verified WAT anchor **and** is the explicit source for the n⁺/p⁺ coefficients
+that T02F cannot supply (§1.2). T2AF/T59N/T19P are retained as external
+cross-checks; `capability_separation.rule` forbids blending LO_EPI and MM_EPI
+coefficients.
 
 ---
 
@@ -246,6 +302,27 @@ The 3-metal run's top metal therefore sits in the same thickness class as the
 This is why a historical WAT set is usable as a **research reference** but not as
 a **signoff parameter set**.
 
+### Local cross-check: T02F vs N88Y (both first-hand local)
+
+Deltas are `(T02F − N88Y) / N88Y`, computed by `compare_sets` /
+`compare_coupling` and asserted in `scripts/test_tsmc035_pex.py`.
+
+| quantity | N88Y | T02F | Δ |
+|---|---|---|---|
+| poly Rsheet (Ω/□) | 7.4 | 8.5 | +14.9 % |
+| nwell Rsheet (Ω/□) | 1011 | 1048 | +3.7 % |
+| M1 / M2 Rsheet (Ω/□) | 0.07 / 0.07 | 0.07 / 0.07 | 0.0 % |
+| poly contact (Ω) | 5.6 | 6.8 | +21.4 % |
+| M1–M2 coupling area / fringe | 36 / 56 | 36 / 52 | 0.0 % / −7.1 % |
+| M1–M3 coupling area / fringe | 13 / 35 | 14 / 38 | +7.7 % / +8.6 % |
+| M2–M3 coupling area / fringe | 36 / 53 | 38 / 58 | +5.6 % / +9.4 % |
+
+Two independent first-hand local sources for the same 0.35 µm generation agree
+**exactly** on metal sheet resistance and within ~10 % on coupling capacitance,
+while poly sheet resistance and poly contact resistance show the same
+lot-to-lot spread seen against T2AF. This is the strongest local corroboration
+available offline.
+
 ---
 
 ## 5. Open question: the LO_EPI/MM_EPI FEOL gap is probably a silicide confound
@@ -283,14 +360,14 @@ C_aF  = C_area[aF/µm²] · A_overlap[µm²]
       + C_fringe[aF/µm] · L_edge[µm]
 ```
 
-Worked example (T2AF set, verified by `scripts/test_tsmc035_pex.py`):
+Worked example (T02F set, verified by `scripts/test_tsmc035_pex.py`):
 
 | element | inputs | result |
 |---|---|---|
 | metal1 wire | 0.07 Ω/□, L=100 µm, W=0.6 µm | 11.6667 Ω |
-| metal2 wire + 1 via1 | 0.07 Ω/□, L=50 µm, W=0.6 µm, via 1.24 Ω | 5.8333 + 1.24 = 7.0733 Ω |
-| nactive + 2 contacts | 79.4 Ω/□, L=10 µm, W=0.6 µm, 62.7 Ω/cut | 1323.333 + 125.4 = 1448.733 Ω |
-| metal1–metal2 coupling | A=100 µm², edge=50 µm | 3800 + 2900 = 6700 aF |
+| metal2 wire + 1 via1 | 0.07 Ω/□, L=50 µm, W=0.6 µm, via 1.50 Ω | 5.8333 + 1.50 = 7.3333 Ω |
+| nactive + 2 contacts | 79.1 Ω/□ (borrowed from N88Y), L=10 µm, W=0.6 µm, 54.8 Ω/cut (borrowed) | 1318.333 + 109.6 = 1427.933 Ω |
+| metal1–metal2 coupling | A=100 µm², edge=50 µm | 3600 + 2600 = 6200 aF |
 
 Honesty properties enforced by the engine and the test:
 
@@ -299,8 +376,8 @@ Honesty properties enforced by the engine and the test:
   M2–M4 coupling on N88Y, any contact on metal1) raises instead of defaulting;
 * a via count without an explicit `via_target` raises;
 * every report carries `calibrated_to_current_d35: false`, `signoff: false`, and
-  a `coefficient_set_verification` of `verified_local_report` or
-  `external_unverified`.
+  a `coefficient_set_verification` of `verified_local_report`,
+  `verified_local_techfile`, or `external_unverified`.
 
 Excluded terms are declared rather than silently omitted: junction capacitance
 (owned by the compact model), substrate network (unavailable), lateral sidewall
@@ -315,11 +392,12 @@ coefficients materialized).
 `common/pex/field_solver.py::canonical_sweep_manifest`, maturity
 `field_solver_estimated`, `calibrated: false`, `signoff: false`.
 
-The fit target is the **measured** T2AF coupling matrix (§2) with the local N88Y
-matrix as cross-check, acceptance band 15 %. Inputs are the official 4-metal
-cross-section thicknesses (§6 of `d35_physical_stack.md`) plus a fitted relative
-permittivity (SiO₂ 3.9 assumed until fitted). An external FastCap / FasterCap /
-Palace run consumes the canonical sweep manifest and returns a research RC table.
+The fit target is the local first-hand **T02F (4M/2P)** coupling matrix (§1.2)
+with the local N88Y matrix as cross-check, acceptance band 15 %. Inputs are the
+official 4-metal cross-section thicknesses (§6 of `d35_physical_stack.md`) plus a
+fitted relative permittivity (SiO₂ 3.9 assumed until fitted). An external FastCap
+/ FasterCap / Palace run consumes the canonical sweep manifest and returns a
+research RC table.
 
 ---
 
@@ -327,6 +405,9 @@ Palace run consumes the canonical sweep manifest and returns a research RC table
 
 * MOSIS parametric report **run N88Y**, technology **SCN035H**, vendor TSMC —
   `../ncsu-cdk-1.6.0/models/MOSIS_reports/n88y-params.txt` (local first-hand).
+* NCSU CDK 1.6.0 techfile block for **`TSMC_CMOS035_4M2P`**, **run T02F**
+  (2000-05-17) — `../ncsu-cdk-1.6.0/techfile/layerDefinitions.tf`
+  (local first-hand; the 4-metal BEOL default).
 * NCSU CDK 1.6.0 shipped cards `models/hspice/public/publicModel/tsmc35N`,
   `tsmc35P` (local first-hand; header `* run N88Y`).
 * MOSIS TSMC SCN035 **MM_EPI** report (run T2AF) —

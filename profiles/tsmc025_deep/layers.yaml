@@ -396,15 +396,3 @@ layers:
     cif:
       - CMT
       - CM3
-  -
-    name: DEEP_N_WELL
-    purpose: drawing
-    gds:
-      -
-        layer: 38
-        datatype: 0
-    cif:
-      - CDNW
-    role: well
-    available: true
-    note: "MOSIS SCN4M/5M/6M layer capability shared by SUBM and DEEP variants"

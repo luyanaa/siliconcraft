@@ -52,7 +52,12 @@ meta:
     ldmosAvailable: true
     dmosAvailable: true
     voltageAwareSpacing: true
-    substratePexAvailable: true
+    # Substrate PEX is REQUIRED for signoff on this process, but no backend,
+    # substrate stack, or calibrated coefficient exists in this repository.
+    # The former `substratePexAvailable: true` conflated "substrate coupling
+    # matters for this process" with "this repository can extract it".
+    substratePexRequired: true
+    substratePexAvailable: false
     guardRingRulesAvailable: false
     latchupRulesAvailable: false
     memsAvailable: false
@@ -62,6 +67,9 @@ meta:
     - "https://datasheet.datasheetarchive.com/originals/crawler/xfab.com/dd47a8c450bf3db21dd51bcf6966ea4f.pdf"
     - "https://cdn.thomasnet.com/ccp/30121834/147470.pdf"
     - "https://www.xfab.com/resourcexplorer/detail/datasheet-xh035"
+    # Generic X-FAB automotive-HV-CMOS methodology paper, cited identically by
+    # xh018 and xh035.  It is NOT an XH035-specific substrate document, so it
+    # supports "substrate extraction is required", not "XH035 substrate data".
     - "https://www.xfab.com/resourcexplorer/detail/a-new-methodology-for-active-substrate-parasitic-extraction-in-automotive-hv-cmos-processes"
 layers:
   -

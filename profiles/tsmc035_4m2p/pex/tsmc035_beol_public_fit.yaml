@@ -73,7 +73,7 @@ fit_parameters:
     units: dimensionless
 
 fit_target:
-  observables: tsmc035_wat_reference.yaml#coefficient_sets.t2af_mm_epi_4m.capacitance_aF.coupling
+  observables: tsmc035_wat_reference.yaml#coefficient_sets.t02f_ncsu_4m2p.capacitance_aF.coupling
   cross_check_observables: tsmc035_wat_reference.yaml#coefficient_sets.n88y_scn035h_3m.capacitance_aF.coupling
   objective: "Reproduce the measured M1-M2 / M1-M3 / M1-M4 / M2-M3 / M2-M4 / M3-M4 area and fringe coefficients within the recorded lot-to-lot spread."
   acceptance_band_percent: 15

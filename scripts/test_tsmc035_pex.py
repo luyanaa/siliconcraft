@@ -94,11 +94,14 @@ def check_identity_and_layers() -> dict:
         "via3": [30],
         "metal4": [31],
         "pad": [26],
-        "DEEP_N_WELL": [38],
     }
     for name, numbers in expected.items():
         assert name in gds, f"layer {name} missing from layers.yaml"
         assert gds[name] == numbers, f"{name}: {gds[name]} != {numbers}"
+    # Regression guard: DEEP_N_WELL / GDS 38 was injected without a source and
+    # must not return. See scripts/parse_cdk_layers.py and
+    # schema/scmos_process_matrix.yaml (deep_n_well_layer_authority).
+    assert "DEEP_N_WELL" not in gds, "unsourced DEEP_N_WELL layer reappeared"
     return process
 
 
@@ -141,8 +144,8 @@ def check_pex_v0(process) -> None:
     reference = load(PROFILE_DIR / "pex" / "tsmc035_wat_reference.yaml")
     manifest = process.pex_doc
 
-    # The 4-metal MM_EPI set is the declared D35 reference; LO_EPI never is.
-    assert reference["d35_reference_set"] == "t2af_mm_epi_4m"
+    # The local 4M/2P techfile set is the declared D35 reference; LO_EPI never is.
+    assert reference["d35_reference_set"] == "t02f_ncsu_4m2p"
     assert reference["capability_separation"]["rule"]
     sets = reference["coefficient_sets"]
     for name, dataset in sets.items():
@@ -151,12 +154,50 @@ def check_pex_v0(process) -> None:
     assert sets["n88y_scn035h_3m"]["provenance"]["verification_status"] == (
         "verified_local_report"
     )
+    assert sets["t02f_ncsu_4m2p"]["provenance"]["authority"] == "local_first_hand"
+    assert sets["t02f_ncsu_4m2p"]["provenance"]["verification_status"] == (
+        "verified_local_techfile"
+    )
     for name in ("t2af_mm_epi_4m", "t59n_mm_epi_4m", "t19p_lo_epi_4m"):
         assert sets[name]["provenance"]["verification_status"] == (
             "not_reverified_offline"
         )
     assert sets["t2af_mm_epi_4m"]["provenance"]["process_option"] == "MM_EPI"
     assert sets["t19p_lo_epi_4m"]["provenance"]["process_option"] == "LO_EPI"
+
+    # --- T02F: native to the 4M/2P option, with per-quantity borrowings ----
+    t02f = sets["t02f_ncsu_4m2p"]
+    assert t02f["provenance"]["process_option"] == "TSMC_CMOS035_4M2P"
+    assert t02f["provenance"]["run"] == "T02F"
+    assert t02f["provenance"]["date"] == "2000-05-17"
+    # native values quoted straight from the CDK techfile block
+    assert t02f["sheet_resistance_ohm_sq"]["poly"] == 8.5
+    assert t02f["sheet_resistance_ohm_sq"]["nwell"] == 1048
+    assert t02f["sheet_resistance_ohm_sq"]["metal4"] == 0.04
+    assert t02f["via_resistance_ohm"]["via3"] == 1.16
+    assert t02f["capacitance_aF"]["coupling"]["metal3-metal4"] == {
+        "area": 34, "fringe": 55,
+    }
+    assert t02f["capacitance_aF"]["poly2_cap"]["elec-poly"]["area"] == 865
+    # every borrowed coefficient is recorded AND equals the live table value
+    borrowed = t02f["per_quantity_provenance"]["borrowed"]
+    assert borrowed, "T02F must record its borrowings explicitly"
+    for table, entries in borrowed.items():
+        for key, record in entries.items():
+            assert record["value"] == t02f[table][key], (
+                f"borrowed {table}.{key} disagrees with the coefficient table"
+            )
+            assert record["source_set"] in sets, record["source_set"]
+            assert record["source_set"] != "t02f_ncsu_4m2p"
+            assert record["rationale"], f"{table}.{key}: no rationale"
+    # unsplit quantities stay under the source's own key and are never split
+    unsplit = t02f["per_quantity_provenance"]["unsplit_in_source"]
+    assert "capacitance_aF.to_substrate.active" in unsplit
+    assert "nactive" not in t02f["capacitance_aF"]["to_substrate"]
+    assert "pactive" not in t02f["capacitance_aF"]["to_substrate"]
+    assert "never silently blended" in (
+        t02f["per_quantity_provenance"]["fill_rule"].lower()
+    )
 
     # --- arithmetic -------------------------------------------------------
     report = build_wat_rc_report(
@@ -183,29 +224,38 @@ def check_pex_v0(process) -> None:
         ],
     )
     assert report["pex_profile"] == "mosis_wat_rc"
-    assert report["coefficient_set"] == "t2af_mm_epi_4m"
-    assert report["coefficient_set_verification"] == "external_unverified"
+    assert report["coefficient_set"] == "t02f_ncsu_4m2p"
+    assert report["coefficient_set_verification"] == "verified_local_techfile"
     assert report["calibrated_to_current_d35"] is False
     assert report["signoff"] is False
 
     segments = report["segments"]
     approx(segments[0]["resistance_ohm"], 0.07 * 100.0 / 0.6)
     approx(segments[1]["wire_resistance_ohm"], 0.07 * 50.0 / 0.6)
-    approx(segments[1]["via_resistance_ohm"], 1.24)
-    approx(segments[1]["resistance_ohm"], 0.07 * 50.0 / 0.6 + 1.24)
-    approx(segments[2]["wire_resistance_ohm"], 79.4 * 10.0 / 0.6)
-    approx(segments[2]["contact_resistance_ohm"], 2 * 62.7)
-    approx(segments[2]["resistance_ohm"], 79.4 * 10.0 / 0.6 + 2 * 62.7)
+    approx(segments[1]["via_resistance_ohm"], 1.50)
+    approx(segments[1]["resistance_ohm"], 0.07 * 50.0 / 0.6 + 1.50)
+    approx(segments[2]["wire_resistance_ohm"], 79.1 * 10.0 / 0.6)
+    approx(segments[2]["contact_resistance_ohm"], 2 * 54.8)
+    approx(segments[2]["resistance_ohm"], 79.1 * 10.0 / 0.6 + 2 * 54.8)
 
     approx(report["resistance_ohm"], sum(s["resistance_ohm"] for s in segments))
-    approx(report["contact_resistance_ohm"], 2 * 62.7)
-    approx(report["via_resistance_ohm"], 1.24)
+    approx(report["contact_resistance_ohm"], 2 * 54.8)
+    approx(report["via_resistance_ohm"], 1.50)
     assert report["excluded_terms"]["substrate_network"] == "excluded_and_unavailable"
 
     coupling = report["coupling"][0]
-    approx(coupling["area_capacitance_aF"], 38 * 100.0)
-    approx(coupling["fringe_capacitance_aF"], 58 * 50.0)
-    approx(coupling["capacitance_aF"], 38 * 100.0 + 58 * 50.0)
+    approx(coupling["area_capacitance_aF"], 36 * 100.0)
+    approx(coupling["fringe_capacitance_aF"], 52 * 50.0)
+    approx(coupling["capacitance_aF"], 36 * 100.0 + 52 * 50.0)
+
+    # An external, non-reverified set must still report as unverified.
+    external = build_wat_rc_report(
+        manifest, reference,
+        [WireSegment(layer="metal1", length_um=10.0, width_um=0.6)],
+        coefficient_set="t2af_mm_epi_4m",
+    )
+    assert external["coefficient_set_verification"] == "external_unverified"
+    assert external["signoff"] is False
 
     # A locally verified set produces the verified label.
     local = build_wat_rc_report(
@@ -305,6 +355,36 @@ def check_pex_v0(process) -> None:
     assert sets["n88y_scn035h_3m"]["sheet_resistance_ohm_sq"]["metal3"] == (
         sets["t2af_mm_epi_4m"]["sheet_resistance_ohm_sq"]["metal4"]
     )
+    # ... and the same tier mapping holds against the local 4M/2P techfile set
+    assert sets["n88y_scn035h_3m"]["sheet_resistance_ohm_sq"]["metal3"] == (
+        sets["t02f_ncsu_4m2p"]["sheet_resistance_ohm_sq"]["metal4"]
+    )
+
+    # the recorded LOCAL T02F-vs-N88Y cross-check must reproduce
+    local_recorded = reference["local_cross_check"]["deltas_percent"]
+    local_sheet = compare_sets(
+        reference, "n88y_scn035h_3m", "t02f_ncsu_4m2p",
+        [
+            ("sheet_resistance_ohm_sq", "poly", "poly"),
+            ("sheet_resistance_ohm_sq", "metal1", "metal1"),
+            ("sheet_resistance_ohm_sq", "metal2", "metal2"),
+            ("sheet_resistance_ohm_sq", "nwell", "nwell"),
+        ],
+    )
+    for key in ("poly", "metal1", "metal2", "nwell"):
+        assert local_sheet["deltas_percent"][key] == (
+            local_recorded["sheet_resistance_ohm_sq"][key]
+        ), f"recorded local sheet-resistance delta for {key} is stale"
+    local_coupling = compare_coupling(
+        reference, "n88y_scn035h_3m", "t02f_ncsu_4m2p",
+        ["metal1-metal2", "metal1-metal3", "metal2-metal3"],
+    )
+    for pair in ("metal1-metal2", "metal1-metal3", "metal2-metal3"):
+        for field_name in ("area", "fringe"):
+            key = f"{pair}.{field_name}"
+            assert local_coupling["deltas_percent"][key] == (
+                local_recorded["capacitance_coupling"][pair][field_name]
+            ), f"recorded local coupling delta {key} is stale"
 
 
 def check_pex_v1(process) -> None:

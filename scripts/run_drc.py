@@ -59,10 +59,12 @@ def load_profile(profile_dir: Path):
         gds = lyr.get("gds") or []
         if gds:
             layermap[lyr["name"]] = [int(gds[0]["layer"]), int(gds[0]["datatype"])]
-    # The MOSIS stream map names the optional isolation layer DEEP_N_WELL,
-    # while the shared Diva-derived layer contract uses lower-case
-    # deep_nwell.  Preserve the physical spelling and provide the semantic
-    # alias to both DRC and LVS runners.
+    # The shared Diva-derived layer contract names the deep n-well isolation
+    # layer in lower case (`deep_nwell`).  No profile currently supplies a
+    # DEEP_N_WELL GDS layer: the NCSU CDK has no such stream layer and GDS 38 was
+    # an unsourced injection (see schema/scmos_process_matrix.yaml
+    # deep_n_well_layer_authority).  Keep the alias so a future source-backed
+    # profile can expose it to both the DRC and LVS runners.
     if "DEEP_N_WELL" in layermap:
         layermap.setdefault("deep_nwell", layermap["DEEP_N_WELL"])
     features = dict(meta.get("features") or {})

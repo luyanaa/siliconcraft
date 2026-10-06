@@ -137,8 +137,19 @@ GATED_LAYERS = {
     "npnAvailable": ["pbase", "cactive"],
 }
 
-# MOSIS SCN4M/5M/6M layer maps retain this optional capability in SUBM and DEEP.
-DEEP_N_WELL_MOSIS_PREFIXES = ("SCN4M", "SCN5M", "SCN6M")
+# REMOVED: an earlier revision injected a synthetic "DEEP_N_WELL" drawing layer at
+# GDS 38 for every SCN4M/5M/6M code. That injection was unsourced and is gone.
+# Evidence from the NCSU CDK 1.6.0:
+#   * pipo/streamInLayermap (the GDS->Cadence stream map) defines no layer 38 and
+#     no deep n-well layer at all -- it lists nwell/pwell/cwell/pbase/active/...
+#   * techfile/layerDefinitions.tf uses 38 as the Cadence tech-layer ID of
+#     `polycap` (gated by polycapAvailable), and Magic's SCMOS tech uses 38 for
+#     `ndop`/`pdop`. Neither is a GDS stream layer.
+#   * the CDK's "DEEP" is a MOSIS rule family (`deepRules`, documented in
+#     skill/globalData.il as "the process uses the MOSIS DEEP (deep submicron)
+#     rules") plus a pcell gate-extension branch -- not a layer.
+# Deep n-well isolation therefore has NO public GDS authority in this source, so
+# it must not be asserted. Re-add only with an independent MOSIS/TSMC reference.
 
 
 def well_type_of(mosis_code: str) -> str:
@@ -259,16 +270,6 @@ def build_profile(name: str, process: str, td: dict, tf: dict, stream: dict, cif
         elif name == "pwell" and meta["well_type"] == "n":
             entry["note"] = "n-well process; pwell layer unused for this variant"
         layers.append(entry)
-    if mosis.startswith(DEEP_N_WELL_MOSIS_PREFIXES):
-        layers.append({
-            "name": "DEEP_N_WELL",
-            "purpose": "drawing",
-            "gds": [{"layer": 38, "datatype": 0}],
-            "cif": ["CDNW"],
-            "role": "well",
-            "available": True,
-            "note": "MOSIS SCN4M/5M/6M layer capability shared by SUBM and DEEP variants",
-        })
     return {"meta": meta, "layers": layers}
 
 

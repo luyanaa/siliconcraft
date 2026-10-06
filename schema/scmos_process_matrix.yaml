@@ -32,7 +32,7 @@ profiles:
     min_width_um: 0.6
     model_prefix: tsmc35
     rule_family: scmos_subm
-    deep_n_well_layer: DEEP_N_WELL
+    deep_n_well_layer: null
   - name: tsmc035_4m
     source_process: TSMC_CMOS035_4M
     techfile: tsmc_04_4m.tf
@@ -43,7 +43,7 @@ profiles:
     min_width_um: 0.6
     model_prefix: tsmc35
     rule_family: scmos_subm
-    deep_n_well_layer: DEEP_N_WELL
+    deep_n_well_layer: null
   - name: tsmc03
     source_process: TSMC_CMOS025
     techfile: tsmc_03.tf
@@ -54,7 +54,7 @@ profiles:
     min_width_um: 0.45
     model_prefix: tsmc25
     rule_family: scmos_subm
-    deep_n_well_layer: DEEP_N_WELL
+    deep_n_well_layer: null
   - name: tsmc02
     source_process: TSMC_CMOS020
     techfile: tsmc_02.tf
@@ -65,7 +65,7 @@ profiles:
     min_width_um: 0.3
     model_prefix: tsmc20
     rule_family: scmos_subm
-    deep_n_well_layer: DEEP_N_WELL
+    deep_n_well_layer: null
   - name: tsmc025_deep
     source_process: TSMC_CMOS025_DEEP
     techfile: tsmc_03d.tf
@@ -76,7 +76,7 @@ profiles:
     min_width_um: 0.36
     model_prefix: tsmc25d
     rule_family: scmos_deep
-    deep_n_well_layer: DEEP_N_WELL
+    deep_n_well_layer: null
     stacked_vias: true
     drc_authority: reference
     pex_status: deferred
@@ -91,7 +91,7 @@ profiles:
     min_width_um: 0.27
     model_prefix: tsmc18d
     rule_family: scmos_deep
-    deep_n_well_layer: DEEP_N_WELL
+    deep_n_well_layer: null
     stacked_vias: true
     drc_authority: reference
     pex_status: deferred
@@ -144,6 +144,25 @@ profiles:
     model_prefix: xh018
     rule_family: scmos_subm
     note: "X-FAB public basic-rule/HVCMOS contract; provisional logical map, not signoff"
+# Deep n-well isolation has NO public GDS authority for these processes in the
+# NCSU CDK 1.6.0. pipo/streamInLayermap defines no layer 38 and no deep n-well
+# layer at all; techfile/layerDefinitions.tf uses 38 as the Cadence tech-layer ID
+# of `polycap`; Magic's SCMOS tech uses 38 for `ndop`/`pdop`. The CDK's "DEEP" is
+# a MOSIS rule family (deepRules in skill/globalData.il) plus a pcell
+# gate-extension branch -- not a layer. deep_n_well_layer is therefore null for
+# every profile until an independent MOSIS/TSMC source establishes a stream
+# number. This does not assert that the silicon lacks deep n-well; it records
+# that no public GDS authority is available.
+deep_n_well_layer_authority:
+  status: unavailable
+  gds_layer: null
+  withdrawn_gds_layer: 38
+  reason: "GDS 38 was injected without a source; it is polycap's Cadence tech-layer ID, not a GDS stream layer"
+  sources_checked:
+    - "NCSU CDK pipo/streamInLayermap"
+    - "NCSU CDK pipo/cifInLayermap"
+    - "NCSU CDK techfile/layerDefinitions.tf"
+    - "NCSU CDK skill/globalData.il (deepRules documentation)"
 deep_rule_boundary:
   status: explicit_source_backed_only
   supported_profiles:

@@ -30,6 +30,11 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable
 
 VERIFIED_STATUS = "verified_local_report"
+# Statuses that count as verified against a first-hand local source.
+# `verified_local_techfile` covers NCSU CDK Cadence techfile layer properties
+# (e.g. the TSMC_CMOS035_4M2P / T02F block in techfile/layerDefinitions.tf):
+# first-hand local data, but not a MOSIS wafer-acceptance report.
+VERIFIED_STATUSES = frozenset({VERIFIED_STATUS, "verified_local_techfile"})
 
 
 class WatRcError(ValueError):
@@ -303,7 +308,7 @@ def build_wat_rc_report(
         raise WatRcError("no coefficient set selected")
     dataset = select_set(reference_doc, selected)
     provenance = dict(dataset.get("provenance") or {})
-    verified = provenance.get("verification_status") == VERIFIED_STATUS
+    verified = provenance.get("verification_status") in VERIFIED_STATUSES
 
     segment_results = [evaluate_segment(spec, dataset, item) for item in segments]
     coupling_results = [evaluate_coupling(dataset, item) for item in pairs]
@@ -316,7 +321,9 @@ def build_wat_rc_report(
         "coefficient_set": selected,
         "coefficient_set_provenance": provenance,
         "coefficient_set_verification": (
-            "verified_local_report" if verified else "external_unverified"
+            str(provenance.get("verification_status"))
+            if verified
+            else "external_unverified"
         ),
         "calibrated_to_current_d35": bool(
             spec.get("calibrated_to_current_d35", False)
