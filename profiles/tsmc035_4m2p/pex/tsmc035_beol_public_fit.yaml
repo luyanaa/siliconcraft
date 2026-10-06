@@ -1,0 +1,117 @@
+# profiles/tsmc035_4m2p/pex/tsmc035_beol_public_fit.yaml
+#
+# Parameterized public-stack reconstruction for research capacitance sweeps.
+# This is NOT a foundry stack, contains no QRC coefficients, and is not
+# calibrated.  An external FastCap/FasterCap/Palace run consumes the canonical
+# sweep manifest and this fit, and the result is checked against the measured
+# MOSIS WAT capacitance matrix in tsmc035_wat_reference.yaml.
+schema_version: 1
+profile: tsmc035_4m2p
+kind: parameterized_beol_public_fit
+maturity: field_solver_estimated
+calibrated: false
+source:
+  process_collateral: profiles/tsmc035_4m2p/layers.yaml#meta.sources
+  observables:
+    - official_tsmc_035_4m_cross_section_thickness
+    - mosis_wat_pairwise_area_and_fringe_capacitance
+    - public_metal_sheet_resistance
+  limitation: "The repository does not assert a complete current D35 thickness/epsilon table; fit inputs must be supplied or extracted from the cited public revisions."
+
+# Official TSMC 0.35um 4-metal cross-section (third-party mirror of the TSMC
+# thickness-rule deck; archived locally with provenance).
+official_cross_section:
+  reference: docs/mosis_evidence/tsmc035_cross_section.md
+  total_height_um: 7.275
+  gate_oxide_um: 0.0078
+  poly_to_metal1_oxide_um: 1.09
+  metal_thickness_um: {metal1: 0.67, metal2: 0.64, metal3: 0.64, metal4: 0.925}
+  ild_thickness_um: {metal1_metal2: 1.1, metal2_metal3: 1.1, metal3_metal4: 1.1}
+  relative_permittivity: null
+  relative_permittivity_policy: "Not stated in the deck; SiO2 3.9 is assumed for every oxide tier and must be fitted."
+  caveat: "Conductor and ILD thickness are official; poly1/poly2 film thickness and permittivity are not."
+
+# Alternative public priors, kept separate and never averaged silently.
+alternative_priors:
+  patent_embodiment:
+    reference: "US20110008962A1 (requester-supplied citation; not re-fetched offline)"
+    class: patent_embodiment_example
+    metal_thickness_um: {metal1: 0.665, metal2: 0.645, metal3: 0.645, metal4: 0.925}
+    ild_thickness_um: ~1.0
+    field_oxide_um: 0.297
+    caveat: "Patent embodiment examples are not guaranteed process values; the source contains an apparent M3/M4 inconsistency."
+  literature_poly:
+    reference: "requester-supplied citation PMC11859862 (not re-fetched offline)"
+    class: peer_reviewed_paper
+    poly1_thickness_um: 0.278
+    poly2_thickness_um: 0.180
+    note: "Confirms M1-M4 are aluminium with a via/IMD stack."
+  generation_cross_check:
+    reference: "AMS C35 ENG-182 Rev.6 (different foundry, same 0.35um generation)"
+    class: different_foundry_same_generation
+    metal1_thickness_um: 0.665
+    ild1_thickness_um: 1.0
+    note: "Numerically consistent with the TSMC 0.35 cross-section; no licensing relationship is asserted."
+
+fit_parameters:
+  metal_thickness_um:
+    status: official_document_value
+    values: {metal1: 0.67, metal2: 0.64, metal3: 0.64, metal4: 0.925}
+    units: um
+  ild_thickness_um:
+    status: official_document_value
+    values: {metal1_metal2: 1.1, metal2_metal3: 1.1, metal3_metal4: 1.1}
+    units: um
+  ild_relative_permittivity:
+    status: fitted_parameter
+    value: null
+    assumption_if_unfitted: 3.9
+    units: dimensionless
+  substrate_effective_permittivity:
+    status: research_placeholder_only
+    value: null
+    units: dimensionless
+
+fit_target:
+  observables: tsmc035_wat_reference.yaml#coefficient_sets.t2af_mm_epi_4m.capacitance_aF.coupling
+  cross_check_observables: tsmc035_wat_reference.yaml#coefficient_sets.n88y_scn035h_3m.capacitance_aF.coupling
+  objective: "Reproduce the measured M1-M2 / M1-M3 / M1-M4 / M2-M3 / M2-M4 / M3-M4 area and fringe coefficients within the recorded lot-to-lot spread."
+  acceptance_band_percent: 15
+  note: "The target is measured WAT data; a fit that lands inside the band is a plausibility check, not a calibration."
+
+constraints:
+  - id: metal_sheet_resistance
+    source: mosis_wat_tsmc_scn035
+    use: constrain_conductor_geometry
+    route_capacitance_claim: false
+  - id: top_metal_tier
+    source: "N88Y 3M MTL3 0.04 ohm/sq == T2AF 4M MTL4 0.04 ohm/sq"
+    use: corroborate_metal4_as_thick_tier
+    route_capacitance_claim: false
+
+canonical_patterns:
+  - single_wire_over_plane
+  - parallel_wires
+  - adjacent_metal
+  - crossing_metal
+  - min_width_spacing
+  - scaled_width_spacing_2x
+  - scaled_width_spacing_4x
+
+solver_interface:
+  candidates: [FastCap, FasterCap, Palace]
+  input: canonical_sweep_manifest
+  output: research_rc_table
+  downstream: [OpenRCX, custom_import]
+
+confidence:
+  M1_M2_C: medium_high
+  M2_M3_C: medium_high
+  M3_M4_C: medium
+  M1_substrate_C: medium_low
+  substrate_C: unavailable
+
+signoff:
+  foundry_qrc: false
+  tapeout_qualification: false
+  calibrated: false

@@ -1,0 +1,64 @@
+# Process-specific bindings for TSMC 0.35um Mixed-Signal 2P4M Polycide 3.3/5V.
+#
+# Core MOS only.  The 3.3 V core cards are the MOSIS SCN035H run N88Y BSIM3v3
+# cards shipped by the NCSU CDK (models/hspice/public/publicModel/tsmc35N,P);
+# see model_maturity.yaml for the run-vs-option caveat.
+schema_version: 1
+canonical_source: "../../../common/devices/canonical/mos.yaml"
+bindings:
+  nmos_core:
+    canonical_variant: nmos_core
+    layout:
+      gate_types: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      substrate_node: Gnd!
+    simulation:
+      representation: primitive
+      name: tsmc35N
+      prefix: m
+      model_library: "../models/tsmc035_4m2p.lib"
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+    lvs:
+      extracted_class: tsmc35N
+      netgen_class: tsmc35N
+      permutable:
+        -
+          - d
+          - s
+  pmos_core:
+    canonical_variant: pmos_core
+    layout:
+      gate_types: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      substrate_node: Vdd!
+    simulation:
+      representation: primitive
+      name: tsmc35P
+      prefix: m
+      model_library: "../models/tsmc035_4m2p.lib"
+      parameter_map:
+        w: w
+        l: l
+        nf: nf
+        m: m
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+    lvs:
+      extracted_class: tsmc35P
+      netgen_class: tsmc35P
+      permutable:
+        -
+          - d
+          - s

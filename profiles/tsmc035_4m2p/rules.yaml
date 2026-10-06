@@ -1,0 +1,28 @@
+# Source contract for TSMC 0.35um Mixed-Signal 2P4M Polycide 3.3/5V.
+#
+# Process identity: TSMC_CMOS035_4M2P (NCSU CDK 1.6.0 techfile tsmc_04_4m2p.tf),
+# MOSIS code SCN4ME_SUBM, lambda 0.20um.  TSRI (formerly CIC) currently markets
+# the same base as "D35".
+#
+# The shared SCMOS reference deck is selected intentionally: the NCSU CDK ships
+# a Diva deck (techfile/divaDRC.rul) but no generated authoritative deck and no
+# signoff runset for this profile.  Reference-oracle coverage only.
+schema_version: 1
+profile: tsmc035_4m2p
+engine: scmos_reference
+authority: reference_oracle
+source:
+  process: TSMC_CMOS035_4M2P
+  techfile: tsmc_04_4m2p.tf
+  drc: techfile/divaDRC.rul
+  lvs: techfile/divaLVS.rul
+  source_revision: "NCSU CDK 1.6.0"
+  coverage: "SCMOS core rules; SUBM branch selected by lambda=0.20um and rule_family=scmos_subm"
+  signoff: false
+pex:
+  status: research
+  reason: "WAT analytical RC (v0) and reconstructed BEOL field-solver (v1) are provided for research only; neither is a foundry QRC replacement."
+rules:
+  grid:
+    x: 0.1
+    y: 0.1

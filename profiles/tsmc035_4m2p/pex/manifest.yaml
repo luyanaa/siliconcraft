@@ -1,0 +1,164 @@
+# TSMC 0.35um Mixed-Signal 2P4M Polycide 3.3/5V (TSRI "D35") parasitic contract.
+#
+# Two research flows are declared:
+#
+#   mosis_wat_rc            PEX v0 — analytical RC straight from MOSIS WAT
+#                           measurements (sheet R, per-cut contact/via R, and
+#                           pairwise area/fringe capacitance).  No field solver.
+#                           maturity: historical_measured
+#
+#   field_solver_estimated  PEX v1 — reconstructed BEOL stack for an external
+#                           FastCap/FasterCap/Palace sweep.  Not calibrated.
+#
+# Neither flow is a foundry QRC table and neither is signoff-qualified.
+schema_version: 3
+profile: tsmc035_4m2p
+default: none
+flow:
+  backend: wat_analytical_rc
+  secondary_backend: field_solver_reconstruction
+  source_driven: true
+  maturity: historical_measured
+  signoff: false
+  capacitance:
+    status: field_solver_estimated
+    calibrated: false
+    solver_candidates: [FastCap, FasterCap, Palace]
+    source: profiles/tsmc035_4m2p/pex/tsmc035_beol_public_fit.yaml
+    output: research_rc_table
+    consumer: OpenRCX_or_custom_import
+  original_process: TSMC_CMOS035_4M2P
+  mosis_code: SCN4ME_SUBM
+  ordinary_pex_level: "R + contact/via R + C_ground + C_coupling (no inductance)"
+  solver_availability:
+    status: not_installed_locally
+    note: "FastCap/FasterCap/Palace are not installed in this environment. This repository only produces and validates the solver input (canonical sweep manifest + parameterized BEOL fit); it never executes a field solver and never claims a solved result."
+  contact_policy: "Per-cut contact and via resistance are taken from measured MOSIS WAT reports; they are never guessed and never folded into wire resistance."
+  parasitic_ownership:
+    transistor_intrinsic_capacitance: model
+    gate_overlap_capacitance: model
+    junction_area_capacitance: model
+    junction_sidewall_capacitance: model
+    diffusion_sheet_resistance: historical_measured
+    gate_sheet_resistance: historical_measured
+    well_sheet_resistance: historical_measured
+    metal_sheet_resistance: historical_measured
+    metal_interconnect_rc: historical_measured_analytical
+    interconnect_capacitance: historical_measured_pairwise
+    contact_resistance: historical_measured
+    via_resistance: historical_measured
+    substrate_network: unavailable
+  electrical_evidence:
+    metal_sheet_resistance:
+      status: historical_measured
+      source: mosis_wat_tsmc_scn035
+    diffusion_sheet_resistance:
+      status: historical_measured
+      source: mosis_wat_tsmc_scn035
+    well_sheet_resistance:
+      status: historical_measured
+      source: mosis_wat_tsmc_scn035
+    gate_sheet_resistance:
+      status: historical_measured
+      source: mosis_wat_tsmc_scn035
+    contact_resistance:
+      status: historical_measured
+      source: mosis_wat_tsmc_scn035
+    via_resistance:
+      status: historical_measured
+      source: mosis_wat_tsmc_scn035
+    interconnect_capacitance:
+      status: historical_measured_reference
+      source: mosis_wat_tsmc_scn035
+    substrate_network:
+      status: unavailable
+  extraction_domains:
+    PEX_INTERCONNECT:
+      maturity: historical_measured_analytical
+      output: R_and_C_research_table
+      calibrated_to_current_d35: false
+    PEX_DEVICE:
+      maturity: contract_only
+      ownership: model
+      calibrated: false
+    PEX_SUBSTRATE:
+      maturity: unavailable
+      backend: external_foundry_or_calibrated_substrate_extractor
+      distributed_network_required: true
+selection:
+  automatic: forbidden
+  explicit_required: true
+profiles:
+  none:
+    generated: false
+    status: unavailable
+    description: "No PEX profile selected; layer/derived-layer topology contract only."
+    magic_directives: []
+  mosis_wat_rc:
+    generated: false
+    extractor: wat_analytical_rc
+    status: research
+    maturity: historical_measured
+    calibrated_to_current_d35: false
+    reference_data: tsmc035_wat_reference.yaml
+    coefficient_set: t2af_mm_epi_4m
+    cross_check_set: n88y_scn035h_3m
+    formulas:
+      resistance: "R_ohm = R_sheet_ohm_per_square * length_um / width_um + n_contact * R_contact_ohm + n_via * R_via_ohm"
+      capacitance: "C_aF = C_area_aF_per_um2 * overlap_area_um2 + C_fringe_aF_per_um * edge_length_um"
+    resistance_layers:
+      - nactive
+      - pactive
+      - poly
+      - elec
+      - metal1
+      - metal2
+      - metal3
+      - metal4
+      - nwell
+    contact_targets:
+      - nactive
+      - pactive
+      - poly
+      - elec
+    via_targets:
+      - via
+      - via2
+      - via3
+    coupling_pairs:
+      - metal1-metal2
+      - metal1-metal3
+      - metal1-metal4
+      - metal2-metal3
+      - metal2-metal4
+      - metal3-metal4
+    limitations:
+      - "Pairwise area/fringe capacitance is an overlap-and-edge model; lateral sidewall coupling between same-layer neighbours is not included."
+      - "No temperature coefficients; no temperature correction is applied."
+      - "Coefficient sets are historical MOSIS WAT measurements, not the current TSRI D35 revision."
+    output:
+      format: research_rc_report
+      consumer: custom_import
+      signoff: false
+  field_solver_estimated:
+    generated: false
+    extractor: field_solver_reconstruction
+    status: research
+    maturity: field_solver_estimated
+    calibrated: false
+    beol_fit: tsmc035_beol_public_fit.yaml
+    fit_target: tsmc035_wat_reference.yaml
+    solver_execution: not_performed
+    solver_availability: not_installed_locally
+    canonical_patterns:
+      - single_wire_over_plane
+      - parallel_wires
+      - adjacent_metal
+      - crossing_metal
+      - min_width_spacing
+      - scaled_width_spacing_2x
+      - scaled_width_spacing_4x
+    output:
+      format: research_rc_table
+      consumer: OpenRCX_or_custom_import
+      signoff: false

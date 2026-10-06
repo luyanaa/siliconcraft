@@ -45,6 +45,8 @@ STATIC_GATES = (
     "test_ls1u_devices.py",
     "test_ls1u_contracts.py",
     "test_ams_c35_native_graph.py",
+    "test_tsmc035_pex.py",
+    "run_wat_pex_smoke.py",
 )
 
 

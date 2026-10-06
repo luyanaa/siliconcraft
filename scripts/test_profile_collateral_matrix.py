@@ -95,6 +95,32 @@ def main() -> int:
             assert extraction["profile"] in (manifest.get("profiles") or {})
             spec = manifest["profiles"][extraction["profile"]]
             assert spec.get("extractor") == "r_only_python"
+        elif extraction["route"] == "wat_analytical_rc":
+            profiles_doc = manifest.get("profiles") or {}
+            assert extraction["profile"] in profiles_doc
+            spec = profiles_doc[extraction["profile"]]
+            assert spec.get("extractor") == "wat_analytical_rc"
+            assert spec.get("calibrated_to_current_d35") is False
+            reference = spec.get("reference_data")
+            assert reference, f"{name}: wat_analytical_rc needs reference_data"
+            assert (ROOT / f"profiles/{name}/pex" / reference).exists(), (
+                f"{name}: missing WAT reference {reference!r}"
+            )
+            assert extraction["rc"] == "historical_measured_rc"
+            # the declared field-solver companion must still be a real contract
+            fs_profile = "field_solver_estimated"
+            assert fs_profile in profiles_doc, (
+                f"{name}: wat_analytical_rc profiles must also declare "
+                f"{fs_profile!r}"
+            )
+            sweep = canonical_sweep_manifest(manifest, profile_name=fs_profile)
+            assert sweep["calibrated"] is False
+            assert sweep["signoff"] is False
+            field_solver = entry.get("field_solver") or {}
+            source = field_solver.get("source")
+            assert source and (ROOT / source).exists(), (
+                f"{name}: missing field-solver source {source!r}"
+            )
         else:
             raise AssertionError(f"{name}: unknown extraction route")
 

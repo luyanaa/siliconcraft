@@ -1,0 +1,19 @@
+# TSMC 0.35um Mixed-Signal 2P4M Polycide 3.3/5V device table.
+#
+# The shared reference extractor recognizes the core MOS4 pair.  Optional
+# semantics that the CDK techfile declares for this option remain outside the
+# initial port:
+#
+#   * elec / POLY2 (GDS 56): the CDK Diva deck records the MOSIS statement that
+#     TSMC 0.35u poly2 may build capacitors "but not transistors"; the layer is
+#     therefore a capacitor/electrode layer, not a second gate.
+#   * tactive / THICK_ACTIVE (GDS 60): "Active overlapped by Thick_Active will
+#     have the thicker gate oxide.  Thick_Active by itself does nothing."
+#     (MOSIS FAQ 4.0, quoted in techfile/divaDRC.rul).  This is the historical
+#     5 V / HV device entry point, but no public TSMC 0.35 HV model card exists,
+#     so HV devices are intentionally left unbound rather than guessed.
+schema_version: 1
+devices:
+  mos4:
+    - { name: nmos4, channel: nChannel, diff: nDiff, bulk_net: substrate, model_suffix: nmos }
+    - { name: pmos4, channel: pChannel, diff: pDiff, bulk_net: nBulk, model_suffix: pmos }

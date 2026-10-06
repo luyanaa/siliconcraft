@@ -1,0 +1,15 @@
+# NCSU CDK source-backed reference decks for TSMC 0.35um 4M2P.
+# No private/foundry runset is included.  Missing `file` intentionally selects
+# the shared KLayout reference DRC/LVS implementations.
+drc:
+  available: true
+  format: klayout-pya
+  authority: reference_oracle
+  source: common/drc/scmos_reference.py
+  notes: "SCMOS_SUBM branch selected by RULE_FAMILY=scmos_subm, LAMBDA=0.20"
+lvs:
+  available: true
+  format: klayout-pya
+  authority: reference_oracle
+  source: common/lvs/scmos_reference_lvs.py
+  notes: "Core MOS4 extraction only; TSMC PEX uses the profile's WAT analytical and field-solver flows"

@@ -1,0 +1,137 @@
+# profiles/tsmc035_4m2p/gds_layer_map.yaml
+#
+# TSMC 0.35um Mixed-Signal 2P4M Polycide 3.3/5V (TSRI "D35") GDSII stream map.
+#
+# WHAT THIS FILE IS
+#   The *historical MOSIS submission* map for technology code SCN4ME_SUBM, as
+#   carried by the NCSU CDK 1.6.0 `pipo/streamInLayermap` (the same map the
+#   layer parser consumes to build layers.yaml).  It is the map a designer used
+#   when submitting an SCMOS-format GDS to MOSIS.
+#
+# WHAT THIS FILE IS NOT
+#   It is NOT the current TSRI/CIC or foundry-direct mask stream map.  The
+#   historical flow was almost certainly:
+#       designer SCMOS GDS  ->  MOSIS/CIC interface  ->  foundry mask translation
+#   so a current TSRI D35 stream-out may legitimately use different numbers.
+#   `tapeout_eligible: false`; the current licensed kit stream map is required
+#   before tapeout.
+#
+# VERIFICATION HOOK
+#   If the current TSRI `TSMC035_2P4M_laker.tf` (or any legitimate D35 example
+#   GDS) becomes available, compare these anchors first:
+#       M1=49, V1=50, M2=51, V2=61, M3=62, V3=30, M4=31, CONTACT=25,
+#       POLY=46, POLY2/ELEC=56, ACTIVE=43, THICK_ACTIVE=60
+#   A match on that set establishes that the current D35 stream-out still
+#   inherits the MOSIS SCMOS map; a mismatch localises the translation.
+schema_version: 1
+profile: tsmc035_4m2p
+process: TSMC_CMOS035_4M2P
+tsri_alias: D35
+format: GDSII
+database:
+  user_unit_um: 1.0
+  grid_um: 0.1
+
+source:
+  authority: public_reference
+  foundry: TSMC
+  kit_family: "MOSIS SCMOS / NCSU CDK 1.6.0"
+  technology_code: SCN4ME_SUBM
+  file: "pipo/streamInLayermap"
+  local_tree: "../ncsu-cdk-1.6.0"
+  historical_submission_map: true
+  tapeout_eligible: false
+  evidence_class: local_first_hand_source_file
+  note: "Layer numbers are the CDK stream map, which encodes the MOSIS SCMOS GDS interface for the whole SCMOS ladder (the same numbers are shared by ami06/hp06/tsmc* variants)."
+
+gds_policy:
+  public_map:
+    authority: historical_mosis_submission
+    technology: SCN4ME_SUBM
+    source: "NCSU CDK 1.6.0 pipo/streamInLayermap"
+    current_tsri_equivalence: unverified
+    tapeout_authority: false
+  datatype:
+    value: 0
+    authority: siliconcraft_convention
+    note: "MOSIS SCMOS documentation defines GDS *layer numbers*.  The CDK stream map records layer/datatype 0 for every drawing layer.  datatype=0 is carried here as an internal serialization convention; it is NOT claimed to be an official MOSIS layer/datatype/purpose matrix (drawing/pin/label/net)."
+  purpose_matrix:
+    status: unavailable
+    note: "No public SCMOS drawing/pin/label/net datatype matrix was recovered."
+
+# Canonical (canonical_name is the siliconcraft logical layer used by the
+# profile's layers.yaml and the DRC/LVS/recognition decks).
+layers:
+  - {logical_name: nwell,        gds_layer: 42, cif: CWN,  role: well,    status: core}
+  - {logical_name: pwell,        gds_layer: 41, cif: CWP,  role: well,    status: unused_nwell_process}
+  - {logical_name: active,       gds_layer: 43, cif: CAA,  role: active,  status: core}
+  - {logical_name: tactive,      gds_layer: 60, cif: CTA,  role: active,  status: tsmc_specific}
+  - {logical_name: pselect,      gds_layer: 44, cif: CSP,  role: select,  status: core}
+  - {logical_name: nselect,      gds_layer: 45, cif: CSN,  role: select,  status: core}
+  - {logical_name: poly,         gds_layer: 46, cif: CPG,  role: gate,    status: core}
+  - {logical_name: elec,         gds_layer: 56, cif: CEL,  role: gate,    status: poly2_electrode}
+  - {logical_name: cc,           gds_layer: 25, cif: [CCG, CCC, CCA, CCP, CCE], role: cut, status: canonical_contact}
+  - {logical_name: metal1,       gds_layer: 49, cif: [CMF, CM1], role: metal, status: core}
+  - {logical_name: via,          gds_layer: 50, cif: [CVA, CV1], role: cut,   status: core}
+  - {logical_name: metal2,       gds_layer: 51, cif: [CMS, CM2], role: metal, status: core}
+  - {logical_name: via2,         gds_layer: 61, cif: [CVS, CV2], role: cut,   status: core}
+  - {logical_name: metal3,       gds_layer: 62, cif: [CMT, CM3], role: metal, status: core}
+  - {logical_name: via3,         gds_layer: 30, cif: [CVT, CV3], role: cut,   status: core}
+  - {logical_name: metal4,       gds_layer: 31, cif: [CMQ, CM4], role: metal, status: core}
+  - {logical_name: glass,        gds_layer: 52, cif: COG,  role: pad,     status: overglass}
+  - {logical_name: pad,          gds_layer: 26, cif: XP,   role: pad,     status: non_fab_annotation}
+  - {logical_name: polycap,      gds_layer: 28, cif: CPC,  role: capacitor, status: unavailable_this_option}
+  - {logical_name: sblock,       gds_layer: 29, cif: CSB,  role: misc,    status: unavailable_this_option}
+  - {logical_name: highres,      gds_layer: 34, cif: CHR,  role: resistor, status: unavailable_this_option}
+  - {logical_name: metalcap,     gds_layer: 35, cif: CTM,  role: capacitor, status: unavailable_this_option}
+  - {logical_name: ccd,          gds_layer: 57, cif: CCD,  role: active,  status: unavailable_this_option}
+  - {logical_name: pbase,        gds_layer: 58, cif: CBA,  role: misc,    status: unavailable_this_option}
+  - {logical_name: cwell,        gds_layer: 59, cif: CWC,  role: well,    status: unavailable_this_option}
+  - {logical_name: open,         gds_layer: 23, cif: COP,  role: misc,    status: mems_only}
+  - {logical_name: pstop,        gds_layer: 24, cif: CPS,  role: misc,    status: mems_only}
+  - {logical_name: metal5,       gds_layer: 33, cif: [CMP, CM5], role: metal, status: unavailable_this_option}
+  - {logical_name: metal6,       gds_layer: 37, cif: CM6,  role: metal,  status: unavailable_this_option}
+  - {logical_name: via4,         gds_layer: 32, cif: [CVQ, CV4], role: cut, status: unavailable_this_option}
+  - {logical_name: via5,         gds_layer: 36, cif: CV5,  role: cut,    status: unavailable_this_option}
+  - {logical_name: DEEP_N_WELL,  gds_layer: 38, cif: CDNW, role: well,   status: scn4m_shared_capability}
+
+# The SCMOS spec defines dedicated contact layers that a unified CONTACT layer
+# may replace.  The CDK stream map folds all four onto one Cadence layer `cc`;
+# siliconcraft keeps them as input aliases, never as separate physical cuts.
+contact_compatibility:
+  canonical:
+    logical_name: cc
+    gds_layer: 25
+  legacy_aliases:
+    - {logical_name: poly_contact,   gds_layer: 47, applicability: input_alias, physical_cut: false}
+    - {logical_name: active_contact, gds_layer: 48, applicability: input_alias, physical_cut: false}
+    - {logical_name: poly2_contact,  gds_layer: 55, applicability: input_alias, physical_cut: false}
+  note: "All four numbers map to the same `cc` Cadence layer in pipo/streamInLayermap, so geometry on any of them is a contact cut; they are aliases, not distinct layers."
+  evidence_class: local_first_hand_source_file
+
+tsmc_specific_semantics:
+  tactive:
+    logical_name: tactive
+    gds_layer: 60
+    cif: CTA
+    meaning: "THICK_ACTIVE"
+    semantics: 'Active overlapped by Thick_Active will have the thicker gate oxide.  Thick_Active by itself does nothing.  (MOSIS FAQ 4.0, quoted verbatim in NCSU CDK techfile/divaDRC.rul)'
+    role: "Historical 5 V / HV device recognition entry point for SCN4ME."
+    status: "Layer retained natively; HV devices remain unbound because no public TSMC 0.35 HV compact-model card exists."
+    evidence_class: local_first_hand_source_file
+  elec:
+    logical_name: elec
+    gds_layer: 56
+    cif: CEL
+    meaning: "POLY2 / electrode"
+    semantics: 'The CDK Diva deck records the MOSIS statement that TSMC 0.35u poly2 can build capacitors "but not transistors", and adds a TSMC_CMOS035_4M2P-only DBM check that active and elec may not overlap.'
+    role: "Capacitor/electrode layer, not a second gate."
+    evidence_class: local_first_hand_source_file
+
+# Current TSRI/foundry-direct map: not published.  Recorded explicitly so that
+# no consumer mistakes the historical map above for a foundry stream map.
+current_foundry_map:
+  status: unavailable
+  authority: null
+  tapeout_eligible: false
+  note: "The TSRI/CIC TSMC035 kit stream map (e.g. TSMC035_2P4M_laker.tf) is not public; its contents were not recovered."

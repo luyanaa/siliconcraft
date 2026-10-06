@@ -1,0 +1,92 @@
+# profiles/tsmc035_4m2p/model_maturity.yaml — TSMC 0.35um 4M2P model evidence.
+#
+# Two distinct model authorities are recorded here and must never be merged:
+#
+#  1. tsmc35N / tsmc35P — the cards shipped by the NCSU CDK
+#     (models/hspice/public/publicModel/tsmc35N,P).  These are first-hand
+#     local, non-silicided MOSIS cards whose header reads "* run N88Y"
+#     (MOSIS run N88Y, technology SCN035H, TSMC 0.35um, 3-metal).
+#     FEOL-representative of the TSMC 0.35 lineage; the run is a 3-metal
+#     option, so it does not by itself calibrate the 4-metal BEOL.
+#
+#  2. tsmc035_mosis_mm_epi_reference — historical MOSIS TSMC SCN035
+#     MM_EPI WAT/SPICE extractions reproduced in public university theses.
+#     Recorded as an explicitly labelled historical family reference.
+#     calibrated_to_current_D35: false.
+#
+# No claim is made that either authority is calibrated to the 2026 TSRI D35
+# revision, and no foundry-private card is redistributed.
+process_maturity:
+  level: L1
+  status: historical_foundry_family_reference
+  scope: "TSMC 0.35um core MOS: local first-hand MOSIS SCN035H run N88Y cards plus a separately labelled historical MM_EPI reference profile. Non-signoff."
+  structural:
+    status: complete
+    scope: core_mos4_pair
+    limitations:
+      - "HV / thick-active (tactive, GDS 60) and POLY2-electrode devices are not bound; no public TSMC 0.35 HV card exists."
+  lvs:
+    status: reference_oracle
+    scope: core_mos4_extraction
+    circuit_level_comparison: pending
+  pex:
+    status: research
+    backends:
+      - wat_analytical_rc
+      - field_solver_reconstruction
+    coefficient_quality: historical_measured
+    calibrated: false
+    signoff: false
+  simulation:
+    core_mos: functional_nominal
+  external_validation:
+    current_d35_correlation: unavailable
+    foundry_signoff: unavailable
+
+models:
+  tsmc35N:
+    simulator: ngspice
+    representation: primitive
+    source: "NCSU CDK 1.6.0 models/hspice/public/publicModel/tsmc35N — MOSIS BSIM3v3.1 card, header '* run N88Y'"
+    run: N88Y
+    mosis_technology: SCN035H
+    corners:
+      - tsmc035_4m2p
+    mismatch: false
+    fit_status: local_first_hand_measured
+    evidence: "Card parameters match the local MOSIS N88Y parametric report verbatim (TOX 7.6E-9 m, VTH0 0.4964448)."
+    limitation: "N88Y is a 3-metal, non-silicided SCN035H run; it is FEOL-representative of the 4M2P option but does not calibrate its BEOL."
+  tsmc35P:
+    simulator: ngspice
+    representation: primitive
+    source: "NCSU CDK 1.6.0 models/hspice/public/publicModel/tsmc35P — MOSIS BSIM3v3.1 card, header '* run N88Y'"
+    run: N88Y
+    mosis_technology: SCN035H
+    corners:
+      - tsmc035_4m2p
+    mismatch: false
+    fit_status: local_first_hand_measured
+    evidence: "Card parameters match the local MOSIS N88Y parametric report verbatim (VTH0 -0.6636594)."
+    limitation: "same run/option caveat as tsmc35N"
+  tsmc035_mosis_mm_epi_reference:
+    simulator: ngspice
+    representation: primitive
+    source: "Historical MOSIS TSMC SCN035 MM_EPI WAT/SPICE extractions reproduced in public university theses (see sources.yaml)"
+    corners: []
+    mismatch: false
+    fit_status: historical_reference_not_reverified
+    calibrated_to_current_d35: false
+    evidence: "Recorded from requester-supplied citations; the sandbox used for this port had no network access, so the numbers were not re-fetched. They are cross-checked against the local N88Y report where overlapping quantities exist."
+    limitation: "Do not present these 1998-2005 WAT numbers as 2026 D35 signoff parameters."
+  tsmc035_hv:
+    simulator: null
+    representation: contract_only
+    source: "tactive / THICK_ACTIVE GDS 60, CDK techfile hvAvailable=t; MOSIS FAQ 4.0 thick-oxide semantics quoted in techfile/divaDRC.rul"
+    evidence: "Layer semantics and DRC derivation are public; no numerical TSMC 0.35 HV compact-model card was recovered."
+    fit_status: unavailable
+  tsmc035_poly2_cap:
+    simulator: null
+    representation: contract_only
+    source: "elec / POLY2 GDS 56; CDK divaDRC.rul records the MOSIS statement that TSMC 0.35u poly2 builds capacitors but not transistors"
+    evidence: "Capacitor-class layer is public; no numerical POLY2 capacitor card was recovered."
+    fit_status: unavailable

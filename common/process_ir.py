@@ -1125,6 +1125,12 @@ def _collateral_capabilities(
         isinstance(spec, dict) and spec.get("extractor") == "r_only_python"
         for spec in pex_profiles.values()
     )
+    # Measured-WAT analytical RC: unlike r_only it owns contact/via resistance,
+    # but it is still a research flow and never a signoff backend.
+    wat_rc_profile = any(
+        isinstance(spec, dict) and spec.get("extractor") == "wat_analytical_rc"
+        for spec in pex_profiles.values()
+    )
     rc_profile = any(
         isinstance(spec, dict)
         and (
@@ -1134,12 +1140,15 @@ def _collateral_capabilities(
             or spec.get("extractor") in {
                 "r_only_python",
                 "field_solver_reconstruction",
+                "wat_analytical_rc",
             }
         )
         for spec in pex_profiles.values()
     )
     if r_only_profile:
         pex_rc: str | bool = "public_typical_r_only"
+    elif wat_rc_profile:
+        pex_rc = "historical_measured_rc"
     elif runtime_pex and rc_profile:
         pex_rc = "estimated"
     else:

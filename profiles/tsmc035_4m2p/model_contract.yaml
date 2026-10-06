@@ -1,0 +1,75 @@
+# profiles/tsmc035_4m2p/model_contract.yaml — TSMC 0.35um 4M2P model contract.
+#
+# Two model authorities are declared and must never be merged:
+#
+#   1. tsmc35N / tsmc35P  — the shipped, simulatable core cards.  These are the
+#      NCSU CDK's public MOSIS BSIM3v3.1 cards whose header reads "* run N88Y"
+#      (MOSIS run N88Y, technology SCN035H, TSMC 0.35um, 3-metal,
+#      non-silicided).  Materialized in models/tsmc035_4m2p.lib.
+#
+#   2. tsmc035_mosis_mm_epi_reference — historical MOSIS TSMC SCN035 MM_EPI
+#      WAT/SPICE extractions reproduced in public theses.  Recorded as a
+#      reference profile only; calibrated_to_current_D35: false.  The port was
+#      produced offline, so these were not re-fetched (see sources.yaml).
+family:
+  id: tsmc.cmos035_4m2p
+  backend: ngspice
+  library: models/tsmc035_4m2p.lib
+  section: tsmc035_4m2p
+  process: TSMC_CMOS035_4M2P
+  mosis_code: SCN4ME_SUBM
+  tsri_alias: D35
+  nominal_process_um: 0.35
+  core_supply_v: 3.3
+  hv_supply_v: 5
+  polycide: true
+  metals: 4
+  polys: 2
+  physical_geometry_units: microns
+  source:
+    shipped_cards: "NCSU CDK 1.6.0 models/hspice/public/publicModel/tsmc35N,P (header '* run N88Y')"
+    wats: "MOSIS reports N88Y (local, verified) and T2AF/T59N/T19P (external, requester-supplied)"
+    stack: "docs/mosis_evidence/tsmc035_cross_section.md"
+
+corners:
+  tsmc035_4m2p:
+    condition: typical
+    source: "MOSIS run N88Y nom cards shipped by the NCSU CDK"
+    note: "Only the nominal section is public for this process; the CDK ships no ss/ff/fnsp/snfp directories for the tsmc35 prefix."
+
+model_topology:
+  core_mos:
+    names: [tsmc35N, tsmc35P]
+    intrinsic: "BSIM3v3.1 (HSPICE LEVEL=49)"
+    terminals: "drain, gate, source, bulk"
+    capability: "nominal DC/AC large- and small-signal simulation"
+    limitation: "Run N88Y is a 3-metal, non-silicided SCN035H lot.  It is FEOL-representative of the 4M2P mixed-signal option but does not calibrate that option's BEOL or its 4th metal."
+  historical_reference:
+    names: [tsmc035_mosis_mm_epi_reference]
+    intrinsic: "BSIM3v3.1 (HSPICE LEVEL=49)"
+    status: "reference_only"
+    calibrated_to_current_d35: false
+    limitation: "Recorded from citations only; the port had no network access.  Never a signoff card."
+  withheld:
+    hv_thick_oxide:
+      names: [tsmc035_hv]
+      reason: "THICK_ACTIVE (tactive, GDS 60) semantics are public but no numerical TSMC 0.35 HV card was recovered."
+    poly2_capacitor:
+      names: [tsmc035_poly2_cap]
+      reason: "elec/POLY2 (GDS 56) is a capacitor-class layer; no numerical POLY2 capacitor card was recovered."
+
+device_voltage_classes:
+  core:
+    voltage_v: 3.3
+    model: tsmc35N
+    model_p: tsmc35P
+  hv:
+    voltage_v: 5
+    model: null
+    status: withheld
+    entry_layer: tactive
+
+signoff:
+  foundry_corner_pack: false
+  current_d35_calibration: false
+  tapeout_qualification: false

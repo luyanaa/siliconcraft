@@ -18,6 +18,7 @@ def main() -> int:
         "ams_c35": "field_solver_estimated",
         "cnm25": "field_solver_estimated",
         "tsmc018_deep": "field_solver_estimated",
+        "tsmc035_4m2p": "field_solver_estimated",
         "xh018": "field_solver_estimated",
         "xh035": "field_solver_estimated",
     }

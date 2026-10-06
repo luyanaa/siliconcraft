@@ -1,0 +1,7 @@
+# Core MOS smoke; this validates the public TSMC 0.35um (N88Y) model cards only.
+expected_netlist:
+  - "m1 d in 0 0 tsmc35N"
+  - "v1 in 0 3.3"
+  - "v2 d 0 3.3"
+probe: "@m1[id]"
+min_current: 0

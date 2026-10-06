@@ -1,0 +1,22 @@
+# Netlist bindings for the source-backed TSMC 0.35um 4M2P core MOS symbols.
+schema_version: 1
+symbols:
+  nmos4:
+    device_binding: nmos_core
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
+    template: {name: M1, w: "3u", l: "0.4u", m: "1", ad: "0", as: "0", pd: "0", ps: "0"}
+  pmos4:
+    device_binding: pmos_core
+    format: "@spiceprefix@name @pinlist @model w=@w l=@l m=@m ad=@ad as=@as pd=@pd ps=@ps"
+    template: {name: M1, w: "6u", l: "0.4u", m: "1", ad: "0", as: "0", pd: "0", ps: "0"}
+  vdc:
+    spiceprefix: v
+    format: "@spiceprefix@name @pinlist @value"
+    template: {name: V1, value: "3.3"}
+  gnd:
+    spiceprefix: ""
+    format: "*.alias @lab"
+    template: {name: l1, lab: "0"}
+  lab_pin:
+    format: "*.alias @lab"
+    template: {name: p1, lab: xxx}

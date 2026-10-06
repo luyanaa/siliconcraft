@@ -21,8 +21,15 @@ jobs:
           python3 scripts/test_stdcell_generator.py
           python3 scripts/test_routing_grammar.py
           python3 scripts/inspect_routing_grammar.py --profile ls1u --output /tmp/ls1u-routing-grammar.json
+          python3 scripts/test_device_ir_contracts.py
+          python3 scripts/test_device_oracles.py
+          python3 scripts/test_tsmc035_pex.py
       - uses: DeterminateSystems/nix-installer-action@v16
       - uses: DeterminateSystems/magic-nix-cache-action@v9
+      - name: Run recognition compiler checks
+        run: >
+          nix-shell -p klayout python3 --run
+          "python3 scripts/test_recognition_ir.py"
       - name: Run siliconcraft conformance and stdcell geometry gates
         run: >
           nix-shell -p klayout netgen magic-vlsi ngspice python3 --run
@@ -40,15 +47,15 @@ jobs:
           --workdir build/stdcell/ami06/nor2_gate"
 
   pex:
-    name: Magic PEX contract and runtime gates
+    name: Native and Magic PEX contract and runtime gates
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@v16
       - uses: DeterminateSystems/magic-nix-cache-action@v9
-      - name: Run source-reference PEX gates
+      - name: Run source-reference and native PEX gates
         run: >
-          nix-shell -p magic-vlsi ngspice python3 --run
+          nix-shell -p klayout magic-vlsi netgen ngspice python3 --run
           "python3 scripts/run_pex_ci.py"
       - name: Run L0 RF workbench
         run: >

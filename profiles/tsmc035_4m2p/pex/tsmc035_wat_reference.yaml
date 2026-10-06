@@ -1,0 +1,221 @@
+# profiles/tsmc035_4m2p/pex/tsmc035_wat_reference.yaml
+#
+# MOSIS wafer-acceptance-test (WAT) coefficient sets for the TSMC 0.35um
+# process family, used by the `mosis_wat_rc` analytical PEX flow.
+#
+# PROVENANCE RULE (enforced by scripts/test_tsmc035_pex.py)
+#   Every coefficient set carries a `provenance.authority` and a
+#   `provenance.verification_status`.  A set whose status is not
+#   `verified_local_report` is NEVER used as the default 4M reference and is
+#   NEVER presented as signoff data.
+#
+# TWO AUTHORITIES, NEVER MERGED
+#   1. n88y_scn035h_3m  — first-hand LOCAL report, verified in this repository.
+#   2. t2af_mm_epi_4m / t59n_mm_epi_4m / t19p_lo_epi_4m — historical MOSIS
+#      reports cited by the requester.  The port was produced offline, so these
+#      were not re-fetched; they are labelled `not_reverified_offline` and are
+#      cross-checked against the local N88Y report where quantities overlap.
+schema_version: 1
+profile: tsmc035_4m2p
+kind: mosis_wat_reference
+process_family: TSMC_SCN035
+d35_reference_set: t2af_mm_epi_4m
+d35_reference_rationale: 'The TSRI D35 marketing name is "TSMC 0.35um Mixed-Signal 2P4M Polycide 3.3/5V": mixed-signal and 4-metal.  The MM_EPI 4-metal sets therefore match the option class more closely than the 3-metal SCN035H N88Y run or the LO_EPI set, so T2AF is the default 4M reference.  N88Y remains the first-hand verified anchor.'
+capability_separation:
+  rule: "LO_EPI and MM_EPI coefficients must never be blended."
+  note: "The FEOL sheet resistance of the LO_EPI set differs from the MM_EPI/N88Y sets by more than an order of magnitude (N+ ~3.6 vs ~79 ohm/sq).  That gap is far larger than the metal/CBEOL spread and is more consistent with a silicided-vs-non-silicided source/drain difference than with epi resistivity alone.  The repository's own process audit already separates the non-silicided N88Y run from the silicided T27K run, so this is flagged as an open question rather than resolved.  See docs/d35_subm_deep_audit.md."
+
+coefficient_sets:
+  # ------------------------------------------------------------------ local
+  n88y_scn035h_3m:
+    provenance:
+      authority: local_first_hand
+      verification_status: verified_local_report
+      run: N88Y
+      vendor: TSMC
+      mosis_technology: SCN035H
+      feature_size_um: 0.35
+      metals: 3
+      silicide: non_silicided
+      date: "1998-10-30"
+      file: "../ncsu-cdk-1.6.0/models/MOSIS_reports/n88y-params.txt"
+      nature: "official MOSIS parametric report (bundled in the NCSU CDK mirror)"
+      caveat: "3-metal run: supplies MTL1..MTL3 only; no M4."
+    sheet_resistance_ohm_sq:
+      nactive: 79.1
+      pactive: 153.4
+      poly: 7.4
+      elec: 47.4
+      metal1: 0.07
+      metal2: 0.07
+      metal3: 0.04
+      nwell: 1011
+    contact_resistance_ohm:
+      nactive: 54.8
+      pactive: 118.5
+      poly: 5.6
+      elec: 31.4
+    via_resistance_ohm:
+      via: 1.31
+      via2: 1.42
+    capacitance_aF:
+      units: {area: aF_per_um2, fringe: aF_per_um}
+      coupling:
+        poly-metal1:  {area: 46, fringe: 61}
+        poly-metal2:  {area: 15, fringe: 37}
+        poly-metal3:  {area: 9,  fringe: 28}
+        elec-metal1:  {area: 44, fringe: null}
+        metal1-metal2: {area: 36, fringe: 56}
+        metal1-metal3: {area: 13, fringe: 35}
+        metal2-metal3: {area: 36, fringe: 53}
+      to_substrate:
+        metal1: {area: 23, fringe: 54}
+        metal2: {area: 11, fringe: 30}
+        metal3: {area: 6,  fringe: 31}
+        poly:   {area: 117, fringe: null}
+        nactive: {area: 921, fringe: 299}
+        pactive: {area: 1408, fringe: 385}
+        nwell:  {area: 55, fringe: null}
+      gate_overlap:
+        nactive-poly: {overlap: 306}
+        pactive-poly: {overlap: 590}
+    device_and_benchmark:
+      tox_angstrom: 76
+      vth_n_v: 0.54
+      vth_p_v: -0.77
+      ring_oscillator: {stages: 31, div: 4, vdd_v: 3.3, freq_mhz: 196.17, power_uw_per_mhz_per_gate: 5.83}
+    spice_card:
+      level: 49
+      version: "3.1"
+      models: [CMOSN, CMOSP]
+      materialized_as: "profiles/tsmc035_4m2p/models/tsmc035_4m2p.lib (sections: tsmc035_4m2p)"
+
+  # --------------------------------------------------- requester-supplied 4M
+  t2af_mm_epi_4m:
+    provenance:
+      authority: external_reported
+      verification_status: not_reverified_offline
+      run: T2AF
+      process_option: MM_EPI
+      mosis_technology: SCN035
+      metals: 4
+      url: "https://etd.ohiolink.edu/acprod/odb_etd/ws/send_file/send?accession=ucin1078349985&disposition=attachment"
+      nature: "university thesis reproducing an official MOSIS report (archive)"
+      supplied_by: requester
+      note: "Sandbox had no network access; numbers were not re-fetched. Cross-checked against the local N88Y report below."
+    sheet_resistance_ohm_sq:
+      nactive: 79.4
+      pactive: 154.0
+      poly: 8.7
+      elec: 47.1
+      metal1: 0.07
+      metal2: 0.07
+      metal3: 0.07
+      metal4: 0.04
+      nwell: 1000
+    contact_resistance_ohm:
+      nactive: 62.7
+      pactive: 132.7
+      poly: 7.2
+      elec: 34.1
+    via_resistance_ohm:
+      via: 1.24
+      via2: 0.99
+      via3: 0.88
+    capacitance_aF:
+      units: {area: aF_per_um2, fringe: aF_per_um}
+      coupling:
+        metal1-metal2: {area: 38, fringe: 58}
+        metal1-metal3: {area: 14, fringe: 37}
+        metal1-metal4: {area: 9,  fringe: 29}
+        metal2-metal3: {area: 39, fringe: 53}
+        metal2-metal4: {area: 14, fringe: 38}
+        metal3-metal4: {area: 39, fringe: 65}
+    device_and_benchmark:
+      spice_card: {level: 49, version: "3.1", models: [NMOS, PMOS]}
+
+  t59n_mm_epi_4m:
+    provenance:
+      authority: external_reported
+      verification_status: not_reverified_offline
+      run: T59N
+      process_option: MM_EPI
+      mosis_technology: SCN035
+      metals: 4
+      url: "https://etda.libraries.psu.edu/files/final_submissions/3071"
+      nature: "university thesis reproducing an official MOSIS report (archive)"
+      supplied_by: requester
+      note: "Partial report: metal sheet resistance and N-well only."
+    sheet_resistance_ohm_sq:
+      metal1: 0.07
+      metal2: 0.07
+      metal3: 0.07
+      metal4: 0.04
+      nwell: 998
+
+  t19p_lo_epi_4m:
+    provenance:
+      authority: external_reported
+      verification_status: not_reverified_offline
+      run: T19P
+      process_option: LO_EPI
+      mosis_technology: SCN035
+      metals: 4
+      url: "https://etd.ohiolink.edu/acprod/odb_etd/ws/send_file/send?accession=ucin1059399964&disposition=inline"
+      nature: "university thesis reproducing an official MOSIS report (archive)"
+      supplied_by: requester
+      caveat: "Do NOT merge with the MM_EPI sets.  Its N+/P+ sheet resistance (~3.6 / ~2.7 ohm/sq) is a silicided-class value, inconsistent with the non-silicided MM_EPI/N88Y FEOL."
+    sheet_resistance_ohm_sq:
+      nactive: 3.6
+      pactive: 2.7
+    capacitance_aF:
+      units: {area: aF_per_um2, fringe: aF_per_um}
+      coupling:
+        metal1-metal2: {area: 39, fringe: 53}
+        metal1-metal3: {area: 14, fringe: 37}
+        metal1-metal4: {area: 9,  fringe: 27}
+        metal2-metal3: {area: 35, fringe: 52}
+        metal2-metal4: {area: 14, fringe: 35}
+        metal3-metal4: {area: 36, fringe: 59}
+    device_and_benchmark:
+      spice_card: {level: 49, version: "3.1", models: [NMOS, PMOS]}
+
+# Cross-check computed in this port: the local first-hand N88Y report versus the
+# requester-supplied external sets.  This is the evidence that the external
+# numbers are plausible for this process family even though they were not
+# re-fetched.
+cross_check:
+  basis: "N88Y (local, verified) vs T2AF (external, not reverified)"
+  deltas_percent:
+    sheet_resistance_ohm_sq:
+      nactive: 0.4
+      pactive: 0.4
+      poly: 17.6
+      elec: -0.6
+      metal1: 0.0
+      metal2: 0.0
+      nwell: -1.1
+    contact_resistance_ohm:
+      nactive: 14.4
+      pactive: 12.0
+      poly: 28.6
+      elec: 8.6
+    via_resistance_ohm:
+      via: -5.3
+      via2: -30.3
+    capacitance_coupling:
+      metal1-metal2: {area: 5.6, fringe: 3.6}
+      metal1-metal3: {area: 7.7, fringe: 5.7}
+      metal2-metal3: {area: 8.3, fringe: 0.0}
+  top_metal_mapping:
+    finding: "N88Y (3-metal) MTL3 = 0.04 ohm/sq equals T2AF/T59N (4-metal) MTL4 = 0.04 ohm/sq, while N88Y MTL1/MTL2 = 0.07 ohm/sq equals T2AF/T59N MTL1/MTL2/MTL3 = 0.07 ohm/sq.  The 3-metal run's top metal therefore falls in the same thickness class as the 4-metal option's M4, which independently corroborates the official cross-section mapping (M1 0.67 / M2 0.64 / M3 0.64 / M4 0.925 um, M4 being the thick tier)."
+    confidence: high
+  assessment: "CBEOL quantities (M1/M2 sheet resistance, M1-M2 / M1-M3 / M2-M3 coupling capacitance) agree within ~10%, and the top-metal tier mapping is exact.  FEOL quantities agree for N+/P+ active (~0.4%) but show real lot-to-lot spread on poly (17.6%) and on contact resistance (12-29%).  That spread is the reason a historical WAT set may be used as a research reference but never as a signoff parameter set."
+
+caveats:
+  - "Historical WAT numbers (1998-2005) are not calibrated to the current TSRI D35 revision."
+  - "T2AF/T59N/T19P were supplied by citation only; the port was produced without network access and did not re-fetch them."
+  - "LO_EPI and MM_EPI coefficients are kept in separate sets and must not be blended."
+  - "N88Y supplies no M4 and no via3; the 4-metal reference must come from the MM_EPI set for those quantities."
+  - "No temperature coefficients are materialized; no temperature correction is applied."
+  - "Contact and via resistance are per-cut values; the caller owns the cut count."

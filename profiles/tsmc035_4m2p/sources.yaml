@@ -1,0 +1,115 @@
+# profiles/tsmc035_4m2p/sources.yaml — provenance for the TSMC 0.35um 4M2P port.
+#
+# Process identity chain:
+#   TSRI "D35"  ==  TSMC 0.35um Mixed-Signal 2P4M Polycide 3.3/5V
+#               ==  NCSU CDK TSMC_CMOS035_4M2P (lambda 0.20um, 4M/2P, HV FET)
+#               ==  MOSIS technology code SCN4ME_SUBM
+#
+# The equivalence above is a documented *lineage* claim (identical marketing
+# name, poly count, metal count, oxide/voltage classes, and MOSIS mapping).
+# It is NOT a claim that any historical WAT number is a current D35 signoff
+# parameter.
+process_identity:
+  tsri_name: "TSMC 0.35um Mixed-Signal 2P4M Polycide 3.3/5V"
+  tsri_alias: "D35"
+  cdk_process: TSMC_CMOS035_4M2P
+  cdk_techlib: NCSU_TechLib_tsmc04_4M2P
+  cdk_techfile: tsmc_04_4m2p.tf
+  mosis_code: SCN4ME_SUBM
+  lambda_um: 0.2
+  grid_um: 0.1
+  metals: 4
+  polys: 2
+  polycide: true
+  core_voltage_v: 3.3
+  hv_voltage_v: 5
+  lineage_confidence: high
+  current_revision_equivalence: unverified
+
+local_first_hand:
+  ncsu_cdk:
+    title: "NCSU CDK 1.6.0"
+    tree: "../ncsu-cdk-1.6.0"
+    role: "layer/process metadata, GDS stream map, Diva DRC/LVS source, and the shipped tsmc35N/P BSIM3v3 cards"
+    files:
+      - "skill/globalData.il (NCSU_techData[\"TSMC_CMOS035_4M2P\"])"
+      - "techfile/tsmc_04_4m2p.tf"
+      - "pipo/streamInLayermap"
+      - "pipo/cifInLayermap"
+      - "techfile/divaDRC.rul"
+      - "techfile/divaLVS.rul"
+      - "models/hspice/public/publicModel/tsmc35N"
+      - "models/hspice/public/publicModel/tsmc35P"
+  mosis_report_n88y:
+    title: "MOSIS PARAMETRIC TEST RESULTS, RUN N88Y, TECHNOLOGY SCN035H, TSMC, 0.35um"
+    date: "1998-10-30 (card header)"
+    file: "../ncsu-cdk-1.6.0/models/MOSIS_reports/n88y-params.txt"
+    role: "first-hand measured WAT data for the TSMC 0.35 lineage: sheet resistance (N+ 79.1 / P+ 153.4 / poly 7.4 / poly2 47.4 / MTL1 0.07 / MTL2 0.07 / MTL3 0.04 ohm/sq, N-well 1011 ohm/sq), contact resistance (54.8 / 118.5 / 5.6 / 31.4 ohm), via resistance (1.31 / 1.42 ohm), full area/fringe capacitance table, TOX 76 A, and a 31-stage ring oscillator at 196.17 MHz (3.3 V)."
+    caveat: "N88Y is a 3-metal SCN035H run (MTL1..MTL3 only). It does not by itself supply M4."
+  repo_field_stack_doc:
+    title: "TSMC035um Thickness Rule cross-section (official TSMC rules deck, third-party mirror)"
+    file: "docs/mosis_evidence/tsmc035_cross_section.md"
+    role: "official 4-metal cross-section: GOX 0.0078um; poly->M1 1.09um; M1 0.67; Via1/oxide2 1.1; M2 0.64; Via2/oxide3 1.1; M3 0.64; Via3/oxide4 1.1; M4 0.925; total 7.275um"
+    caveat: "conductor thickness is official; permittivity is not stated (k=3.9 assumed). Poly1/Poly2 film thickness not stated."
+
+requester_supplied_external:
+  # Supplied in the task brief.  NOT re-fetched: the port was produced in a
+  # sandbox with no network access.  Treat as external reported data until
+  # independently re-verified.
+  verification_status: not_reverified_offline
+  note: "Numbers below were supplied by the requester with the cited URLs. They are cross-checked against the local N88Y report where the quantities overlap, and the agreement is recorded in pex/tsmc035_wat_reference.yaml."
+  references:
+    - id: t2af_mm_epi
+      description: "MOSIS TSMC SCN035 MM_EPI WAT report (run T2AF): Rsheet, contact/via resistance, area/fringe capacitance matrix, and full BSIM3v3.1 cards"
+      url: "https://etd.ohiolink.edu/acprod/odb_etd/ws/send_file/send?accession=ucin1078349985&disposition=attachment"
+      host: "OhioLINK ETD Center"
+      nature: "archive (university thesis reproducing an official MOSIS report)"
+    - id: t59n_mm_epi
+      description: "MOSIS TSMC SCN035 MM_EPI WAT report (run T59N): M1-M3 0.07 ohm/sq, M4 0.04 ohm/sq, N-well ~998 ohm/sq"
+      url: "https://etda.libraries.psu.edu/files/final_submissions/3071"
+      host: "Penn State ETDA"
+      nature: "archive (university thesis reproducing an official MOSIS report)"
+    - id: t19p_lo_epi
+      description: "MOSIS TSMC 0.35 LO_EPI WAT report (run T19P): Rsheet, capacitance matrix, and a full BSIM3v3.1 model card"
+      url: "https://etd.ohiolink.edu/acprod/odb_etd/ws/send_file/send?accession=ucin1059399964&disposition=inline"
+      host: "OhioLINK ETD Center"
+      nature: "archive (university thesis reproducing an official MOSIS report)"
+    - id: us20110008962a1
+      description: "Patent reporting TSMC 0.35 2P4M CMOS-MEMS layer thicknesses (M1 ~0.665um, M2/M3 ~0.645um, M4 ~0.925um, IMD ~1um, field oxide ~0.297um)"
+      url: "https://patents.google.com/patent/US20110008962A1/en"
+      nature: "patent embodiment example, not a guaranteed process value"
+    - id: owtu_5171
+      description: "Thesis on the same TSMC 0.35 2P4M process reporting M2 ~0.6um and an oxide stack of order 1um"
+      url: "https://www.collectionscanada.gc.ca/obj/thesescanada/vol2/OWTU/TC-OWTU-5171.pdf"
+      nature: "peer-reviewed thesis"
+    - id: pmc11859862
+      description: "Paper reporting Poly1 ~0.278um, Poly2 ~0.180um and confirming M1-M4 are Al with a via/IMD stack"
+      url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC11859862/"
+      nature: "peer-reviewed paper"
+    - id: mems_35_calibre_xrc
+      description: "Early Taiwan MEMS/mixed-signal work naming the process 'TSMC 0.35um Mixed-Signal 2P4M Polycide 3.3/5V (MEMS_35)' and using Calibre XRC for PEX"
+      url: "requester-supplied description; no stable URL captured"
+      nature: "secondary literature"
+    - id: mosis_scmos_8
+      description: "MOSIS SCMOS 8.0 technology-code table mapping TSMC 0.35um 2P4M polycide to SCN4ME / SCN4ME_SUBM, and the public SCMOS GDS layer map"
+      url: "requester-supplied description; no stable URL captured"
+      nature: "official MOSIS documentation (mirrored)"
+
+gds_stream_map:
+  file: "gds_layer_map.yaml"
+  authority: public_reference
+  historical_authority: "MOSIS SCMOS submission map as carried by the NCSU CDK pipo/streamInLayermap"
+  current_tsri_map_status: unavailable
+  tapeout_eligible: false
+  requirement: "The current TSRI/foundry TSMC035 4M2P stream map and runset are required for tapeout."
+
+pex:
+  reference_data: "pex/tsmc035_wat_reference.yaml"
+  beol_fit: "pex/tsmc035_beol_public_fit.yaml"
+  flows:
+    - id: mosis_wat_rc
+      kind: analytical_rc
+      maturity: historical_measured
+    - id: field_solver_estimated
+      kind: field_solver_reconstruction
+      maturity: field_solver_estimated
