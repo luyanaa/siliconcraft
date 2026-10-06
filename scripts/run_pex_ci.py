@@ -35,6 +35,16 @@ def capability_profiles(capability: str) -> tuple[str, ...]:
 
 
 PEX_PROFILES = capability_profiles("pex_runtime")
+
+# Runtime gates that request the `authoritative` LVS/DRC deck need the generated
+# collateral under profiles/<name>/generated/, which is gitignored ("generated
+# tool collateral (never hand-edited, always regenerated)") and therefore absent
+# on a fresh checkout.  scripts/run_ci.py generates it for its own profile; this
+# runner must do the same for the profiles whose runtime tests consume that deck,
+# otherwise the PEX job fails only in CI.  Only ams_c35's tests request it today
+# (test_ams_c35_native_pex.py and test_ams_c35_mixed_signal.py both pass
+# deck="authoritative" to scripts/run_lvs.py).
+AUTHORITATIVE_DECK_PROFILES = ("ams_c35",)
 STATIC_GATES = (
     "test_process_ir.py",
     "test_ams_c35_maturity.py",
@@ -78,6 +88,12 @@ def main() -> int:
             run(gate)
 
     if not args.static_only:
+        # Generate the authoritative decks these runtime gates consume.  Without
+        # this the tests pass only on a machine that happens to have the
+        # gitignored generated/ collateral from an earlier manual run.
+        for profile in AUTHORITATIVE_DECK_PROFILES:
+            run("gen_drc.py", "--profile", profile)
+            run("gen_lvs.py", "--profile", profile)
         for profile in PEX_PROFILES:
             if profile == "ams_c35":
                 run("test_ams_c35_passives.py")
