@@ -39,20 +39,22 @@ jobs:
       - name: Generate analog PCells for every profile that declares them
         # Profiles with no PCell contract (ls1u declares `engine: unavailable`)
         # report a declared absence and exit 0 rather than failing.
+        # Single-quoted --run so the loop variable reaches nix-shell instead of
+        # being expanded (to empty) by the outer bash.
         run: >
           nix-shell -p klayout python3 --run
-          "for p in ami06 ami16 ams_c35 hp06 ls1u tsmc035_4m2p; do
+          'for p in ami06 ami16 ams_c35 hp06 ls1u tsmc035_4m2p; do
           SILICONCRAFT_PROFILE=$p SILICONCRAFT_OUTPUT=/tmp/pcells-$p.gds
-          klayout -b -r scripts/run_pcells.py || exit 1; done"
+          klayout -b -r scripts/run_pcells.py || exit 1; done'
       - name: Run xschem symbol and smoke gates
         # Every profile that ships a model library and an xschem_smoke.yaml must
         # netlist and simulate.  xh018/xh035 are excluded: neither has a public
         # compact-model card, so no simulated smoke can exist for them.
         run: >
           nix-shell -p xschem ngspice python3 --run
-          "for p in ami06 ami16 ams_c35 cnm25 hp06 ls1u openrule1um tr1um
+          'for p in ami06 ami16 ams_c35 cnm25 hp06 ls1u openrule1um tr1um
           tsmc018_deep tsmc025_deep tsmc035_4m2p; do
-          python3 scripts/run_xschem.py --profile $p || exit 1; done"
+          python3 scripts/run_xschem.py --profile $p || exit 1; done'
       - name: Run siliconcraft AMI06 conformance gate
         run: >
           nix-shell -p klayout netgen magic-vlsi ngspice python3 --run
