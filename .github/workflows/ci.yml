@@ -24,17 +24,45 @@ jobs:
           python3 scripts/test_device_ir_contracts.py
           python3 scripts/test_device_oracles.py
           python3 scripts/test_tsmc035_pex.py
+      - name: Generate routed stdcell candidates for every enabled profile
+        # Pure-Python planner gate: exercises an inverter through
+        # generate_candidates for each profile that has a sourced rule map and a
+        # fixed-height row contract, so a profile cannot silently regress out of
+        # the supported set.  Also runs the xh018/xh035 LV adapter smoke.
+        run: python3 scripts/test_stdcell_profile_contracts.py
       - uses: DeterminateSystems/nix-installer-action@v16
       - uses: DeterminateSystems/magic-nix-cache-action@v9
       - name: Run recognition compiler checks
         run: >
           nix-shell -p klayout python3 --run
           "python3 scripts/test_recognition_ir.py"
-      - name: Run siliconcraft conformance and stdcell geometry gates
+      - name: Generate analog PCells for every profile that declares them
+        # Profiles with no PCell contract (ls1u declares `engine: unavailable`)
+        # report a declared absence and exit 0 rather than failing.
+        run: >
+          nix-shell -p klayout python3 --run
+          "for p in ami06 ami16 ams_c35 hp06 ls1u tsmc035_4m2p; do
+          SILICONCRAFT_PROFILE=$p SILICONCRAFT_OUTPUT=/tmp/pcells-$p.gds
+          klayout -b -r scripts/run_pcells.py || exit 1; done"
+      - name: Run xschem symbol and smoke gates
+        # Every profile that ships a model library and an xschem_smoke.yaml must
+        # netlist and simulate.  xh018/xh035 are excluded: neither has a public
+        # compact-model card, so no simulated smoke can exist for them.
+        run: >
+          nix-shell -p xschem ngspice python3 --run
+          "for p in ami06 ami16 ams_c35 cnm25 hp06 ls1u openrule1um tr1um
+          tsmc018_deep tsmc025_deep tsmc035_4m2p; do
+          python3 scripts/run_xschem.py --profile $p || exit 1; done"
+      - name: Run siliconcraft AMI06 conformance gate
         run: >
           nix-shell -p klayout netgen magic-vlsi ngspice python3 --run
-          "python3 scripts/run_ci.py --profile ami06 &&
-          python3 scripts/run_stdcell_inv_gate.py --profile ami06 &&
+          "python3 scripts/run_ci.py --profile ami06"
+      - name: Run AMI06 stdcell geometry, PEX, and LEF gates
+        # Separate step from run_ci.py so a failure here is attributable; this
+        # chain was previously unreachable because it hung off run_ci.py with &&.
+        run: >
+          nix-shell -p klayout netgen magic-vlsi ngspice python3 --run
+          "python3 scripts/run_stdcell_inv_gate.py --profile ami06 &&
           python3 scripts/run_stdcell_gate.py --profile ami06
           --architecture two_metal_classic --cell nand2_drc
           --input common/tests/spice/stdcell/nand2_drc.spice
