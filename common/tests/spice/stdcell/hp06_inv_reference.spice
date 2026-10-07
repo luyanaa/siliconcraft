@@ -1,0 +1,7 @@
+* Reference schematic for the generated HP06 INV DRC/LVS fixture.
+* Flat netlist, matching the authoritative extractor's output:
+*   m1 Y A VSS VSS hp14tbN w=1.5 l=0.6 ...
+*   m2 Y A VDD VDD hp14tbP w=1.5 l=0.6 ...
+M0 Y A VSS VSS hp14tbN W=1.5 L=0.6
+M1 Y A VDD VDD hp14tbP W=1.5 L=0.6
+.end
