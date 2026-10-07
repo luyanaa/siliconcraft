@@ -337,7 +337,14 @@ def derive(L, F, WELL, TECH, LAMBDA, DBU_, UNIVERSE):
         polycapCap = and_(poly, polycap)
     if F("sblockAvailable"):
         sGateWidthCheck = sized(sized(and_(Gate, sblock), -2.9), 2.9)
-    if F("npnAvailable"):
+    # NPN recognition derives the collector as `nwell & cactive`, minus the
+    # pbase implant.  That only distinguishes an NPN collector from an ordinary
+    # PMOS when the collector-active layer is a stream of its own.  On processes
+    # where CACTIVE aliases ACTIVE (ami16: both are GDS 43/0) every PMOS active
+    # inside an nwell looks like a collector, so the NPN rules fire on ordinary
+    # logic.  Callers that can see the layer map set npnLayerDistinct; when it is
+    # absent the historical behaviour is kept.
+    if F("npnAvailable") and F("npnLayerDistinct", True):
         npnCollectorActive = and_(nwell, cactive)
         npnCollector = andnot(npnCollectorActive, pbase)
         npnCollectorSelect = and_(nselect, npnCollector)

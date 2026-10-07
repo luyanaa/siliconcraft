@@ -59,8 +59,8 @@ def run():
         sys.exit(1)
     warnings = []
 
-    def F(name):
-        return FEATURES.get(name, False)
+    def F(name, default=False):
+        return FEATURES.get(name, default)
 
     def L(name):
         info = LAYER_MAP.get(name)

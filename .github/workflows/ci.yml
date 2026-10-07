@@ -114,7 +114,14 @@ jobs:
           --architecture two_metal_classic --cell inv
           --input common/tests/spice/stdcell/cnm25_inv.spice
           --schematic common/tests/spice/stdcell/cnm25_inv_reference.spice
-          --workdir build/stdcell/cnm25/inv_gate"
+          --workdir build/stdcell/cnm25/inv_gate &&
+          python3 scripts/gen_drc.py --profile ami16 &&
+          python3 scripts/gen_lvs.py --profile ami16 &&
+          python3 scripts/run_stdcell_gate.py --profile ami16
+          --architecture two_metal_classic --cell inv
+          --input common/tests/spice/stdcell/ami16_inv.spice
+          --schematic common/tests/spice/stdcell/ami16_inv_reference.spice
+          --workdir build/stdcell/ami16/inv_gate"
 
   pex:
     name: Native and Magic PEX contract and runtime gates

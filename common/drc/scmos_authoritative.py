@@ -224,6 +224,14 @@ def run():
 
     LAYER_MAP = json.loads(os.environ.get("LAYERMAP", "{}"))
     FEATURES = json.loads(os.environ.get("FEATURES", "{}"))
+    # The NPN collector is derived as `nwell & cactive`, which only separates an
+    # NPN from an ordinary PMOS when cactive is its own stream.  Tell the layer
+    # derivation whether that holds, so NPN rules are skipped instead of firing
+    # on ordinary logic (ami16 maps both to GDS 43/0).
+    if "npnLayerDistinct" not in FEATURES:
+        FEATURES["npnLayerDistinct"] = LAYER_MAP.get("cactive") != LAYER_MAP.get(
+            "active"
+        )
     RULE_FAMILY = os.environ.get("RULE_FAMILY") or FEATURES.get("rule_family", "scmos")
     if RULE_FAMILY not in ("scmos", "scmos_subm", "scmos_deep"):
         raise SystemExit(f"unsupported SCMOS rule family: {RULE_FAMILY!r}")
@@ -231,8 +239,8 @@ def run():
     if SELECTED_AUTHORITY not in RULE_AUTHORITIES:
         raise SystemExit(f"unsupported RULE_AUTHORITY {SELECTED_AUTHORITY!r}")
 
-    def F(name):
-        return FEATURES.get(name, False)
+    def F(name, default=False):
+        return FEATURES.get(name, default)
 
     def L(name):
         info = LAYER_MAP.get(name)

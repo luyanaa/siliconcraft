@@ -110,8 +110,8 @@ def run():
     LAYER_MAP = json.loads(os.environ.get("LAYERMAP", "{}"))
 
     # feature flags (from profile layers.yaml `features`)
-    def F(name):
-        return FEATURES.get(name, False)
+    def F(name, default=False):
+        return FEATURES.get(name, default)
 
     FEATURES = json.loads(os.environ.get("FEATURES", "{}"))
 
