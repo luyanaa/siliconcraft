@@ -56,21 +56,22 @@ jobs:
           tsmc018_deep tsmc025_deep tsmc035_4m2p; do
           python3 scripts/run_xschem.py --profile $p || exit 1; done'
       - name: Run siliconcraft AMI06 conformance gate
-        # nixpkgs is pinned to the revision the librelane nix-shell uses, where
-        # `netgen` is the Tim-Edwards LVS comparator (1.5.316).  The default
-        # channel's `netgen` is the unrelated Schoeberl/OpenCascade 3D mesh
-        # generator, which fails with "Problem in Tk_Init / Ng_Init" instead of
-        # comparing netlists.
+        # netgen must be the Tim-Edwards LVS comparator.  Plain nixpkgs ships
+        # only `netgen`, the unrelated Schoeberl/OpenCascade 3D mesh generator
+        # (it fails with "Problem in Tk_Init / Ng_Init" instead of comparing
+        # netlists).  The LVS tool lives in the nix-eda flake, which is what the
+        # librelane nix-shell uses locally; `nix shell -c` puts it on PATH and
+        # the inner nix-shell inherits it.
         run: >
-          nix-shell -I nixpkgs=https://github.com/nixos/nixpkgs/archive/b3aad468604d3e488d627c0b43984eb60e75e782.tar.gz
-          -p klayout netgen magic-vlsi ngspice tk python3 --run
+          nix shell github:fossi-foundation/nix-eda/6.11.0#netgen -c
+          nix-shell -p klayout magic-vlsi ngspice tk python3 --run
           "python3 scripts/run_ci.py --profile ami06"
       - name: Run AMI06 stdcell geometry, PEX, and LEF gates
         # Separate step from run_ci.py so a failure here is attributable; this
         # chain was previously unreachable because it hung off run_ci.py with &&.
         run: >
-          nix-shell -I nixpkgs=https://github.com/nixos/nixpkgs/archive/b3aad468604d3e488d627c0b43984eb60e75e782.tar.gz
-          -p klayout netgen magic-vlsi ngspice tk python3 --run
+          nix shell github:fossi-foundation/nix-eda/6.11.0#netgen -c
+          nix-shell -p klayout magic-vlsi ngspice tk python3 --run
           "python3 scripts/run_stdcell_inv_gate.py --profile ami06 &&
           python3 scripts/run_stdcell_gate.py --profile ami06
           --architecture two_metal_classic --cell nand2_drc
@@ -91,11 +92,11 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@v16
       - uses: DeterminateSystems/magic-nix-cache-action@v9
       - name: Run source-reference and native PEX gates
-        # Same nixpkgs pin as the conformance job: `netgen` must be the LVS
-        # comparator, not the 3D mesh generator.
+        # Same netgen source as the conformance job: the nix-eda LVS comparator,
+        # not nixpkgs' 3D mesh generator.
         run: >
-          nix-shell -I nixpkgs=https://github.com/nixos/nixpkgs/archive/b3aad468604d3e488d627c0b43984eb60e75e782.tar.gz
-          -p klayout magic-vlsi netgen ngspice tk python3 --run
+          nix shell github:fossi-foundation/nix-eda/6.11.0#netgen -c
+          nix-shell -p klayout magic-vlsi ngspice tk python3 --run
           "python3 scripts/run_pex_ci.py"
       - name: Run L0 RF workbench
         run: >
