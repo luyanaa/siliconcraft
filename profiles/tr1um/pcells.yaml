@@ -1,0 +1,68 @@
+# profiles/tr1um/pcells.yaml — KLayout analog PCell contract
+#
+# Geometry is generated in microns and snapped to meta.grid_um.  Layer names
+# resolve through layers.yaml; rule values resolve through
+# rules.stdcell.rule_map.  Magic extraction is intentionally outside this
+# contract.
+#
+# Scope: core MOS, taps, and via12.  TR-1um is a 2-metal SCMOS process
+# (metal3Available is false), so there is no via23 or via34, and no electrode
+# (elec) layer, so no elec-over-poly capacitor.  HV/ESD devices are not exposed
+# as PCells: the profile carries hv markers and HV rules but no numerical device
+# card for them.
+# Default/minimum sizes follow meta.min_width_um (3.4) and meta.min_channel_um
+# (1.0).
+
+pcells:
+  nmos:
+    kind: mos4
+    polarity: n
+    canonical_device: nmos_core
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 3.4, min: 3.4}
+      l_um: {type: float, default: 1.0, min: 1.0}
+  pmos:
+    kind: mos4
+    polarity: p
+    canonical_device: pmos_core
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 3.4, min: 3.4}
+      l_um: {type: float, default: 1.0, min: 1.0}
+  ntap:
+    kind: tap
+    polarity: n
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  ptap:
+    kind: tap
+    polarity: p
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via12:
+    kind: via
+    cut: via
+    lower: metal1
+    upper: metal2
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}

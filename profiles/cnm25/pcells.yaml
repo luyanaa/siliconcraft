@@ -1,0 +1,71 @@
+# profiles/cnm25/pcells.yaml — KLayout analog PCell contract
+#
+# Geometry is generated in microns and snapped to meta.grid_um.  Layer names
+# resolve through layers.yaml; rule values come from rules.yaml, whose ids are
+# already SCMOS-shaped (so the shared semantic map resolves them directly).
+# Magic extraction is intentionally outside this contract.
+#
+# Scope: core MOS, taps, and via12.  CNM25 is a 2-metal process
+# (metal3Available is false), so there is no via23 or via34.  The process has a
+# POLY0 (elec) layer but it is used for the PiP capacitor only and never forms
+# transistor channels, so no elec-over-poly capacitor is exposed here; the
+# profile's own native KLayout PCell port under reference/klayout covers the
+# PiP primitive.
+# pselectFromActive is true: CNM25 derives P+ select from active, so there is no
+# separate pselect layer, and the tap PCell relies on that feature flag.
+# Default/minimum sizes follow meta.min_width_um (2.0) and meta.min_channel_um
+# (3.0).
+
+pcells:
+  nmos:
+    kind: mos4
+    polarity: n
+    canonical_device: nmos_core
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 2.0, min: 2.0}
+      l_um: {type: float, default: 3.0, min: 3.0}
+  pmos:
+    kind: mos4
+    polarity: p
+    canonical_device: pmos_core
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 2.0, min: 2.0}
+      l_um: {type: float, default: 3.0, min: 3.0}
+  ntap:
+    kind: tap
+    polarity: n
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  ptap:
+    kind: tap
+    polarity: p
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via12:
+    kind: via
+    cut: via
+    lower: metal1
+    upper: metal2
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}

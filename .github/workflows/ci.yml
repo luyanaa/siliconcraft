@@ -43,8 +43,8 @@ jobs:
         # being expanded (to empty) by the outer bash.
         run: >
           nix-shell -p klayout python3 --run
-          'for p in ami06 ami16 ams_c35 hp06 ls1u tsmc018_deep tsmc025_deep
-          tsmc035_4m2p; do
+          'for p in ami06 ami16 ams_c35 cnm25 hp06 ls1u tr1um tsmc018_deep
+          tsmc025_deep tsmc035_4m2p; do
           SILICONCRAFT_PROFILE=$p SILICONCRAFT_OUTPUT=/tmp/pcells-$p.gds
           klayout -b -r scripts/run_pcells.py || exit 1; done'
       - name: Run xschem symbol and smoke gates
