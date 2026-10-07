@@ -1,0 +1,18 @@
+* Reference schematic for the generated OpenRule1um INV DRC/LVS fixture.
+*
+* Flat netlist matching the batch adapter's extraction.  Ports follow from the
+* adapter's global connections: connect_global(ptie/bulk, "SUBSTRATE") plus the
+* label-derived pins, so the circuit exposes A, Y, VDD, VSS and SUBSTRATE.
+*
+* Bulks differ per device and that is the point: OpenRule1um is single n-well,
+* so the PMOS bulk is the nwell (VDD) while the NMOS bulk is the p-substrate
+* (SUBSTRATE).  The extracted netlist reads
+*   M$1 3 1 2 3 or1_pmos   -> d=VDD g=A s=Y b=VDD
+*   M$2 4 1 2 5 or1_nmos   -> d=VSS g=A s=Y b=SUBSTRATE
+* with net 1=A 2=Y 3=VDD 4=VSS 5=SUBSTRATE.  The area/perimeter properties are
+* the values the adapter extracts; without them netgen reports property errors.
+.subckt inv_c0 A Y VDD VSS SUBSTRATE
+M0 Y A VSS SUBSTRATE or1_nmos L=1u W=2u AS=7.1P AD=7.1P PS=11.1U PD=11.1U
+M1 Y A VDD VDD or1_pmos L=1u W=2u AS=7.1P AD=7.1P PS=11.1U PD=11.1U
+.ends inv_c0
+.end

@@ -1,0 +1,7 @@
+* siliconcraft inputs: A
+* siliconcraft outputs: Y
+* siliconcraft supplies: VDD VSS
+.subckt inv A Y VDD VSS
+M0 Y A VSS VSS or1_nmos W=2u L=1u
+M1 Y A VDD VDD or1_pmos W=2u L=1u
+.ends inv

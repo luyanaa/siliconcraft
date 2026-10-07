@@ -42,7 +42,7 @@ lvs:
   provenance: "Anagix-free batch adapter derived from OpenRule1um master 85dbacfb05351c5116158f4d8e0d5c995d3b4ad1 tech/tech/lvs/lvs.lylvs"
   upstream_file: lvs.lylvs
   upstream_source_sha256: "5216ddd2d183d860fc504d3a970582504ebe5ae23a10a9fc6a212aa90ab2aae7"
-  adapter_sha256: "11fc8ae7ea2d71ca32d1b07e90406554a46563a6463b5cf2a66ed21e9ef2cf66"
+  adapter_sha256: "dc50568810b0eddf3047904155c782e95b4ac98af6ae0ff03e15cdc0c3be69df"
   upstream_dependency_commit: "ca2da6795c4e216bae44cfd76b8fafeabff5c6b4"
   license: "Apache-2.0"
   signoff: false

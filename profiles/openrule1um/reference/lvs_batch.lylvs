@@ -37,7 +37,10 @@ via1 = input(9, 0)
 ml2 = input(10, 0)
 via2 = input(11, 0)
 ml3 = input(12, 0)
-text = input(13, 0)
+# 64/0 is the stream siliconcraft's renderer writes net text to
+# (common/lvs/scmos_lvs_core.py TEXT_GDS); the upstream deck reads its own
+# TEXT layer at 13/0, which the renderer never populates.
+text = input(64, 0)
 frame = input(14, 0)
 res = input(15, 0)
 cap = input(16, 0)
@@ -127,10 +130,31 @@ connect(ml1, via1)
 connect(via1, ml2)
 connect(ml2, via2)
 connect(via2, ml3)
+
+# Port extraction.  The adapter declared no label source and never called
+# netlist.make_top_level_pins, so the extracted circuit named no signal net and
+# exposed no ports -- only the globally connected substrate.  KLayout attaches a
+# label to a net only when the text layer is part of the connectivity graph, so
+# the text layer is connected to every layer a pin can sit on before labels() is
+# declared.  Same fix as ls1u.
+connect(text, ml1)
+connect(text, ml2)
+connect(text, pol)
+labels(text)
+
 connect_global(ptie, "SUBSTRATE")
 connect_global(bulk, "SUBSTRATE")
 
 netlist.purge
-target_netlist($output, write_spice, "OpenRule1um Anagix-free batch LVS")
+netlist.make_top_level_pins
+
+# true: use net names instead of numbers; false: use numbers for nets
+spice_with_net_names = true
+# true: put in comments with details; false: no comments
+spice_with_comments = true
+# spice_with_net_names makes the writer emit the label-derived port names
+# instead of positional numbers, so netgen can match ports by name.
+target_netlist($output, write_spice(spice_with_net_names, spice_with_comments),
+               "OpenRule1um Anagix-free batch LVS")
 </text>
 </klayout-macro>
