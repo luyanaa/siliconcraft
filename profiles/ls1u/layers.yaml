@@ -14,6 +14,16 @@ meta:
   well_type: e
   rule_family: native
   stacked_vias: false
+  # The stdcell renderer works in SCMOS token names (NSELECT/PSELECT/CC/VIA12).
+  # LS1u draws the same physical layers under its own names, so map them here
+  # rather than teaching every consumer about this process's vocabulary.
+  stdcell_physical_layers:
+    NSELECT: nimplant
+    PSELECT: pimplant
+    CC: contact
+    CP: contact
+    VIA12: via1
+    VIA23: via2
   features:
     twinWellAvailable: true
     shallowTrenchIsolation: true

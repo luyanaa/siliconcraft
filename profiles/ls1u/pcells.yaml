@@ -1,11 +1,80 @@
-engine: unavailable
-authoritative: false
-reason: "Upstream LS1u supplies no native PCell implementation or stdlib-free layout API."
-pcells: []
-pending:
-  - nmos4
-  - pmos4
-  - substrate_tap
-  - well_tap
-  - contact
-  - metal_route
+# profiles/ls1u/pcells.yaml — KLayout analog PCell contract
+#
+# Geometry is generated in microns and snapped to meta.grid_um.  Layer names
+# resolve through layers.yaml; rule values resolve through
+# rules.stdcell.rule_map, which translates every semantic key onto this
+# profile's own rule ids and layer names (contact, via1, nimplant/pimplant).
+# Magic extraction is intentionally outside this contract.
+#
+# Scope: core MOS, taps, and the via12/via23 pair.  via34 is NOT exposed: the
+# native deck (reference/klayout/ls1u.lydrc) defines rules only up to
+# via2/metal3, so there is no sourced cut size, spacing or enclosure for via3
+# even though the layer exists.  There is no electrode (elec) layer, so no
+# elec-over-poly capacitor.
+#
+# Upstream LS1u ships no PCell implementation of its own; this contract drives
+# siliconcraft's shared SCMOS-shaped engine from ls1u's own rule table instead.
+# Default/minimum sizes follow meta.min_width_um (1.5) and meta.min_channel_um
+# (0.5).
+
+pcells:
+  nmos:
+    kind: mos4
+    polarity: n
+    canonical_device: nmos_core
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 1.5, min: 1.5}
+      l_um: {type: float, default: 0.5, min: 0.5}
+  pmos:
+    kind: mos4
+    polarity: p
+    canonical_device: pmos_core
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 1.5, min: 1.5}
+      l_um: {type: float, default: 0.5, min: 0.5}
+  ntap:
+    kind: tap
+    polarity: n
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  ptap:
+    kind: tap
+    polarity: p
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via12:
+    kind: via
+    cut: via1
+    lower: metal1
+    upper: metal2
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via23:
+    kind: via
+    cut: via2
+    lower: metal2
+    upper: metal3
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}

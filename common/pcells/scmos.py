@@ -133,6 +133,14 @@ class Profile:
         return entry.get("available", True) is not False
 
     def layer_info(self, name: str):
+        # A process may draw the SCMOS-shaped layers under its own names (ls1u
+        # uses nimplant/pimplant/contact/via1).  meta.stdcell_physical_layers
+        # maps the canonical token onto the profile's name so consumers can keep
+        # speaking the shared vocabulary.
+        canonical = str(name).upper()
+        mapped = (self.meta.get("stdcell_physical_layers") or {}).get(canonical)
+        if mapped and mapped in self.layers:
+            name = str(mapped)
         if name not in self.layers:
             raise ProfileError(f"{self.profile_dir.name}: unknown layer {name}")
         entries = self.layers[name].get("gds", [])
@@ -306,10 +314,15 @@ class Technology:
         self.select_active_enc = sem("select.active_enclosure.n")
         self.select_channel_enc = max(
             sem("select.channel_enclosure.n"),
-            sem("select.channel_enclosure.p"),
+            # A source may constrain only one implant branch: ls1u's native deck
+            # checks N-implant-to-poly (2.5.1) and defines no P-implant
+            # equivalent, so the P branch is unconstrained rather than invented.
+            optional("select.channel_enclosure.p") or 0.0,
         )
         self.gate_extension = sem("gate.extension")
-        self.select_contact_enc = sem("select.contact_enclosure.n")
+        # Never consumed by the geometry; a profile without an implant-to-contact
+        # rule (ls1u) leaves it unset instead of fabricating one.
+        self.select_contact_enc = optional("select.contact_enclosure.n")
         self.metal_contact_enc = sem("metal1.contact_enclosure")
         self.nwell_active_enc = sem("nwell.active_enclosure")
         self.nwell_contact_enc = self.nwell_active_enc
@@ -343,11 +356,20 @@ class Technology:
         else:
             self.poly_elec_enc = None
             self.cap_elec_min = None
-        if profile.has_feature("metal4Available"):
+        # Gate on the PCell being declared, not merely on a fourth metal
+        # existing: a profile can have the layer without any sourced via3 rule
+        # (ls1u's native deck stops at via2/metal3), and the values are only
+        # needed when a via34 PCell is actually registered.
+        if "via34" in profile.pcells and profile.has_feature("metal4Available"):
             self.via3_size = sem("via34.cut_size")
             self.via3_spacing = sem("via34.cut_spacing")
             self.via3_lower_enc = sem("via34.lower_enclosure")
             self.via3_upper_enc = sem("via34.upper_enclosure")
+        else:
+            self.via3_size = None
+            self.via3_spacing = None
+            self.via3_lower_enc = None
+            self.via3_upper_enc = None
 
     def _rule(
         self,

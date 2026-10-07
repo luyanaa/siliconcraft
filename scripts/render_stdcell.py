@@ -89,7 +89,12 @@ def render_tap(top, layout, layer, process, tap):
         bottom + contact_h + metal_enc,
     )
     select = str(select_layer_name).lower()
-    select_layer = process.ir.layers.get(select)
+    # Resolve the implant through the profile's own name for it, if declared
+    # (ls1u draws nselect/pselect as nimplant/pimplant).
+    select_key = (
+        process.ir.layers_doc.get("meta", {}).get("stdcell_physical_layers") or {}
+    ).get(select.upper(), select)
+    select_layer = process.ir.layers.get(select_key)
     select_available = bool(select_layer and select_layer.get("available", True))
     select_enc = tech.select_active_enc
     if select_available:
@@ -164,6 +169,10 @@ def main() -> int:
     layout.dbu = 0.001
     top = layout.create_cell(f"{candidate['cell']}_c{candidate_index}")
 
+    # Token -> physical layer name.  These are the SCMOS names, but a process may
+    # name the same physical layers differently (ls1u draws the implants as
+    # nimplant/pimplant, the contact as `contact` and the first via as `via1`),
+    # so a profile can override any entry through meta.stdcell_physical_layers.
     physical = {
         "NWELL": "nwell",
         "ACTIVE": "active",
@@ -178,6 +187,12 @@ def main() -> int:
         "VIA12": "via",
         "VIA23": "via2",
     }
+    physical.update(
+        {
+            str(key).upper(): str(value)
+            for key, value in (process.ir.meta.get("stdcell_physical_layers") or {}).items()
+        }
+    )
     layer_cache = {}
 
     def layer(logical):
