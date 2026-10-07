@@ -89,6 +89,9 @@ def main() -> int:
         "cnm25",
         "ams_c35",
         "tr1um",
+        "tsmc018_deep",
+        "tsmc025_deep",
+        "tsmc035_4m2p",
     ]
     assert "simulator_model_library_and_section" in policy["required_inputs"]
     assert "lef" in policy["required_output_views"]

@@ -24,6 +24,9 @@ PROFILES = {
     "cnm25": "two_metal_classic",
     "ams_c35": "three_metal_classic",
     "tr1um": "two_metal_classic",
+    "tsmc018_deep": "three_metal_classic",
+    "tsmc025_deep": "three_metal_classic",
+    "tsmc035_4m2p": "three_metal_classic",
 }
 
 

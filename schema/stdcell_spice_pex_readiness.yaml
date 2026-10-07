@@ -6,6 +6,11 @@ status: preparation_contract
 
 policy:
   generator_implementation: geometry_candidate_planner
+  # Profiles whose fixed-height contract and sourced rule map let the planner
+  # emit a routed candidate.  The three tsmc* entries were enabled by adding a
+  # lambda-multiple rule map (CDK Diva deck, via rules.stdcell.rule_map) and a
+  # derived row contract; they are geometry-only, with no SPICE model card or
+  # characterization, exactly like the others here.
   active_stdcell_profiles:
     - ami06
     - ami16
@@ -13,6 +18,9 @@ policy:
     - cnm25
     - ams_c35
     - tr1um
+    - tsmc018_deep
+    - tsmc025_deep
+    - tsmc035_4m2p
   signoff_claims: forbidden
   historical_model_import: forbidden
   purpose: "The stdcell planner emits fixed-height SCMOS geometry/routing candidates; native pin, DRC/LVS/PEX, and characterization gates remain required."
