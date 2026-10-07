@@ -214,15 +214,11 @@ def main() -> int:
     for polarity, row in rows.items():
         for shape_group in ("active", "select", "wells", "gates", "contacts"):
             for shape in row.get(shape_group, ()):
-                if (
-                    shape_group == "select"
-                    and gds_stream(shape["layer"])
-                    == gds_stream(process.stdcell_layer("active", polarity))
-                ):
-                    # Some native decks alias select to active on the same
-                    # GDS stream.  Emit that stream once, not as duplicate
-                    # polygons that trigger overlap/spacing markers.
-                    continue
+                # This check must come first: a process may declare
+                # pselectFromActive and have no pselect layer at all (cnm25), in
+                # which case resolving its stream raises "unknown layer pselect".
+                # Previously the stream comparison below ran first and blew up
+                # before this skip could be reached.
                 if (
                     str(shape["layer"]).upper() == "PSELECT"
                     and not bool(
@@ -231,6 +227,15 @@ def main() -> int:
                     )
                     and process.ir.layers_doc.get("meta", {}).get("features", {}).get("pselectFromActive")
                 ):
+                    continue
+                if (
+                    shape_group == "select"
+                    and gds_stream(shape["layer"])
+                    == gds_stream(process.stdcell_layer("active", polarity))
+                ):
+                    # Some native decks alias select to active on the same
+                    # GDS stream.  Emit that stream once, not as duplicate
+                    # polygons that trigger overlap/spacing markers.
                     continue
                 top.shapes(layer(shape["layer"])).insert(
                     pya.Box(

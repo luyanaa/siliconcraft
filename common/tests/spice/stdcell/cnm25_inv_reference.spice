@@ -1,0 +1,7 @@
+* Reference schematic for the generated CNM25 INV DRC/LVS fixture.
+* Flat netlist, matching the authoritative extractor's output:
+*   m1 Y A VSS VSS cnm25modN w=5.5 l=3 ...
+*   m2 Y A VDD VDD cnm25modP w=5.5 l=3 ...
+M0 Y A VSS VSS cnm25modN W=5.5 L=3
+M1 Y A VDD VDD cnm25modP W=5.5 L=3
+.end
