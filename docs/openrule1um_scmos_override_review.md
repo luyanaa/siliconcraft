@@ -154,6 +154,82 @@ That is the smallest defensible change consistent with the CDK's classification,
 and it is testable: regenerating the openrule1um row and re-running its native
 deck should show whether the larger wells are what the native DRC expects.
 
+## The FEOL / BEOL test
+
+The question raised was narrower and sharper: the envelope line width is
+certainly 1um, but given the deck comes from PTC06 de-NDA'd and **shrunk**, do
+FEOL and BEOL scale the same way — and does either fit SUBM?
+
+Test: for every native rule, solve `lambda_eff = native_um / branch_multiple`.
+If a branch is the right description of the process, `lambda_eff` should come out
+as one consistent number; the branch with the tighter spread is the better fit.
+Source for PTC06's lineage:
+`sasimi.jp/new/sasimi2022/files/archive/pdf/p190_C-4.pdf` — *"An NDA-free
+oriented Open PDK technology and EDA for small volume LSI developments"* — which
+states the target was a **domestic 0.6um CMOS process**, that OpenRule1um is its
+NDA-free rule subset, and that the full-performance rules needed NDA.
+
+### Result: FEOL and BEOL do NOT scale alike
+
+| domain | branch | lambda_eff median | stdev | implied node |
+| --- | --- | --- | --- | --- |
+| **FEOL** | classic | 0.5000 | **0.0742** | 1.000 um |
+| **FEOL** | SUBM | 0.5000 | 0.0911 | 1.000 um |
+| **BEOL** | classic | 0.3333 | 0.1242 | 0.667 um |
+| **BEOL** | SUBM | 0.3333 | **0.0739** | 0.667 um |
+
+Read the stdev column, not the median — the median just tracks which branch's
+multiples were divided by:
+
+- **FEOL fits classic** (0.0742 vs 0.0911). Its `lambda_eff` sits at 0.5, i.e. the
+  1um envelope node.
+- **BEOL fits SUBM** (0.0739 vs 0.1242). Its `lambda_eff` sits at **exactly
+  0.3333 = 1/3**, i.e. a **0.667um** node — a 1um envelope **shrunk by 2/3**.
+
+So the hypothesis is **half confirmed, and in a specific way**: the BEOL does
+carry a shrunk SUBM scaling, while the FEOL does not — the FEOL stayed at the
+envelope's own classic scale. That is what "de-NDA then shrink" would look like
+if the shrink was applied to the interconnect stack.
+
+Per-rule detail for the BEOL under SUBM, showing how tight the 1/3 cluster is:
+
+| native rule | um | SUBM mult | lambda_eff |
+| --- | --- | --- | --- |
+| dcont.space | 1.0 | 3 | 0.3333 |
+| ml1.width | 1.0 | 3 | 0.3333 |
+| ml1.space | 1.0 | 3 | 0.3333 |
+| ml2.width | 1.0 | 3 | 0.3333 |
+| ml2.space | 1.0 | 3 | 0.3333 |
+| ml3.space | 1.0 | 3 | 0.3333 |
+| ml3.width | 1.0 | 5 | 0.2000 |
+| via1.space | 0.5 | 3 | 0.1667 |
+| via2.space | 0.5 | 3 | 0.1667 |
+
+Six of nine land on exactly 1/3. The three exceptions are precisely the rules the
+profile already marks as native BEOL overrides — `ml3.width` (SCMOS treats M3 as a
+thick top metal, which this process does not) and the via spacings, which are far
+tighter natively than any SCMOS branch.
+
+### What this implies for the policy
+
+The two domains need different treatment, which the current single
+`scmos_variant` flag cannot express:
+
+- **FEOL** — keep the classic arm at the envelope lambda. That is what the profile
+  does today and it is the better fit.
+- **BEOL** — the native values are already a shrunk SUBM scaling, so the SCMOS
+  envelope should not be layered over them at all; the native deck is the
+  authority. This agrees with the existing `beol: native_override` policy, and now
+  explains *why* it is right rather than merely conservative.
+- **Wells sit on the FEOL side**, so the earlier "SUBM would double the well
+  rules" concern does not apply — under this reading the wells stay classic.
+
+This is a cleaner resolution than the earlier A/B/C framing: the deck is not
+"classic with some overrides" nor "SUBM throughout", but **classic FEOL + shrunk
+SUBM BEOL**, and the profile's existing split already mirrors that. The one thing
+that would need to change is the *description* — a single `scmos_variant` label
+misrepresents it.
+
 ## Upstream source reviewed
 
 `github.com/mineda-support/OpenRule1um` @
