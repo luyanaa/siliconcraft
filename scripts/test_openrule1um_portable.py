@@ -136,6 +136,70 @@ def check_lambda_contract() -> None:
 
 
 
+def check_native_override_coverage() -> dict:
+    """Every rule the native deck enforces must be represented in the profile.
+
+    The portable envelope can only carry SCMOS semantic keys, so rules SCMOS
+    cannot express (off-grid, marker semantics, high-poly, select-layer,
+    marker-to-layer spacings) are declared as native_overrides instead.  This
+    pins that claim to the deck: count the deck's own output() calls and require
+    the profile to represent every one of them.
+    """
+    import re
+
+    deck = (PROFILE / "reference" / "drc.lydrc").read_text()
+    for a, b in (("&lt;", "<"), ("&gt;", ">"), ("&amp;", "&"), ("&quot;", '"')):
+        deck = deck.replace(a, b)
+    enforced = []
+    for line in deck.split("\n"):
+        m = re.search(
+            r"^\s*([A-Za-z_0-9]+(?:\.[A-Za-z_0-9]+)?)\.(\w+)\((.*?)\)\s*\.output\(\s*\"([^\"]*)\"",
+            line,
+        )
+        if m:
+            enforced.append((m.group(1), m.group(2)))
+    require(enforced, "no rules parsed out of the native deck")
+
+    doc = yamlish.load((PROFILE / "rules.yaml").read_text())
+    portable = doc.get("portable") or {}
+    overrides = portable.get("native_overrides") or {}
+    grid = overrides.get("grid") or {}
+    grid_layers = grid.get("layers") or []
+    declared = overrides.get("rules") or []
+
+    grid_in_deck = [e for e in enforced if e[1] == "ongrid"]
+    rest_in_deck = [e for e in enforced if e[1] != "ongrid"]
+    require(
+        len(grid_layers) == len(grid_in_deck),
+        f"grid override covers {len(grid_layers)} layers but the deck checks {len(grid_in_deck)}",
+    )
+    require(
+        len(declared) == len(rest_in_deck),
+        f"profile declares {len(declared)} native overrides but the deck enforces {len(rest_in_deck)} non-grid rules",
+    )
+    require(
+        len(grid_layers) + len(declared) == len(enforced),
+        "native override coverage does not account for every rule in the deck",
+    )
+    # each declared override must cite a real deck line and carry the deck's value
+    deck_lines = deck.split("\n")
+    for item in declared:
+        line = item.get("line")
+        require(isinstance(line, int), f"override {item.get('id')} has no source line")
+        src = deck_lines[line - 1]
+        require(
+            item["layer"] in src,
+            f"override {item.get('id')} cites line {line} which does not mention {item['layer']}",
+        )
+        if item.get("value_um") is not None:
+            require(
+                f"{item['value_um']}".rstrip("0").rstrip(".") in src
+                or f"{item['value_um']:g}" in src,
+                f"override {item.get('id')} value {item['value_um']} not found on line {line}",
+            )
+    return {"deck_rules": len(enforced), "grid_layers": len(grid_layers), "overrides": len(declared)}
+
+
 def check_profile() -> dict:
     doc = yamlish.load((PROFILE / "rules.yaml").read_text())
     portable = doc.get("portable") or {}
@@ -243,6 +307,12 @@ def main() -> int:
     args = parser.parse_args()
 
     portable = check_profile()
+    coverage = check_native_override_coverage()
+    print(
+        "[portable] native override coverage: PASS "
+        f"{coverage['deck_rules']} deck rules = {coverage['grid_layers']} grid + "
+        f"{coverage['overrides']} overrides"
+    )
     check_lambda_contract()
     print("[portable] profile + lambda DRC/LVS contract: PASS lambda=0.5um")
     print("[portable] LVS default adapter contract: PASS; Anagix-free batch adapter selected")

@@ -51,6 +51,85 @@ portable:
       # The BEOL's own numbers already carry the shrunk SUBM scaling, so no SCMOS
       # envelope is layered over them; the native deck is the authority there.
       envelope: none
+  native_overrides:
+    # Every rule reference/drc.lydrc enforces that SCMOS cannot express --
+    # off-grid, marker semantics, high-poly, select-layer and marker-to-layer
+    # spacings.  Values are the native deck's own, transcribed with the line
+    # number they come from; SCMOS has no comparable constraint for these, so
+    # there is nothing to take the stricter of.
+    source: reference/drc.lydrc
+    # The deck's own header calls several of these "may be pseudo-error (can be
+    # ignored)"; that text is kept verbatim in the note field rather than
+    # silently dropped.
+    grid:
+      value_um: 0.05
+      layers: [nwl, diff, pol, hpol, cnt, ml1, via1, ml2, via2, ml3, parea, narea, pad]
+      source_lines: "62-74"
+    rules:
+      - {id: OR1-NWL-SPACE, kind: space, layer: nwl, value_um: 5.0, note: "NWL space < 5.0", line: 84}
+      - {id: OR1-PAREA-SPACE, kind: space, layer: parea, value_um: 0.5, note: "Parea space < 0.5", line: 85}
+      - {id: OR1-NAREA-SPACE, kind: space, layer: narea, value_um: 0.5, note: "Narea space < 0.5", line: 86}
+      - {id: OR1-PAREA-SEPARATION, kind: separation, layer: parea, value_um: 0.5, layer2: narea, note: "Parea-Narea space < 0.5", line: 87}
+      - {id: OR1-DIFF-SPACE, kind: space, layer: diff, value_um: 1.5, note: "DIFF space < 1.5", line: 88}
+      - {id: OR1-NWL-SEPARATION, kind: separation, layer: nwl, value_um: 3.0, layer2: ndiff, note: "NWL-Ndiff space < 3.0", line: 89}
+      - {id: OR1-PDIFF-SEPARATION, kind: separation, layer: pdiff, value_um: 0.5, layer2: dm_nscn, note: "Pdiff-NScont space < 0.5", line: 90}
+      - {id: OR1-NDIFF-SEPARATION, kind: separation, layer: ndiff, value_um: 1.0, layer2: dm_pscn, note: "Ndiff-PScont space < 1.0", line: 91}
+      - {id: OR1-POL-SPACE, kind: space, layer: pol, value_um: 1.0, note: "POL space < 1.0", line: 92}
+      - {id: OR1-MOS-SPACE, kind: space, layer: mos, value_um: 1.0, note: " POL(MOS) space < 1.0", line: 93}
+      - {id: OR1-POL-SEPARATION-L94, kind: separation, layer: pol, value_um: 0.5, layer2: diff, note: "POL-diff space < 0.5", line: 94}
+      - {id: OR1-DIFF-SEPARATION-L95, kind: separation, layer: diff, value_um: 1.0, layer2: dm_dcn, note: "Diff-dcont space < 1.0", line: 95}
+      - {id: OR1-MOS-SEPARATION, kind: separation, layer: mos, value_um: 0.5, layer2: dm_dcn, note: "MOS-dcont space < 0.5", line: 96}
+      - {id: OR1-DIFF-SEPARATION-L97, kind: separation, layer: diff, value_um: 1.0, layer2: dm_pcn, note: "Diff-pcont space < 1.0", line: 97}
+      - {id: OR1-POL-SEPARATION-L98, kind: separation, layer: pol, value_um: 0.5, layer2: dm_pcn, note: "POL-pcont space < 0.5, may be pseudo-error (can be ignored)", line: 98}
+      - {id: OR1-ML1-SPACE, kind: space, layer: ml1, value_um: 1.0, note: "ML1 space < 1.0", line: 99}
+      - {id: OR1-ML2-SPACE, kind: space, layer: ml2, value_um: 1.0, note: "ML2 space < 1.0", line: 100}
+      - {id: OR1-ML3-SPACE, kind: space, layer: ml3, value_um: 1.0, note: "ML3 space < 1.0", line: 101}
+      - {id: OR1-ML1-SEPARATION-L102, kind: separation, layer: ml1, value_um: 0.5, layer2: dm_dcn, note: "ML1-dcont space < 0.5, may be pseudo-error (can be ignored)", line: 102}
+      - {id: OR1-ML1-SEPARATION-L103, kind: separation, layer: ml1, value_um: 0.5, layer2: dm_pcn, note: "ML1-pcont space < 0.5, may be pseudo-error (can be ignored)", line: 103}
+      - {id: OR1-DM-VIA1-SPACE, kind: space, layer: dm_via1, value_um: 0.5, note: "via1 space < 0.5", line: 104}
+      - {id: OR1-DM-VIA2-SPACE, kind: space, layer: dm_via2, value_um: 0.5, note: "via2 space < 0.5", line: 105}
+      - {id: OR1-ML1-SEPARATION-L106, kind: separation, layer: ml1, value_um: 0.5, layer2: dm_via1, note: "ML1-via1 space < 0.5", line: 106}
+      - {id: OR1-ML2-SEPARATION-L107, kind: separation, layer: ml2, value_um: 0.5, layer2: dm_via1, note: "ML2-via1 space < 0.5", line: 107}
+      - {id: OR1-ML2-SEPARATION-L108, kind: separation, layer: ml2, value_um: 0.5, layer2: dm_via2, note: "ML2-via2 space < 0.5", line: 108}
+      - {id: OR1-ML3-SEPARATION, kind: separation, layer: ml3, value_um: 0.5, layer2: dm_via2, note: "ML3-via2 space < 0.5", line: 109}
+      - {id: OR1-DM-VIA1-SEPARATION-L110, kind: separation, layer: dm_via1, value_um: 0.5, layer2: dm_dcn, note: "via1-dcont space < 0.5", line: 110}
+      - {id: OR1-DM-VIA1-SEPARATION-L111, kind: separation, layer: dm_via1, value_um: 0.5, layer2: dm_pcn, note: "via1-pcont space < 0.5", line: 111}
+      - {id: OR1-DM-VIA1-SEPARATION-L112, kind: separation, layer: dm_via1, value_um: 0.5, layer2: dm_nscn, note: "via1-nscont space < 0.5", line: 112}
+      - {id: OR1-DM-VIA1-SEPARATION-L113, kind: separation, layer: dm_via1, value_um: 0.5, layer2: dm_pscn, note: "via1-pscont space < 0.5", line: 113}
+      - {id: OR1-DM-VIA1-SEPARATION-L114, kind: separation, layer: dm_via1, value_um: 0.5, layer2: dm_via2, note: "via1-via2 space < 0.5", line: 114}
+      - {id: OR1-DM-DCN-SPACE, kind: space, layer: dm_dcn, value_um: 1.0, note: "dcont space < 1.0", line: 115}
+      - {id: OR1-HIPOL-SPACE, kind: space, layer: hipol, value_um: 2.0, note: "Poly in HPOL space < 2.0", line: 116}
+      - {id: OR1-POL-SEPARATION-L117, kind: separation, layer: pol, value_um: 1.0, layer2: hipol, note: "Poly outside HPOL space < 1.0", line: 117}
+      - {id: OR1-HPOL-SEPARATION, kind: separation, layer: hpol, value_um: 3.0, layer2: mos, note: "HPOL MOS gate space < 3.0", line: 118}
+      - {id: OR1-DM-NSCN-RAW-MERGED, kind: merged, layer: dm_nscn.raw, note: "nsubcont overlap", line: 121}
+      - {id: OR1-DM-PCN-AND, kind: and, layer: dm_pcn, note: "pcont-via1 non-stack", line: 126}
+      - {id: OR1-DM-DCN-AND, kind: and, layer: dm_dcn, note: "dcont-via1 non-stack", line: 127}
+      - {id: OR1-DM-VIA1-AND, kind: and, layer: dm_via1, note: "via1-via2 non-stack", line: 128}
+      - {id: OR1-NWL-WIDTH, kind: width, layer: nwl, value_um: 4.0, note: "NWL width < 4.0", line: 131}
+      - {id: OR1-NWL-DP-WIDTH, kind: width, layer: nwl_dp, value_um: 4.0, note: "NWL(diff.pot) width < 4.0", line: 132}
+      - {id: OR1-PAREA-WIDTH, kind: width, layer: parea, value_um: 0.5, note: "Parea width < 0.5", line: 133}
+      - {id: OR1-NAREA-WIDTH, kind: width, layer: narea, value_um: 0.5, note: "Narea width < 0.5", line: 134}
+      - {id: OR1-DIFF-WIDTH, kind: width, layer: diff, value_um: 1.0, note: "DIFF width < 1.0", line: 135}
+      - {id: OR1-POL-WIDTH, kind: width, layer: pol, value_um: 1.0, note: "POL width < 1.0", line: 136}
+      - {id: OR1-ML1-WIDTH, kind: width, layer: ml1, value_um: 1.0, note: "ML1 width < 1.0", line: 137}
+      - {id: OR1-ML2-WIDTH, kind: width, layer: ml2, value_um: 1.0, note: "ML2 width < 1.0", line: 138}
+      - {id: OR1-ML3-WIDTH, kind: width, layer: ml3, value_um: 1.0, note: "ML3 width < 1.0", line: 139}
+      - {id: OR1-HIPOL-WIDTH, kind: width, layer: hipol, value_um: 2.0, note: "Poly in HPOL width < 2.0", line: 140}
+      - {id: OR1-NWL-ENCLOSING, kind: enclosing, layer: nwl, value_um: 2.0, layer2: pdiff, note: "Pdiff enclosure in NWL < 2.0", line: 150}
+      - {id: OR1-DM-NSCN-NOT-INSIDE, kind: not_inside, layer: dm_nscn, note: "nsubcon outside NWL", line: 151}
+      - {id: OR1-PAREA-ENCLOSING, kind: enclosing, layer: parea, value_um: 0.5, layer2: diff, note: "DIFF enclosure in Parea < 0.5", line: 152}
+      - {id: OR1-NAREA-ENCLOSING, kind: enclosing, layer: narea, value_um: 0.5, layer2: diff, note: "DIFF enclosure in Narea < 0.5", line: 153}
+      - {id: OR1-HPOL-ENCLOSING, kind: enclosing, layer: hpol, value_um: 5.0, layer2: hipol, note: "POL enclosure in HPOL < 5.0", line: 154}
+      - {id: OR1-POL-ENCLOSING, kind: enclosing, layer: pol, value_um: 1.0, layer2: diff, note: "POL gate extension < 1.0", line: 157}
+      - {id: OR1-CNT-OUTSIDE, kind: outside, layer: cnt, note: "Stand alone Cont", line: 163}
+      - {id: OR1-VIA1-OUTSIDE, kind: outside, layer: via1, note: "Stand alone VIA1", line: 164}
+      - {id: OR1-VIA2-OUTSIDE, kind: outside, layer: via2, note: "Stand alone VIA2", line: 165}
+      - {id: OR1-ML1-ENCLOSING-L170, kind: enclosing, layer: ml1, value_um: 0.5, layer2: dm_dcn_in_widemetal, note: "DM_dcont encosure is less than 0.5 for wide M1 (>15um)", line: 170}
+      - {id: OR1-ML1-ENCLOSING-L173, kind: enclosing, layer: ml1, value_um: 0.5, layer2: dm_pcn_in_widemetal, note: "DM_pcont encosure is less than 0.5 for wide M1 (>15um)", line: 173}
+      - {id: OR1-ML1-ENCLOSING-L176, kind: enclosing, layer: ml1, value_um: 0.5, layer2: dm_via1_in_widemetal, note: "DM_Via1 encosure is less than 0.5 for wide M1 (>15um)", line: 176}
+      - {id: OR1-ML2-ENCLOSING-L180, kind: enclosing, layer: ml2, value_um: 0.5, layer2: dm_via1_in_widemetal, note: "DM_Via1 encosure is less than 0.5 for wide M2 (>15um)", line: 180}
+      - {id: OR1-ML2-ENCLOSING-L183, kind: enclosing, layer: ml2, value_um: 0.5, layer2: dm_via2_in_widemetal, note: "DM_Via2 encosure is less than 0.5 for wide M2 (>15um)", line: 183}
+      - {id: OR1-ML3-ENCLOSING, kind: enclosing, layer: ml3, value_um: 0.5, layer2: dm_via2_in_widemetal, note: "DM_Via2 encosure is less than 0.5 for wide M3 (>15um)", line: 187}
   legality:
     canonical_input: synthetic_minimum_geometry
     upstream_basic_gds: optional_reference_input
