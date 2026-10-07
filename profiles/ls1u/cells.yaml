@@ -6,11 +6,14 @@
 #   p row   = nwell.min_width + 2 * nwell.active_enclosure   (exact for ami06,
 #             ams_c35, hp06 and tsmc035_4m2p)                = 5.0 + 2*3.0 = 11.0
 #   n row   = active.min_width + 2 * gate.extension + 2 * contact.cut_size
-#             (matches the ami06/hp06 branch)                = 1.5 + 2*1.0 + 2*1.0 = 5.5
+#             (matches the ami06/hp06 branch)                = 1.5 + 2*1.0 + 2*1.0 = 5.5,
+#             rounded up to 6.0 so the row centre lands on the 0.5um grid:
+#             rail 1.5 + 6.0/2 = 4.5, and 9.0 + 11.0/2 = 14.5 for the p row.  An
+#             odd 5.5 row would centre devices at 4.25, which its own
+#             LS1U.0.*_GRID rules reject.
 #   row gap = active.min_width                               = 1.5
 #   rail    = active.min_width                               = 1.5
-# Site = gap + n + p + 2 * rail = 1.5 + 5.5 + 11.0 + 3.0 = 21.0um, which lands
-# exactly on this profile's 0.5um grid.
+# Site = gap + n + p + 2 * rail = 1.5 + 6.0 + 11.0 + 3.0 = 21.5um, on grid.
 #
 # LS1u is a 1um-node reference process; this is a geometry candidate, not a
 # foundry standard-cell library or a signoff row contract.
@@ -23,9 +26,9 @@ stdcell:
     - profiles/ls1u/rules.yaml
     - profiles/ls1u/reference/klayout/ls1u.lydrc
     - shared SCMOS row derivation (see profiles/ams_c35/cells.yaml)
-  site_height_um: 21.0
+  site_height_um: 21.5
   row_heights_um:
-    n: 5.5
+    n: 6.0
     p: 11.0
   row_gap_um: 1.5
   rail_margin_um: 1.5
