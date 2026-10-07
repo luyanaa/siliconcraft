@@ -89,6 +89,7 @@ def main() -> int:
         "cnm25",
         "ams_c35",
         "tr1um",
+        "ls1u",
         "tsmc018_deep",
         "tsmc025_deep",
         "tsmc035_4m2p",

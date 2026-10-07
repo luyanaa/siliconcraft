@@ -48,8 +48,63 @@ rules:
     - {id: "2.8.5", layer: metal1, layer2: via1, value_um: 0.5, source: process_design_rules.tex}
     - {id: "2.9.3", layer: metal2, layer2: via1, value_um: 0.5, source: process_design_rules.tex}
     - {id: "2.10.3", layer: metal3, layer2: via2, value_um: 0.5, source: process_design_rules.tex}
+    # Four further rules present in the profile's native KLayout deck but absent
+    # from the normalized .tex subset.  Cited to the deck itself, which is a
+    # first-hand local source (profiles/ls1u/reference/klayout/ls1u.lydrc).
+    - {id: "2.3.3.NW", layer: nwell, layer2: active, value_um: 3.0, source: "reference/klayout/ls1u.lydrc", note: "LS1U_NW.enclosing(LS1U_ACTIVE, 3.0um)"}
+    - {id: "2.5.2.P", layer: pimplant, layer2: active, value_um: 1.0, source: "reference/klayout/ls1u.lydrc", note: "LS1U_PSEL.enclosing(LS1U_ACTIVE, 1.0um)"}
+    - {id: "2.6.2.P", layer: poly, layer2: contact, value_um: 0.5, source: "reference/klayout/ls1u.lydrc", note: "LS1U_POLY.enclosing(LS1U_CT, 0.5um)"}
+    - {id: "2.10.3.M2", layer: metal2, layer2: via2, value_um: 0.5, source: "reference/klayout/ls1u.lydrc", note: "LS1U_M2.enclosing(LS1U_V2, 0.5um)"}
   area: []
   overlap:
     - {id: "2.12.2", layer: metal3, layer2: glass, value_um: 6.0, source: process_design_rules.tex}
   extension: []
   notch: []
+
+  # Semantic map for the stdcell and PCell geometry consumers.
+  #
+  # LS1u numbers its own rules (2.3.1 active width, 2.6.1 contact width) and uses
+  # its own layer names (contact, via1, nimplant/pimplant), so every semantic key
+  # is translated here rather than relying on the SCMOS-shaped defaults.  All
+  # values come from this profile's own rule table above.
+  #
+  # Two keys are deliberately absent because no source defines them:
+  #   select.channel_enclosure.p - the native deck checks only N implant to poly
+  #     (2.5.1) and has no P-implant equivalent.
+  #   select.contact_enclosure.n/.p - the native deck defines no implant-to-
+  #     contact rule at all.
+  # The consumers treat a missing key as unconstrained rather than inventing a
+  # value, so max() falls back to the sourced branch.
+  stdcell:
+    rule_map:
+      contact.cut_size: {group: width, id: "2.6.1", layer: contact}
+      contact.cut_spacing: {group: spacing, id: "2.6.3", layer: contact}
+      active.min_width: {group: width, id: "2.3.1", layer: active}
+      poly.min_width: {group: width, id: "2.4.1", layer: poly}
+      poly.min_spacing: {group: spacing, id: "2.4.3", layer: poly}
+      poly.contact_spacing: {group: spacing, id: "2.6.4", layer: contact, layer2: poly}
+      poly.contact_enclosure: {group: enclosure, id: "2.6.2.P", layer: poly, layer2: contact}
+      active.contact_enclosure: {group: enclosure, id: "2.6.2", layer: active, layer2: contact}
+      active.contact_gate_spacing: {group: spacing, id: "2.6.4", layer: contact, layer2: poly}
+      select.active_enclosure.n: {group: enclosure, id: "2.5.2", layer: nimplant, layer2: active}
+      select.active_enclosure.p: {group: enclosure, id: "2.5.2.P", layer: pimplant, layer2: active}
+      select.channel_enclosure.n: {group: spacing, id: "2.5.1", layer: nimplant, layer2: poly}
+      gate.extension: {group: enclosure, id: "2.4.4", layer: poly, layer2: active}
+      metal1.contact_enclosure: {group: enclosure, id: "2.7.3", layer: metal1, layer2: contact}
+      nwell.active_enclosure: {group: enclosure, id: "2.3.3.NW", layer: nwell, layer2: active}
+      nwell.min_width: {group: width, id: "2.2.1", layer: nwell}
+      via12.cut_size: {group: width, id: "2.8.1", layer: via1}
+      via12.cut_spacing: {group: spacing, id: "2.8.2", layer: via1}
+      via12.lower_enclosure: {group: enclosure, id: "2.8.5", layer: metal1, layer2: via1}
+      via12.upper_enclosure: {group: enclosure, id: "2.9.3", layer: metal2, layer2: via1}
+      via12.active_spacing: {group: spacing, id: "2.8.4", layer: via1, layer2: active}
+      via23.cut_size: {group: width, id: "2.10.1", layer: via2}
+      via23.cut_spacing: {group: spacing, id: "2.10.2", layer: via2}
+      via23.lower_enclosure: {group: enclosure, id: "2.10.3.M2", layer: metal2, layer2: via2}
+      via23.upper_enclosure: {group: enclosure, id: "2.10.3", layer: metal3, layer2: via2}
+      metal.M1.min_width: {group: width, id: "2.7.1", layer: metal1}
+      metal.M1.min_spacing: {group: spacing, id: "2.7.2", layer: metal1}
+      metal.M2.min_width: {group: width, id: "2.9.1", layer: metal2}
+      metal.M2.min_spacing: {group: spacing, id: "2.9.2", layer: metal2}
+      metal.M3.min_width: {group: width, id: "2.11.1", layer: metal3}
+      metal.M3.min_spacing: {group: spacing, id: "2.11.2", layer: metal3}

@@ -106,16 +106,20 @@ class StdcellTechnology:
             active_contact_gate_spacing=r("active.contact_gate_spacing"),
             select_active_enc=max(
                 r("select.active_enclosure.n"),
-                r("select.active_enclosure.p"),
+                optional_r("select.active_enclosure.p"),
             ),
             select_channel_enc=max(
                 r("select.channel_enclosure.n"),
-                r("select.channel_enclosure.p"),
+                # A source may constrain only one implant branch.  ls1u's native
+                # deck checks N-implant-to-poly (2.5.1) and has no P-implant
+                # equivalent, so the P branch is unconstrained rather than
+                # fabricated; max() then uses the sourced N value alone.
+                optional_r("select.channel_enclosure.p"),
             ),
             gate_extension=r("gate.extension"),
             select_contact_enc=max(
-                r("select.contact_enclosure.n"),
-                r("select.contact_enclosure.p"),
+                optional_r("select.contact_enclosure.n"),
+                optional_r("select.contact_enclosure.p"),
             ),
             metal_contact_enc=r("metal1.contact_enclosure"),
             nwell_active_enc=r("nwell.active_enclosure"),
