@@ -83,7 +83,12 @@ jobs:
           --architecture three_metal_classic --cell nor2_drc
           --input common/tests/spice/stdcell/nor2_drc.spice
           --schematic common/tests/spice/stdcell/nor2_drc_reference.spice
-          --workdir build/stdcell/ami06/nor2_gate"
+          --workdir build/stdcell/ami06/nor2_gate &&
+          python3 scripts/run_stdcell_gate.py --profile ls1u
+          --architecture three_metal_classic --cell inv
+          --input common/tests/spice/stdcell/ls1u_inv.spice
+          --schematic common/tests/spice/stdcell/ls1u_inv_reference.spice
+          --workdir build/stdcell/ls1u/inv_gate"
 
   pex:
     name: Native and Magic PEX contract and runtime gates
