@@ -3,6 +3,87 @@
 Status: **analysis only — no policy change made.** This document exists so the
 override design can be reviewed before any rule value is committed.
 
+## SCMOS vs SCMOS_SUBM: which branch is this process?
+
+This is the prior question, and it decides everything below. The profile
+currently declares `scmos_variant: non_submicron`, i.e. the **classic** SCMOS
+arm. There is real evidence it should be **SUBM**.
+
+### The CDK classifies a 0.6um process as SUBM
+
+`ncsu-cdk-1.6.0/skill/globalData.il` carries the per-technology table
+`NCSU_techData`, whose `submicronRules` field is exactly the branch selector
+(`techfile/divaDRC.rul` branches on `submicronAvailable =
+NCSU_techData[techdesc]->submicronRules`):
+
+| tech | description | lambda | minL | minW | submicronRules |
+| --- | --- | --- | --- | --- | --- |
+| AMI_ABN | AMI 1.6u ABN | 0.8 | 1.6 | 4.0 | **nil** |
+| AMI_ABN_12 | AMI 1.2u ABN | 0.6 | 1.2 | 1.8 | **nil** |
+| ORBIT_SCNA2 | Orbit 2.0u | 1.0 | 2.0 | 3.0 | **nil** |
+| NCSU_EGRC | NCSU EGRC 3.0u | 1.5 | 1.5 | 1.5 | **nil** |
+| AMI_CWL | AMI 0.80u CWL | 0.5 | 1.0 | 1.5 | nil (outlier) |
+| **HP_CMOS26G** | **HP 0.80u** | 0.4 | 0.8 | 1.2 | **t** |
+| **AMI_C5N** | **AMI 0.60u** | 0.3 | 0.6 | 1.5 | **t** |
+| **HP_AMOS14TB** | **HP 0.60u** | 0.3 | 0.6 | 0.9 | **t** |
+| TSMC_CMOS035_* | TSMC 0.40u | 0.2 | 0.4 | 0.6 | **t** |
+| TSMC_CMOS020 | TSMC 0.20u | 0.10 | 0.20 | 0.30 | **t** |
+| TSMC_CMOS025_DEEP | TSMC 0.24u DEEP | 0.12 | 0.24 | 0.36 | nil |
+| TSMC_CMOS018_DEEP | TSMC 0.18u DEEP | 0.09 | 0.18 | 0.27 | nil |
+
+Read off the table: **every 0.6um and 0.8um process is `submicronRules = t`**;
+only 1.2um and larger are classic. (The two DEEP rows are `nil` because they take
+the separate `deepRules` branch, not because they are classic.)
+
+The profile's own note says OpenRule1um is *"a 1um design-rule envelope for a
+nominal PTS 0.6um CMOS process"*. By the CDK's own classification, a **0.6um**
+process is **SUBM**. So `scmos_variant: non_submicron` is very likely the wrong
+arm, and everything derived from the `else:` branch is derived from the wrong
+arm.
+
+### The counter-evidence, stated plainly
+
+OpenRule1um's native spacing values at lambda = 0.5 line up with the **classic**
+arm, not SUBM:
+
+| semantic rule | classic @0.5 | SUBM @0.5 | OR1 native | matches |
+| --- | --- | --- | --- | --- |
+| poly.min_spacing | 2λ = 1.0 | 3λ = 1.5 | `pol.space(1.0)` = 1.0 | classic |
+| contact.cut_spacing | 2λ = 1.0 | 3λ = 1.5 | `dm_dcn.space(1.0)` = 1.0 | classic |
+| metal.M1.min_spacing | 2λ = 1.0 | 3λ = 1.5 | `ml1.space(1.0)` = 1.0 | classic |
+| poly.min_width | 2λ = 1.0 | 2λ = 1.0 | `pol.width(1.0)` = 1.0 | both |
+| nwell.active_enclosure | 6λ = 3.0 | 6λ = 3.0 | `nwl.separation(ndiff,3.0)` = 3.0 | both |
+| active.min_width | 3λ = 1.5 | 3λ = 1.5 | `diff.width(1.0)` = 1.0 | neither |
+| nwell.min_width | 10λ = 5.0 | 12λ = 6.0 | `nwl.width(4.0)` = 4.0 | neither |
+| metal.M2.min_spacing | 3λ = 1.5 | 3λ = 1.5 | `ml2.space(1.0)` = 1.0 | neither |
+| metal.M3.min_spacing | 4λ = 2.0 | 3λ = 1.5 | `ml3.space(1.0)` = 1.0 | neither |
+
+So the native **spacings** are 2λ at λ=0.5 — a classic-envelope signature —
+while the native **well** values match neither arm. That is the tension: the
+process *node* says SUBM, the rule *envelope* looks classic.
+
+### Why it matters materially
+
+Under "take the stricter of the two", the branch changes the well rules by
+roughly 2x:
+
+| rule | classic @0.5 | SUBM @0.5 | OR1 native | classic outcome | SUBM outcome |
+| --- | --- | --- | --- | --- | --- |
+| nwell spacing (1.2) | 4.5 | **9.0** | 5.0 | native 5.0 | **SCMOS 9.0** |
+| nwell.min_width (1.1) | 5.0 | **6.0** | 4.0 | SCMOS 5.0 | **SCMOS 6.0** |
+
+The spacings are unaffected in practice, because the native 1.0 is tighter than
+SUBM's 1.5 either way. The well rules are where the choice bites: switching to
+SUBM nearly doubles the required well spacing, which directly enlarges rows.
+
+### Note on λ itself
+
+The profile also warns that `lambda_um = 0.5` *"is the grid/reference baseline,
+not a multiplier"*. If that is taken literally, neither arm's λ-scaled values can
+be applied to this process without first deciding what λ means here — which is
+the same lineage question, one level deeper. Worth settling together with the
+branch choice.
+
 ## Upstream source reviewed
 
 `github.com/mineda-support/OpenRule1um` @
