@@ -84,6 +84,76 @@ be applied to this process without first deciding what λ means here — which i
 the same lineage question, one level deeper. Worth settling together with the
 branch choice.
 
+## The SUBM computation, at both candidate λ
+
+Two λ values are in play and they are not the same thing:
+
+- **λ_envelope = 0.5um** — the drawing grid of the "1um design-rule envelope".
+- **λ_process = 0.3um** — the nominal 0.6um process (0.6 / 2).
+
+Computed below with openrule1um's branch context (metal3 yes, metal4 no, elec no,
+submicron yes), SUBM multiples from `common/drc/scmos_reference.py`, native values
+from `profiles/openrule1um/reference/drc.lydrc`:
+
+| semantic rule | SUBM mult | @λ=0.3 | @λ=0.5 | OR1 native | tighter @0.3 | tighter @0.5 |
+| --- | --- | --- | --- | --- | --- | --- |
+| poly.min_width | 2.0 | 0.60 | 1.00 | 1.00 | SCMOS 0.60 | tie 1.00 |
+| poly.min_spacing | 3.0 | 0.90 | 1.50 | 1.00 | SCMOS 0.90 | native 1.00 |
+| active.min_width | 3.0 | 0.90 | 1.50 | 1.00 | SCMOS 0.90 | native 1.00 |
+| contact.cut_size | 2.0 | 0.60 | 1.00 | 1.00 | SCMOS 0.60 | tie 1.00 |
+| contact.cut_spacing | 3.0 | 0.90 | 1.50 | 1.00 | SCMOS 0.90 | native 1.00 |
+| metal.M1.min_width | 3.0 | 0.90 | 1.50 | 1.00 | SCMOS 0.90 | native 1.00 |
+| metal.M1.min_spacing | 3.0 | 0.90 | 1.50 | 1.00 | SCMOS 0.90 | native 1.00 |
+| metal.M2.min_width | 3.0 | 0.90 | 1.50 | 1.00 | SCMOS 0.90 | native 1.00 |
+| metal.M2.min_spacing | 3.0 | 0.90 | 1.50 | 1.00 | SCMOS 0.90 | native 1.00 |
+| metal.M3.min_width | 5.0 | 1.50 | 2.50 | 1.00 | native 1.00 | native 1.00 |
+| metal.M3.min_spacing | 3.0 | 0.90 | 1.50 | 1.00 | SCMOS 0.90 | native 1.00 |
+| nwell.min_width | 12.0 | 3.60 | 6.00 | 4.00 | SCMOS 3.60 | **SCMOS 6.00** |
+| nwell spacing (1.2) | 18.0 | 5.40 | 9.00 | 5.00 | **SCMOS 5.40** | **SCMOS 9.00** |
+| nwell.active_enclosure | 6.0 | 1.80 | 3.00 | 3.00 | SCMOS 1.80 | tie 3.00 |
+| gate.extension | 2.0 | 0.60 | 1.00 | 1.00 | SCMOS 0.60 | tie 1.00 |
+| via12.cut_spacing | 3.0 | 0.90 | 1.50 | 0.50 | native 0.50 | native 0.50 |
+| via23.cut_spacing | 3.0 | 0.90 | 1.50 | 0.50 | native 0.50 | native 0.50 |
+| poly.contact_spacing | 5.0 | 1.50 | 2.50 | (none) | SCMOS 1.50 | SCMOS 2.50 |
+| select.channel_enclosure | 3.0 | 0.90 | 1.50 | (none) | SCMOS 0.90 | SCMOS 1.50 |
+| active.contact_enclosure | 1.0 | 0.30 | 0.50 | (none) | SCMOS 0.30 | SCMOS 0.50 |
+| metal1.contact_enclosure | 1.0 | 0.30 | 0.50 | (none) | SCMOS 0.30 | SCMOS 0.50 |
+| via12.lower_enclosure | 1.0 | 0.30 | 0.50 | (none) | SCMOS 0.30 | SCMOS 0.50 |
+
+### Which λ is coherent: 0.5, not 0.3
+
+The envelope's own arithmetic says λ = 0.5. Two independent checks:
+
+- `pol.width(1.0)` = 1.00, and SCMOS poly width is **2λ in both branches** →
+  λ = 0.5. At λ = 0.3 that rule would be 0.6, which does not describe a 1um
+  envelope.
+- `pol.space(1.0)`, `ml1.space(1.0)`, `dm_dcn.space(1.0)` are all 1.00, which is
+  the **classic** 2λ value at λ = 0.5.
+
+So λ_process = 0.3 does not describe the deck's geometry: it would make the
+SCMOS envelope tighter than the process's own native rules almost everywhere
+(0.6-0.9 vs 1.0), which would make the "native override" concept nearly vacuous.
+λ = 0.5 is the drawing λ the envelope is written in.
+
+### The combination that fits all the evidence
+
+**SUBM branch, evaluated at λ = 0.5.** The branch follows the *process node*
+(the CDK classifies 0.6um as submicron); λ follows the *drawing envelope*
+(1um → 0.5). Under "take the stricter", that yields:
+
+- **spacings** — SUBM 1.5 vs native 1.0 → **native wins** (unchanged from today)
+- **widths** — SUBM 1.0 vs native 1.0 → **tie** (unchanged from today)
+- **wells** — SUBM 9.0 / 6.0 vs native 5.0 / 4.0 → **SCMOS wins**, versus 4.5 / 5.0
+  under classic today
+
+So switching the branch to SUBM changes exactly one thing: **the well rules
+roughly double** (nwell spacing 4.5 → 9.0, nwell width 5.0 → 6.0), which directly
+enlarges rows. Every other semantic key keeps the value it has today.
+
+That is the smallest defensible change consistent with the CDK's classification,
+and it is testable: regenerating the openrule1um row and re-running its native
+deck should show whether the larger wells are what the native DRC expects.
+
 ## Upstream source reviewed
 
 `github.com/mineda-support/OpenRule1um` @
