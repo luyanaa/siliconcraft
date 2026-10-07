@@ -11,9 +11,14 @@
 #             rail 1.5 + 6.0/2 = 4.5, and 9.0 + 11.0/2 = 14.5 for the p row.  An
 #             odd 5.5 row would centre devices at 4.25, which its own
 #             LS1U.0.*_GRID rules reject.
-#   row gap = active.min_width                               = 1.5
+#   row gap = max(active.min_width, metal.M1.min_spacing)   = max(1.5, 2.0) = 2.0
+#             For every other contract these two rules coincide (SCMOS M1 spacing
+#             equals the 3-lambda active width), so the gap is the same value
+#             either way.  Here they differ: LS1u's M1 spacing is 2.0 while its
+#             active width is 1.5, and the M1 power rails sit across the row gap,
+#             so a 1.5 gap violates LS1U.2.7.2 (observed as a real DRC marker).
 #   rail    = active.min_width                               = 1.5
-# Site = gap + n + p + 2 * rail = 1.5 + 6.0 + 11.0 + 3.0 = 21.5um, on grid.
+# Site = gap + n + p + 2 * rail = 2.0 + 6.0 + 11.0 + 3.0 = 22.0um, on grid.
 #
 # LS1u is a 1um-node reference process; this is a geometry candidate, not a
 # foundry standard-cell library or a signoff row contract.
@@ -26,11 +31,11 @@ stdcell:
     - profiles/ls1u/rules.yaml
     - profiles/ls1u/reference/klayout/ls1u.lydrc
     - shared SCMOS row derivation (see profiles/ams_c35/cells.yaml)
-  site_height_um: 21.5
+  site_height_um: 22.0
   row_heights_um:
     n: 6.0
     p: 11.0
-  row_gap_um: 1.5
+  row_gap_um: 2.0
   rail_margin_um: 1.5
   tap_policy: self_tapped
   tapcell:
