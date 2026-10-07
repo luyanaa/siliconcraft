@@ -3,6 +3,121 @@
 Status: **analysis only — no policy change made.** This document exists so the
 override design can be reviewed before any rule value is committed.
 
+## Upstream source reviewed
+
+`github.com/mineda-support/OpenRule1um` @
+`85dbacfb05351c5116158f4d8e0d5c995d3b4ad1`, file `tech/tech/drc/drc.lydrc`.
+The copy at `profiles/openrule1um/reference/drc.lydrc` is **byte-identical** to
+that revision (verified by diff), so the profile is tracking current upstream.
+
+### It is a living deck, not a frozen rule table
+
+Its own header carries the revision log:
+
+```
+ver1.00 2018/02/10  akita11     initial
+ver1.01 2018/02/23  akita11     bug fix
+ver1.10 2018/03/17  akita11     add rules based on rule v110
+ver1.20 2018/04/13  akita11     add rules based on rule v120
+ver1.30 2018/11/27  akita11     add rules based for HPOL
+ver1.31 2018/11/28  akita11     modified HPOL gap rule
+ver1.50 2021/09/27  akita11     widemetal, gate-extension, NWL space
+ver1.51 2021/09/30  akita11     non-MOS POL touching DIFF
+       2023/08/13  S. Moriyama "temporary refine for HPOL (22-82um) -> (20-80um)"
+ver1.52 2024/08/22  C. Takahashi add OFF-GRIDS rules
+```
+
+Two rules this profile leans on (`NWL space < 5.0` at line 84 and
+`NWL-Ndiff space < 3.0` at line 89) were introduced in **ver1.50, 2021**. The
+deck still contains a rule labelled a **"temporary refine"** from 2023.
+
+### Rule-kind census (what the deck actually constrains)
+
+| kind | count |
+| --- | --- |
+| separation (layer to layer) | 22 |
+| space (self spacing) | 13 |
+| ongrid (off-grid, added 2024) | 13 |
+| enclosing | 11 |
+| width | 10 |
+
+### The part that matters for the override question
+
+**1. Contacts and vias are MARKER layers, not drawn geometry.** The deck defines
+`dm_dcn = input(101,0)`, `dm_pcn = 102`, `dm_nscn = 103`, `dm_pscn = 104`,
+`dm_via1 = 105`, `dm_via2 = 106`. Every contact/via rule operates on those
+markers; there is no rule against a drawn cut layer, because the process has no
+`ca`-equivalent drawn contact.
+
+**2. Contact/via ENCLOSURE is only checked for wide metal.** Six of the eleven
+enclosure rules are gated on `*_in_widemetal`:
+
+```
+ml1.enclosing(dm_dcn_in_widemetal, 0.5)   "for wide M1 (>15um)"
+ml1.enclosing(dm_pcn_in_widemetal, 0.5)
+ml1.enclosing(dm_via1_in_widemetal, 0.5)
+ml2.enclosing(dm_via1_in_widemetal, 0.5)
+ml2.enclosing(dm_via2_in_widemetal, 0.5)
+ml3.enclosing(dm_via2_in_widemetal, 0.5)
+```
+
+The other five are well/diff/poly: `nwl.enclosing(pdiff, 2.0)`,
+`parea.enclosing(diff, 0.5)`, `narea.enclosing(diff, 0.5)`,
+`hpol.enclosing(hipol, 5.0)`, `pol.enclosing(diff, 1.0)`.
+
+**3. Several rules are self-declared unreliable.** The deck ships rules whose own
+output text says so:
+
+```
+POL-pcont space < 0.5, may be pseudo-error (can be ignored)
+ML1-dcont space < 0.5, may be pseudo-error (can be ignored)
+ML1-pcont space < 0.5, may be pseudo-error (can be ignored)
+```
+
+## Why this reframes the override question
+
+The declared policy is "SCMOS non_submicron envelope, native where stricter".
+The upstream deck shows the two sources **constrain different things**, so
+"take the stricter" is not sound across the board:
+
+- SCMOS constrains a **drawn** contact layer (`ca`) with general enclosure rules
+  (`5.2.b`, `6.2.b`, `7.3`, `8.3`, `9.3`). OpenRule1um has no drawn contact and
+  checks enclosure only in widemetal regions against **markers**. Comparing
+  SCMOS `6.2.b active-encloses-contact` with an OpenRule1um number compares rules
+  about different objects.
+- SCMOS's `ca`/`cc` vocabulary and OpenRule1um's marker vocabulary do not
+  correspond, so a shared key like `contact.cut_size` means different things on
+  each side.
+- Conversely `nwl.enclosing(pdiff, 2.0)` is a real OpenRule1um enclosure rule
+  with no SCMOS counterpart, so a policy that only overrides SCMOS keys cannot
+  see it.
+
+## Revised options
+
+- **A. SCMOS-envelope-only for the shared semantic keys**, treating the
+  OpenRule1um deck purely as the legality oracle it declares itself to be
+  (`portable.legality.acceptance: zero_markers`) rather than as a source of
+  override values for keys it does not constrain the same way.
+- **B. Native-first for BEOL and contact/via**, accepting that the SCMOS
+  envelope contributes little there, and recording explicitly which semantic keys
+  have no OpenRule1um counterpart at all.
+- **C. Keep the current mixed policy**, but only after deciding how to treat the
+  marker-vs-drawn-contact mismatch, the widemetal-only enclosure gating, and the
+  deck's own pseudo-error disclaimers.
+
+## Unused upstream material worth noting
+
+The same repository at the same revision also ships:
+
+- `tech/tech/lvs/lvs.lylvs` — an LVS deck (the profile references only the DRC)
+- `Basic/libraries/OpenRule1um_Basic.gds`
+- `Basic/libraries/OpenRule1um_StdCell.gds`
+
+Those two GDS libraries are first-hand reference layout for this process and are
+referenced nowhere in the profile today. They are the natural oracle for
+validating generated stdcell geometry against this process, rather than deriving
+values from a rule table whose vocabulary does not line up with SCMOS.
+
 ## Why this is a question at all
 
 OpenRule1um is a de-documented abstraction of PTC06. The expectation recorded in
@@ -81,16 +196,8 @@ Two observations to weigh:
    SCMOS value). So today those two tightenings affect the DRC envelope but not
    generated geometry.
 
-## Options
+See "Revised options" above, which supersedes the earlier A/B framing in light of
+the upstream deck review.
 
-- **A. Keep the declared policy as-is.** Derive `rules.stdcell.rule_map` from the
-  "stricter of the two" column above, with each entry citing either the CDK rule
-  id (SCMOS arm) or the native deck line (override). Fully sourced, no design
-  change.
-- **B. Change the policy first.** e.g. decide that where the native deck is
-  *looser* than SCMOS the native value should win (that would loosen M3 to 1.0 —
-  which is what A already does, since native is stricter), or that the SCMOS
-  envelope should not apply to BEOL at all. This is a judgement about PTC06's
-  lineage, not something derivable from the two decks.
 
 Nothing in this document has been applied to `rules.yaml`.
