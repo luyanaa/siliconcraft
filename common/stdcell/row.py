@@ -274,7 +274,13 @@ def build_transistor_row(
 
     active.extend(shape for shape in shared_active if shape.layer == active_layer)
     select.extend(shape for shape in shared_active if shape.layer == select_layer)
-    if polarity == "p":
+    # A classic n-well process puts the n-channel devices directly in the
+    # substrate, so only the p row draws a well.  A twin-well process draws a
+    # well under both rows, and its LVS deck depends on it: ls1u derives
+    # `nactive = active & pwell & nplus`, so without a pwell under the n row only
+    # the PMOS is recognised.  A profile opts in by declaring well_n.
+    twin_well = bool((process.ir.meta.get("stdcell_layers") or {}).get("well_n"))
+    if polarity == "p" or (twin_well and polarity == "n"):
         min_x = min(shape.x0 for shape in active)
         max_x = max(shape.x1 for shape in active)
         well_height = max(process.row_height_um("p"), tech.nwell_min_width + 2 * tech.nwell_active_enc)

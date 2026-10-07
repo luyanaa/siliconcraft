@@ -17,8 +17,14 @@
 #             either way.  Here they differ: LS1u's M1 spacing is 2.0 while its
 #             active width is 1.5, and the M1 power rails sit across the row gap,
 #             so a 1.5 gap violates LS1U.2.7.2 (observed as a real DRC marker).
-#   rail    = active.min_width                               = 1.5
-# Site = gap + n + p + 2 * rail = 2.0 + 6.0 + 11.0 + 3.0 = 22.0um, on grid.
+#   rail    = max(active.min_width, metal.M1.min_width)     = max(1.5, 2.0) = 2.0
+#             Every other contract has rail >= M1 width (ami06 1.5/0.9,
+#             ams_c35 0.6/0.6, hp06 1.5/0.9, tsmc035_4m2p 0.6/0.6, tsmc018_deep
+#             0.27/0.27, tsmc025_deep 0.36/0.36), so the power rail sits inside
+#             its margin band.  LS1u's M1 is 2.0 wide against a 1.5 margin, so
+#             the rail overhung into the row and left only 1.5um to the first M1
+#             pad -- LS1U.2.7.2 needs 2.0.
+# Site = gap + n + p + 2 * rail = 2.0 + 6.0 + 11.0 + 4.0 = 23.0um, on grid.
 #
 # LS1u is a 1um-node reference process; this is a geometry candidate, not a
 # foundry standard-cell library or a signoff row contract.
@@ -31,12 +37,12 @@ stdcell:
     - profiles/ls1u/rules.yaml
     - profiles/ls1u/reference/klayout/ls1u.lydrc
     - shared SCMOS row derivation (see profiles/ams_c35/cells.yaml)
-  site_height_um: 22.0
+  site_height_um: 23.0
   row_heights_um:
     n: 6.0
     p: 11.0
   row_gap_um: 2.0
-  rail_margin_um: 1.5
+  rail_margin_um: 2.0
   tap_policy: self_tapped
   tapcell:
     required: false

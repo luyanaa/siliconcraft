@@ -1,7 +1,19 @@
 * Reference schematic for the generated LS1u INV DRC/LVS fixture.
+*
+* LS1u's native KLayout LVS deck (reference/klayout/ls1u.lylvs) compares the
+* layout top cell against a schematic circuit of the same name, so this declares
+* .subckt inv_c0 rather than a flat netlist.
+*
+* The deck ties the wells globally:
+*   connect_global(pwell, "PWELL") ; connect_global(nwell, "NWELL")
+* so each device's bulk terminal is the well it sits in, not the supply rail.
+* LS1u is twin-well: NMOS in pwell, PMOS in nwell.
+*
 * Device sizes mirror what the planner emits for ls1u: W is clamped to
 * max(min_width_um=1.5, active_min=1.5, 1.5) = 1.5 and L to
 * max(min_channel_um=0.5, poly_min=1.0) = 1.0.
-M0 Y A VSS VSS LV1UNMOS W=1.5 L=1.0
-M1 Y A VDD VDD LV1UPMOS W=1.5 L=1.0
+.subckt inv_c0 A Y VDD VSS
+M0 Y A VSS PWELL LV1UNMOS W=2.0 L=1.0
+M1 Y A VDD NWELL LV1UPMOS W=2.0 L=1.0
+.ends inv_c0
 .end

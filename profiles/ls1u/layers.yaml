@@ -24,6 +24,15 @@ meta:
     CP: contact
     VIA12: via1
     VIA23: via2
+  # LS1u is a TWIN-well process, so the n-channel devices sit in a drawn pwell
+  # rather than in the substrate.  Its native LVS deck depends on that:
+  #   active_in_pwell = active & pwell ; nactive = active_in_pwell & nplus
+  # Without well_n the n row draws no well and the deck recognises only the
+  # PMOS (observed as "Circuit 1 contains 1 devices, Circuit 2 contains 2").
+  # Classic n-well processes need only well_p, which is why it is the default.
+  stdcell_layers:
+    well_n: pwell
+    well_p: nwell
   features:
     twinWellAvailable: true
     shallowTrenchIsolation: true
