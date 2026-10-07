@@ -207,6 +207,18 @@ def main() -> int:
         info = profile.layer_info(physical_name)
         return int(info.layer), int(info.datatype)
 
+    # Process marker layers.  Some decks never check the drawn cut; they require
+    # every cut to be inside a marker (OpenRule1um: "Stand alone Cont" /
+    # "Stand alone VIA1" / "Stand alone VIA2").  The profile declares both the
+    # marker names and the enclosure, which its upstream cells pin down, so the
+    # geometry stays sourced rather than assumed.
+    marker_spec = process.ir.layers_doc.get("meta", {}).get("stdcell_markers") or {}
+    marker_enc = float(marker_spec.get("enclosure_um", 0.0))
+    contact_markers = [str(name) for name in (marker_spec.get("contacts") or ())]
+    via_markers = {
+        str(k).lower(): str(v) for k, v in (marker_spec.get("vias") or {}).items()
+    }
+
 
     rows = candidate["geometry"].get("rows", {})
     if not rows:
@@ -335,6 +347,72 @@ def main() -> int:
                 db(shape["y1"], layout.dbu),
             )
         )
+
+    # Marker post-pass.  Some decks never check the drawn cut; they require every
+    # cut to sit inside a process marker (OpenRule1um:
+    #   dmcnt = dm_dcn|dm_pcn|dm_nscn|dm_pscn ; cnt.outside(dmcnt)
+    #   via1.outside(dm_via1) ; via2.outside(dm_via2)      reference/drc.lydrc:159-165).
+    # Running this over the finished layout rather than at each insert site
+    # catches cuts drawn by the row builder, the router and the pin shapes alike
+    # -- an earlier per-shape version missed the pin and route cuts entirely.
+    if contact_markers and marker_enc > 0.0:
+        # The deck splits the contact markers by what the cut lands on, and the
+        # split is enforced: rule "DM_dcont touches non-MOS Poly"
+        # (reference/drc.lydrc:190-192) flags dm_dcn edges that touch poly other
+        # than the MOS gate.  So a cut on poly takes dm_pcn and a cut on active
+        # takes dm_dcn -- marking every cut with both is wrong.
+        def grown_region(logical):
+            try:
+                idx = layer(logical)
+            except Exception:
+                return None
+            region = pya.Region(top.begin_shapes_rec(idx))
+            return None if region.is_empty() else region.sized(db(marker_enc, layout.dbu))
+
+        contact_region = grown_region("CC")
+        if contact_region is not None:
+            poly_region = None
+            active_region = None
+            try:
+                poly_region = pya.Region(top.begin_shapes_rec(layer("POLY")))
+            except Exception:
+                pass
+            try:
+                active_region = pya.Region(top.begin_shapes_rec(layer("ACTIVE")))
+            except Exception:
+                pass
+            # Classification must select whole contact polygons, not the
+            # intersection with the landing layer: the marker has to enclose the
+            # entire cut, not just the part that overlaps the diffusion.
+            empty = pya.Region()
+            on_poly = (
+                contact_region.interacting(poly_region)
+                if poly_region is not None
+                else empty
+            )
+            on_active = (
+                contact_region.interacting(active_region)
+                if active_region is not None
+                else empty
+            )
+            # A cut that lands on neither (a route cut) still has to sit in some
+            # marker; give it the diffusion marker, which is the general case.
+            unclassified = contact_region - on_poly - on_active
+            for marker in contact_markers:
+                # The deck's marker names are dm_dcn (diffusion) / dm_pcn (poly) /
+                # dm_nscn / dm_pscn; the profile's layer names are
+                # dcont_marker / pcont_marker.  Match the poly-side ones.
+                name = str(marker).lower()
+                if "pcn" in name or "pscn" in name or "pcont" in name:
+                    region = on_poly
+                else:
+                    region = on_active + unclassified
+                if not region.is_empty():
+                    top.shapes(layer(marker)).insert(region)
+        for logical, marker in via_markers.items():
+            region = grown_region(logical)
+            if region is not None:
+                top.shapes(layer(marker)).insert(region)
 
     def label(name, x_um, y_um, logical_layer_name="M1"):
         text_layer = layout.layer(

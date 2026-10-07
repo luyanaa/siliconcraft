@@ -44,6 +44,22 @@ meta:
   # p side).
   stdcell_layers:
     well_p: nwell
+  # Marker layers.  The deck never checks the drawn cut; it requires every cut to
+  # sit inside a marker:
+  #   dmcnt = dm_dcn | dm_pcn | dm_nscn | dm_pscn ; cnt.outside(dmcnt)
+  #   via1.outside(dm_via1) ; via2.outside(dm_via2)     (reference/drc.lydrc:159-165)
+  # The enclosure is pinned by the upstream cells, not assumed:
+  #   dcont: cnt  1.0x1.0 inside dm_dcn (L101) 2.0x2.0  -> +0.5/side
+  #   Via:   via1 1.0x1.0 inside dm_via1 (L105) 2.0x2.0 -> +0.5/side
+  #   pcont: cnt  1.0x1.0 inside dm_pcn (L102) 2.0x2.0  -> +0.5/side
+  stdcell_markers:
+    enclosure_um: 0.5
+    contacts: [dcont_marker, pcont_marker]
+    # Keyed by the LOGICAL via name the candidate manifest uses (VIA12/VIA23),
+    # not by the physical layer name.
+    vias:
+      via12: via1_marker
+      via23: via2_marker
   license: "Apache-2.0 (upstream OpenRule1um; preserve per-file notices)"
   sources:
     - "https://github.com/mineda-support/OpenRule1um@85dbacfb05351c5116158f4d8e0d5c995d3b4ad1"
