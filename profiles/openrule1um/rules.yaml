@@ -25,9 +25,32 @@ notes:
 portable:
   policy: scmos_lambda_envelope
   lambda_um: 0.5
-  scmos_variant: non_submicron
   base_source: common/drc/scmos_reference.py
   target_drc: reference/drc.lydrc
+  # OpenRule1um's GDS is GLOBALLY shrunk: the published rules are as-drawn at a
+  # 1um envelope while the physical process is PTC06, roughly FEOL 0.6um /
+  # BEOL 0.4um.  A global shrink does not make the BEOL special -- what differs
+  # is that the two domains do not share a lambda, so they land in different
+  # SCMOS arms.  Measured by solving lambda_eff = native_um / branch_multiple for
+  # every native rule and taking the arm whose implied lambda has the tighter
+  # spread (see docs/feol_beol_split_scaling.md):
+  #   FEOL  classic  lambda_eff 0.5000  stdev 0.0742  (vs SUBM 0.0911)
+  #   BEOL  SUBM     lambda_eff 0.3333  stdev 0.0739  (vs classic 0.1242)
+  # and lambda_BEOL / lambda_FEOL = 0.3333 / 0.5 = 2/3, i.e. 0.6um / 0.4um.
+  # 6 of the 9 BEOL rules land on exactly 1/3; the 3 exceptions are the rules
+  # already listed below as native BEOL overrides.
+  domains:
+    feol:
+      variant: non_submicron
+      lambda_um: 0.5
+      node_um: 1.0
+    beol:
+      variant: submicron
+      lambda_um: 0.3333
+      node_um: 0.6667
+      # The BEOL's own numbers already carry the shrunk SUBM scaling, so no SCMOS
+      # envelope is layered over them; the native deck is the authority there.
+      envelope: none
   legality:
     canonical_input: synthetic_minimum_geometry
     upstream_basic_gds: optional_reference_input

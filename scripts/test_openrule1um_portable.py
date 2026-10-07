@@ -141,7 +141,22 @@ def check_profile() -> dict:
     portable = doc.get("portable") or {}
     require(portable.get("policy") == "scmos_lambda_envelope", "portable policy is not SCMOS envelope")
     require(float(portable.get("lambda_um")) == 0.5, "portable lambda is not 0.5um")
-    require(portable.get("scmos_variant") == "non_submicron", "unexpected SCMOS variant")
+    # The deck's GDS is globally shrunk, so the FEOL and BEOL do not share a
+    # lambda and land in different SCMOS arms.  A single scmos_variant could not
+    # express that; the profile declares one entry per domain instead.
+    require("scmos_variant" not in portable, "single scmos_variant should be replaced by per-domain entries")
+    domains = portable.get("domains") or {}
+    feol = domains.get("feol") or {}
+    beol = domains.get("beol") or {}
+    require(feol.get("variant") == "non_submicron", "FEOL is not the classic SCMOS arm")
+    require(float(feol.get("lambda_um")) == 0.5, "FEOL lambda is not 0.5um")
+    require(beol.get("variant") == "submicron", "BEOL is not the SUBM arm")
+    require(abs(float(beol.get("lambda_um")) - 1.0 / 3.0) < 1e-4, "BEOL lambda is not 1/3um")
+    require(beol.get("envelope") == "none", "BEOL must not layer a SCMOS envelope")
+    require(
+        abs(float(beol.get("lambda_um")) / float(feol.get("lambda_um")) - 2.0 / 3.0) < 1e-4,
+        "lambda_BEOL / lambda_FEOL is not 2/3",
+    )
 
     tightenings = portable.get("well_tightenings") or []
     require(len(tightenings) == 2, "portable envelope must declare exactly two well tightenings")
