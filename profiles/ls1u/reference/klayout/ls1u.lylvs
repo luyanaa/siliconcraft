@@ -81,6 +81,10 @@ info("Layers definitions")
   V2 = input(61,0)
   M3 = input(62,0)
   Glass = input(52,0)
+  # siliconcraft writes stdcell pin labels through gds_text_stream(), which
+  # emits them on stream 64/0 -- the same stream common/lvs/scmos_lvs_core.py
+  # uses as TEXT_GDS.
+  TextM1 = input(64,0)
 
 # layers processing
 ########################
@@ -127,6 +131,21 @@ connect(V1,   M2)
 connect(M2,   V2)
 connect(V2,   M3)
 
+# Port extraction.  The upstream deck defines no label layer and leaves
+# `netlist.make_top_level_pins` commented out, so the extracted circuit named no
+# signal net and exposed only the globally connected wells as ports.
+# KLayout only attaches a label to a net when the text layer is part of the
+# connectivity graph, so the text layer is connected to M1 before labels() is
+# declared; without that connect() the nets stay anonymous.
+# A label attaches only to a net whose geometry lies under the text, so the text
+# layer is connected to every layer a pin can sit on: signal pins land on M1
+# routing, while a gate pin sits on the poly (the 'A' label is 0.25um below the
+# gate's M1 strap and on the poly itself).
+connect(TextM1, M1)
+connect(TextM1, M2)
+connect(TextM1, poly)
+labels(TextM1)
+
 
 # Global
 schematic.simplify
@@ -146,7 +165,7 @@ netlist # ... not really required
 # Flatten cells which are present in one netlist only
 align
 # SIMPLIFICATION of the netlist
-#netlist.make_top_level_pins
+netlist.make_top_level_pins
 #netlist.combine_devices
 #netlist.purge
 #netlist.purge_nets

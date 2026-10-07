@@ -4,16 +4,21 @@
 * layout top cell against a schematic circuit of the same name, so this declares
 * .subckt inv_c0 rather than a flat netlist.
 *
-* The deck ties the wells globally:
+* Ports: the deck ties the wells globally
 *   connect_global(pwell, "PWELL") ; connect_global(nwell, "NWELL")
-* so each device's bulk terminal is the well it sits in, not the supply rail.
-* LS1u is twin-well: NMOS in pwell, PMOS in nwell.
+* so the extracted circuit exposes A, Y, VDD, VSS plus PWELL and NWELL, and the
+* port list must match exactly.  LS1u is twin-well: NMOS in pwell, PMOS in nwell.
 *
-* Device sizes mirror what the planner emits for ls1u: W is clamped to
-* max(min_width_um=1.5, active_min=1.5, 1.5) = 1.5 and L to
-* max(min_channel_um=0.5, poly_min=1.0) = 1.0.
-.subckt inv_c0 A Y VDD VSS
-M0 Y A VSS PWELL LV1UNMOS W=2.0 L=1.0
-M1 Y A VDD NWELL LV1UPMOS W=2.0 L=1.0
+* Units: the deck writes device sizes with the SPICE "U" suffix (L=1U W=2U) and
+* netgen reads that as 1e-6 metres, so the schematic must use the same suffix --
+* a bare W=2 is read as 2, a 1e6 mismatch netgen reports as a 200% property
+* error.
+*
+* Sizes mirror what the planner emits for ls1u: L is clamped to
+* max(min_channel_um=0.5, poly_min=1.0) = 1.0um, and the planner draws the
+* active 2.0um high, which is the W the layout reports.
+.subckt inv_c0 A Y VDD VSS NWELL PWELL
+M0 Y A VSS PWELL LV1UNMOS W=2u L=1u
+M1 Y A VDD NWELL LV1UPMOS W=2u L=1u
 .ends inv_c0
 .end

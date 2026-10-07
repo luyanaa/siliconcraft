@@ -59,14 +59,14 @@ stdcell:
     # SCMOS authoritative deck.
     drc_deck: reference
     lvs_deck: reference
-    # The native LVS deck (reference/klayout/ls1u.lylvs) defines no label layer
-    # and leaves `netlist.make_top_level_pins` commented out, so its extracted
-    # circuit names no signal net and exposes only the globally connected wells
-    # as ports.  Running the stdcell gate on ls1u therefore yields:
-    #   DRC   markers=0
-    #   LVS   2 devices vs 2, 6 nets vs 6 -- netgen reports "match uniquely with
-    #         port and property errors", i.e. the topology matches but the ports
-    #         cannot be checked.
-    # Recorded explicitly rather than worked around by weakening the schematic.
-    lvs_port_extraction: unavailable
-    lvs_port_note: "native lylvs deck declares no label layer and has make_top_level_pins commented out; topology-only LVS"
+    # Both gates pass: DRC markers=0, LVS match.
+    #   DRC  0 markers on ls1u's own LS1U.* rules
+    #   LVS  2 devices vs 2, 6 nets vs 6, ports A Y VDD VSS NWELL PWELL
+    # The native lylvs deck originally extracted no signal ports (it declared no
+    # label layer and left make_top_level_pins commented out).  It now reads the
+    # pin text from stream 64/0 -- the same stream
+    # common/lvs/scmos_lvs_core.py uses as TEXT_GDS -- and, importantly, connects
+    # that text layer into the net graph before declaring labels(), because
+    # KLayout only attaches a label to a net whose geometry lies under the text.
+    lvs_port_extraction: verified
+    lvs_port_note: "native deck reads pin text from 64/0 and promotes named nets to ports; see the deck's port-extraction block"
