@@ -1,0 +1,36 @@
+# TSMC035 4M2P fixed-height stdcell geometry candidate.
+#
+# Derived, not signoff.  The row geometry follows the shared lambda=0.20um
+# SCMOS_SUBM four-metal derivation already used by the ams_c35 contract (same
+# lambda, same rule family, same M1-M4 stack): n row 2.7um, p row 4.8um,
+# row gap 0.6um, rail margin 0.6um, giving a 9.3um site.  Rule values come from
+# this profile's rules.yaml (lambda multiples from the CDK Diva deck) and the
+# layer set from layers.yaml.  This is a geometry candidate, not a foundry
+# standard-cell library or a signoff row contract.
+schema_version: 1
+profile: tsmc035_4m2p
+stdcell:
+  geometry_status: derived_candidate_not_signoff
+  geometry_basis:
+    - profiles/tsmc035_4m2p/layers.yaml
+    - profiles/tsmc035_4m2p/rules.yaml
+    - profiles/tsmc035_4m2p/pcells.yaml
+    - public NCSU CDK TSMC_CMOS035_4M2P globalData.il and techfile/divaDRC.rul
+    - shared lambda=0.20um SCMOS_SUBM four-metal row derivation (see profiles/ams_c35/cells.yaml)
+  site_height_um: 9.3
+  row_heights_um:
+    n: 2.7
+    p: 4.8
+  row_gap_um: 0.6
+  rail_margin_um: 0.6
+  tap_policy: self_tapped
+  tapcell:
+    required: false
+    cell: TAPCELL
+    max_spacing_um: null
+  orientations:
+    even_row: R0
+    odd_row: MX
+    legal:
+      - R0
+      - MX
