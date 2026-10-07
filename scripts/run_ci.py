@@ -117,6 +117,12 @@ def main():
         f"--klayout '{K}' --netgen '{N}'", shell=True, env=env,
         capture_output=True, text=True)
     if proc.returncode != 0 or "MATCH UNIQUELY" not in proc.stdout:
+        # Surface the netgen log: without it a CI-only mismatch is undebuggable,
+        # since run_lvs.py keeps its output in the captured stream.
+        tail = ((proc.stdout or "") + (proc.stderr or ""))[-4000:]
+        print(f"[run_ci] netgen positive gate output (exit {proc.returncode}):",
+              file=sys.stderr)
+        print(tail, file=sys.stderr)
         raise SystemExit("netgen positive gate did not match uniquely")
     proc = subprocess.run(
         f"python3 {r/'scripts/run_lvs.py'} --profile {p} --layout {clean} "
