@@ -189,14 +189,13 @@ def validate_profile_gds_map(
             f"{profile_dir / _MAP_NAME}: profile layers missing from stream map: "
             + ", ".join(unmapped_profile_layers)
         )
-    if profile_streams.get("glass") != profile_streams.get("pad"):
-        raise GDSLayerMapError(
-            f"{profile_dir / 'layers.yaml'}: glass must alias the PAD stream"
-        )
+    # NOTE: an earlier revision asserted that `glass` aliases the PAD stream.
+    # That is an SCMOS-family convention, not a general one: the NCSU CDK
+    # pipo/streamInLayermap gives the TSMC 0.35 family glass=52 (COG) and
+    # pad=26 (XP) as genuinely distinct streams.  `glass` is therefore validated
+    # like any other layer below, and a profile whose glass does alias pad
+    # simply declares the same stream for both.
     for logical, pair in profile_streams.items():
-        # ``glass`` is an intentional profile alias of the PAD mask.
-        if logical == "glass":
-            continue
         expected = mapped_logical.get(logical)
         if expected is not None and pair != expected:
             raise GDSLayerMapError(

@@ -61,38 +61,42 @@ gds_policy:
 
 # Canonical (canonical_name is the siliconcraft logical layer used by the
 # profile's layers.yaml and the DRC/LVS/recognition decks).
-layers:
-  - {logical: nwell,        gds_layer: 42, cif: CWN,  role: well,    status: core}
-  - {logical: pwell,        gds_layer: 41, cif: CWP,  role: well,    status: unused_nwell_process}
-  - {logical: active,       gds_layer: 43, cif: CAA,  role: active,  status: core}
-  - {logical: tactive,      gds_layer: 60, cif: CTA,  role: active,  status: tsmc_specific}
-  - {logical: pselect,      gds_layer: 44, cif: CSP,  role: select,  status: core}
-  - {logical: nselect,      gds_layer: 45, cif: CSN,  role: select,  status: core}
-  - {logical: poly,         gds_layer: 46, cif: CPG,  role: gate,    status: core}
-  - {logical: elec,         gds_layer: 56, cif: CEL,  role: gate,    status: poly2_electrode}
-  - {logical: cc,           gds_layer: 25, cif: [CCG, CCC, CCA, CCP, CCE], role: cut, status: canonical_contact}
-  - {logical: metal1,       gds_layer: 49, cif: [CMF, CM1], role: metal, status: core}
-  - {logical: via,          gds_layer: 50, cif: [CVA, CV1], role: cut,   status: core}
-  - {logical: metal2,       gds_layer: 51, cif: [CMS, CM2], role: metal, status: core}
-  - {logical: via2,         gds_layer: 61, cif: [CVS, CV2], role: cut,   status: core}
-  - {logical: metal3,       gds_layer: 62, cif: [CMT, CM3], role: metal, status: core}
-  - {logical: via3,         gds_layer: 30, cif: [CVT, CV3], role: cut,   status: core}
-  - {logical: metal4,       gds_layer: 31, cif: [CMQ, CM4], role: metal, status: core}
-  - {logical: glass,        gds_layer: 52, cif: COG,  role: pad,     status: overglass}
-  - {logical: pad,          gds_layer: 26, cif: XP,   role: pad,     status: non_fab_annotation}
-  - {logical: polycap,      gds_layer: 28, cif: CPC,  role: capacitor, status: unavailable_this_option}
-  - {logical: sblock,       gds_layer: 29, cif: CSB,  role: misc,    status: unavailable_this_option}
-  - {logical: highres,      gds_layer: 34, cif: CHR,  role: resistor, status: unavailable_this_option}
-  - {logical: metalcap,     gds_layer: 35, cif: CTM,  role: capacitor, status: unavailable_this_option}
-  - {logical: ccd,          gds_layer: 57, cif: CCD,  role: active,  status: unavailable_this_option}
-  - {logical: pbase,        gds_layer: 58, cif: CBA,  role: misc,    status: unavailable_this_option}
-  - {logical: cwell,        gds_layer: 59, cif: CWC,  role: well,    status: unavailable_this_option}
-  - {logical: open,         gds_layer: 23, cif: COP,  role: misc,    status: mems_only}
-  - {logical: pstop,        gds_layer: 24, cif: CPS,  role: misc,    status: mems_only}
-  - {logical: metal5,       gds_layer: 33, cif: [CMP, CM5], role: metal, status: unavailable_this_option}
-  - {logical: metal6,       gds_layer: 37, cif: CM6,  role: metal,  status: unavailable_this_option}
-  - {logical: via4,         gds_layer: 32, cif: [CVQ, CV4], role: cut, status: unavailable_this_option}
-  - {logical: via5,         gds_layer: 36, cif: CV5,  role: cut,    status: unavailable_this_option}
+# Canonical mask streams in the shared siliconcraft GDS stream-map
+# schema (see common/gds_layer_map.py): `name` is the source layer name
+# from the CDK stream map, `logical` the profile layer in layers.yaml,
+# and `stream` the GDS layer/datatype pair.
+mask_layers:
+  - {name: nwell, logical: nwell, stream: {layer: 42, datatype: 0}, cif: CWN, role: well, status: core}
+  - {name: pwell, logical: pwell, stream: {layer: 41, datatype: 0}, cif: CWP, role: well, status: unused_nwell_process}
+  - {name: active, logical: active, stream: {layer: 43, datatype: 0}, cif: CAA, role: active, status: core}
+  - {name: tactive, logical: tactive, stream: {layer: 60, datatype: 0}, cif: CTA, role: active, status: tsmc_specific}
+  - {name: pselect, logical: pselect, stream: {layer: 44, datatype: 0}, cif: CSP, role: select, status: core}
+  - {name: nselect, logical: nselect, stream: {layer: 45, datatype: 0}, cif: CSN, role: select, status: core}
+  - {name: poly, logical: poly, stream: {layer: 46, datatype: 0}, cif: CPG, role: gate, status: core}
+  - {name: elec, logical: elec, stream: {layer: 56, datatype: 0}, cif: CEL, role: gate, status: poly2_electrode}
+  - {name: cc, logical: cc, stream: {layer: 25, datatype: 0}, cif: [CCG, role: cut, status: canonical_contact}
+  - {name: metal1, logical: metal1, stream: {layer: 49, datatype: 0}, cif: [CMF, role: metal, status: core}
+  - {name: via, logical: via, stream: {layer: 50, datatype: 0}, cif: [CVA, role: cut, status: core}
+  - {name: metal2, logical: metal2, stream: {layer: 51, datatype: 0}, cif: [CMS, role: metal, status: core}
+  - {name: via2, logical: via2, stream: {layer: 61, datatype: 0}, cif: [CVS, role: cut, status: core}
+  - {name: metal3, logical: metal3, stream: {layer: 62, datatype: 0}, cif: [CMT, role: metal, status: core}
+  - {name: via3, logical: via3, stream: {layer: 30, datatype: 0}, cif: [CVT, role: cut, status: core}
+  - {name: metal4, logical: metal4, stream: {layer: 31, datatype: 0}, cif: [CMQ, role: metal, status: core}
+  - {name: glass, logical: glass, stream: {layer: 52, datatype: 0}, cif: COG, role: pad, status: overglass}
+  - {name: pad, logical: pad, stream: {layer: 26, datatype: 0}, cif: XP, role: pad, status: non_fab_annotation}
+  - {name: polycap, logical: polycap, stream: {layer: 28, datatype: 0}, cif: CPC, role: capacitor, status: unavailable_this_option}
+  - {name: sblock, logical: sblock, stream: {layer: 29, datatype: 0}, cif: CSB, role: misc, status: unavailable_this_option}
+  - {name: highres, logical: highres, stream: {layer: 34, datatype: 0}, cif: CHR, role: resistor, status: unavailable_this_option}
+  - {name: metalcap, logical: metalcap, stream: {layer: 35, datatype: 0}, cif: CTM, role: capacitor, status: unavailable_this_option}
+  - {name: ccd, logical: ccd, stream: {layer: 57, datatype: 0}, cif: CCD, role: active, status: unavailable_this_option}
+  - {name: pbase, logical: pbase, stream: {layer: 58, datatype: 0}, cif: CBA, role: misc, status: unavailable_this_option}
+  - {name: cwell, logical: cwell, stream: {layer: 59, datatype: 0}, cif: CWC, role: well, status: unavailable_this_option}
+  - {name: open, logical: open, stream: {layer: 23, datatype: 0}, cif: COP, role: misc, status: mems_only}
+  - {name: pstop, logical: pstop, stream: {layer: 24, datatype: 0}, cif: CPS, role: misc, status: mems_only}
+  - {name: metal5, logical: metal5, stream: {layer: 33, datatype: 0}, cif: [CMP, role: metal, status: unavailable_this_option}
+  - {name: metal6, logical: metal6, stream: {layer: 37, datatype: 0}, cif: CM6, role: metal, status: unavailable_this_option}
+  - {name: via4, logical: via4, stream: {layer: 32, datatype: 0}, cif: [CVQ, role: cut, status: unavailable_this_option}
+  - {name: via5, logical: via5, stream: {layer: 36, datatype: 0}, cif: CV5, role: cut, status: unavailable_this_option}
 
 # The SCMOS spec defines dedicated contact layers that a unified CONTACT layer
 # may replace.  The CDK stream map folds all four onto one Cadence layer `cc`;

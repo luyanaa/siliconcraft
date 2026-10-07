@@ -121,15 +121,16 @@ def check_gds_layer_map_provenance() -> None:
     assert doc["current_foundry_map"]["tapeout_eligible"] is False
 
     # The provenance map must agree with the generated layer fragment.
-    # The `layers` section uses the same `logical` key as the loader
-    # (common/gds_layer_map.py) and the other profiles' stream maps; only the
-    # custom contact_compatibility/semantics sections below keep `logical_name`.
+    # The mask streams live in the shared `mask_layers` section
+    # (common/gds_layer_map.py), which is also what validate_profile_gds_map
+    # checks; only the custom contact_compatibility/semantics sections below
+    # keep the `logical_name` spelling.
     gds = layer_map(load(PROFILE_DIR / "layers.yaml"))
-    for entry in doc["layers"]:
+    for entry in doc["mask_layers"]:
         name = entry["logical"]
         if name in gds:
-            assert entry["gds_layer"] in gds[name], (
-                f"gds_layer_map {name}={entry['gds_layer']} not in layers.yaml {gds[name]}"
+            assert entry["stream"]["layer"] in gds[name], (
+                f"gds_layer_map {name}={entry['stream']['layer']} not in layers.yaml {gds[name]}"
             )
 
     contacts = doc["contact_compatibility"]
