@@ -82,15 +82,6 @@ info("Layers definitions")
   M3 = input(62,0)
   Glass = input(52,0)
 
-# Port extraction.  The upstream deck defines no label layer and leaves
-# `netlist.make_top_level_pins` commented out, so without this the extracted
-# circuit exposes only the globally connected wells as pins and every signal pin
-# (A/Y/VDD/VSS) stays an anonymous internal net, which no schematic can match.
-# siliconcraft writes the stdcell pin labels through gds_text_stream(), which
-# emits them on stream 64/0 for this profile, so read text from there.
-TextM1 = input(64,0)
-labels(TextM1)
-
 # layers processing
 ########################
 info("Layers processing")
@@ -155,10 +146,7 @@ netlist # ... not really required
 # Flatten cells which are present in one netlist only
 align
 # SIMPLIFICATION of the netlist
-# Enabled: with labels() above, this is what turns the named signal nets into
-# top-level pins.  Left commented out, the extracted circuit exposed only the
-# globally connected wells and no schematic could match its pin list.
-netlist.make_top_level_pins
+#netlist.make_top_level_pins
 #netlist.combine_devices
 #netlist.purge
 #netlist.purge_nets

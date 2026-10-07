@@ -54,3 +54,19 @@ stdcell:
     legal:
       - R0
       - MX
+  verification:
+    # LS1u's DRC authority is its own native KLayout deck, not the generated
+    # SCMOS authoritative deck.
+    drc_deck: reference
+    lvs_deck: reference
+    # The native LVS deck (reference/klayout/ls1u.lylvs) defines no label layer
+    # and leaves `netlist.make_top_level_pins` commented out, so its extracted
+    # circuit names no signal net and exposes only the globally connected wells
+    # as ports.  Running the stdcell gate on ls1u therefore yields:
+    #   DRC   markers=0
+    #   LVS   2 devices vs 2, 6 nets vs 6 -- netgen reports "match uniquely with
+    #         port and property errors", i.e. the topology matches but the ports
+    #         cannot be checked.
+    # Recorded explicitly rather than worked around by weakening the schematic.
+    lvs_port_extraction: unavailable
+    lvs_port_note: "native lylvs deck declares no label layer and has make_top_level_pins commented out; topology-only LVS"
