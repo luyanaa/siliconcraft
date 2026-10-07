@@ -1,0 +1,37 @@
+# TSMC CMOS025/DEEP fixed-height stdcell geometry candidate.
+#
+# Derived, not signoff.  The row geometry is the shared SCMOS row model scaled
+# by lambda: p row 24*lambda, row gap 3*lambda, rail margin 3*lambda, n row
+# 13.5*lambda.  That model reproduces the existing lambda=0.20um SCMOS_SUBM
+# four-metal contract (profiles/ams_c35/cells.yaml: 2.7/4.8/0.6/0.6 at
+# lambda=0.20) and scales here to lambda=0.12um, landing exactly on this
+# profile's 0.06um grid.  Rule values come from this profile's rules.yaml
+# (lambda multiples from the CDK Diva deck DEEP branch, corroborated by its own
+# rules.deep_overrides table).  This is a geometry candidate, not a foundry
+# standard-cell library or a signoff row contract.
+schema_version: 1
+profile: tsmc025_deep
+stdcell:
+  geometry_status: derived_candidate_not_signoff
+  geometry_basis:
+    - profiles/tsmc025_deep/layers.yaml
+    - profiles/tsmc025_deep/rules.yaml
+    - public NCSU CDK TSMC_CMOS025_DEEP globalData.il and techfile/divaDRC.rul
+    - shared SCMOS row model scaled by lambda (see profiles/ams_c35/cells.yaml)
+  site_height_um: 5.58
+  row_heights_um:
+    n: 1.62
+    p: 2.88
+  row_gap_um: 0.36
+  rail_margin_um: 0.36
+  tap_policy: self_tapped
+  tapcell:
+    required: false
+    cell: TAPCELL
+    max_spacing_um: null
+  orientations:
+    even_row: R0
+    odd_row: MX
+    legal:
+      - R0
+      - MX
