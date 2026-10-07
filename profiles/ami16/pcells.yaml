@@ -1,0 +1,78 @@
+# profiles/ami16/pcells.yaml — KLayout analog PCell contract
+#
+# Geometry is generated in microns and snapped to meta.grid_um.  Layer names
+# resolve through layers.yaml; rule values come from rules.yaml.  Magic
+# extraction is intentionally outside this contract.
+#
+# Scope: the core SCMOS device set this profile's layers and features support.
+# AMI_ABN is a 2-metal, 1-poly process with an electrode (elec) layer, so the
+# available analog primitives are core MOS, taps, the M1-M2 via, and the
+# elec-over-poly capacitor.  NPN and high-res devices are declared in
+# devices.yaml but have no numerical card here and are therefore not exposed as
+# PCells.  Default/minimum sizes follow meta.min_width_um (4.0) and
+# meta.min_channel_um (1.6); the capacitor default is the same 21*lambda SCMOS
+# abstraction used by the ami06 contract (21 * 0.8 = 16.8 um).
+
+pcells:
+  nmos:
+    kind: mos4
+    polarity: n
+    canonical_device: nmos_core
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 4.0, min: 4.0}
+      l_um: {type: float, default: 1.6, min: 1.6}
+  pmos:
+    kind: mos4
+    canonical_device: pmos_core
+    polarity: p
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 4.0, min: 4.0}
+      l_um: {type: float, default: 1.6, min: 1.6}
+  ntap:
+    kind: tap
+    polarity: n
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  ptap:
+    kind: tap
+    polarity: p
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via12:
+    kind: via
+    cut: via
+    lower: metal1
+    upper: metal2
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  cap_elec:
+    kind: capacitor
+    top: elec
+    bottom: poly
+    terminals:
+      - TOP
+      - BOTTOM
+    parameters:
+      width_um: {type: float, default: 16.8, min: 16.8}
+      height_um: {type: float, default: 16.8, min: 16.8}

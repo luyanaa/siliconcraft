@@ -1,0 +1,74 @@
+# profiles/hp06/pcells.yaml — KLayout analog PCell contract
+#
+# Geometry is generated in microns and snapped to meta.grid_um.  Layer names
+# resolve through layers.yaml; rule values come from rules.yaml.  Magic
+# extraction is intentionally outside this contract.
+#
+# Scope: HP_AMOS14TB is a 3-metal, 1-poly SCMOS_SUBM process with no electrode
+# (elec) layer, so the analog primitives are core MOS, taps, and the M1-M2 and
+# M2-M3 vias.  There is no elec-over-poly capacitor here (elecAvailable is
+# false), and the cwell/sblock layers are DRC-only features with no device
+# contract.  Default/minimum sizes follow meta.min_width_um (0.9) and
+# meta.min_channel_um (0.6).
+
+pcells:
+  nmos:
+    kind: mos4
+    polarity: n
+    canonical_device: nmos_core
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 0.9, min: 0.9}
+      l_um: {type: float, default: 0.6, min: 0.6}
+  pmos:
+    kind: mos4
+    canonical_device: pmos_core
+    polarity: p
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 0.9, min: 0.9}
+      l_um: {type: float, default: 0.6, min: 0.6}
+  ntap:
+    kind: tap
+    polarity: n
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  ptap:
+    kind: tap
+    polarity: p
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via12:
+    kind: via
+    cut: via
+    lower: metal1
+    upper: metal2
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via23:
+    kind: via
+    cut: via2
+    lower: metal2
+    upper: metal3
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}

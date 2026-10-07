@@ -67,7 +67,10 @@ def _stream(entry: dict[str, Any], context: str) -> tuple[int, int]:
 
 
 def _entries(document: dict[str, Any], section: str) -> tuple[dict[str, Any], ...]:
-    raw = document.get(section) or ()
+    # Default to a list, not a tuple: an absent optional section (e.g. a profile
+    # with no mask_layers/recognition_layers) must read as "none", and the
+    # isinstance(list) guard below would otherwise reject the () default.
+    raw = document.get(section) or []
     if not isinstance(raw, list):
         raise GDSLayerMapError(f"{section}: expected a sequence")
     result: list[dict[str, Any]] = []

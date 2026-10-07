@@ -30,6 +30,56 @@ else:
     _Library = pya.Library
 
 
+# The SCMOS rule semantics that consumer-facing geometry (PCells and stdcells)
+# needs, expressed as semantic key -> (group, rule id, layer, layer2).
+#
+# This is the fallback used by profiles that predate the semantic map.  A
+# profile may instead declare ``rules.stdcell.rule_map`` in its rules.yaml to
+# translate these keys onto its own rule ids and layer names; that is how
+# non-SCMOS-shaped rule tables (native LS1u/OpenRule1um decks, X-FAB contracts)
+# participate without renaming their rules.  Profile.semantic_rule() owns that
+# lookup; this module owns the SCMOS-shaped defaults.
+SEMANTIC_RULE_MAP = {
+    "contact.cut_size": ("width", "6.1", "ca", None),
+    "contact.cut_spacing": ("spacing", "6.3", "ca", None),
+    "active.min_width": ("width", "2.1", "active", None),
+    "poly.min_width": ("width", "3.1", "poly", None),
+    "poly.min_spacing": ("spacing", "3.2", "poly", None),
+    # 5.5.b is waived outright by the CDK Diva deck for HP_AMOS14TB /
+    # HP_CMOS26G / TSMC_CMOS025, so consumers must treat it as optional.
+    "poly.contact_spacing": ("spacing", "5.5.b", "cp", "poly"),
+    "poly.contact_enclosure": ("enclosure", "5.2.b", "poly", "cp"),
+    "active.contact_enclosure": ("enclosure", "6.2.b", "active", "ca"),
+    "active.contact_gate_spacing": ("spacing", "6.4", "ca", "Gate"),
+    "select.active_enclosure.n": ("enclosure", "4.2", "nselect", "active"),
+    "select.active_enclosure.p": ("enclosure", "4.2", "pselect", "active"),
+    "select.channel_enclosure.n": ("enclosure", "4.1", "nselect", "nChannel"),
+    "select.channel_enclosure.p": ("enclosure", "4.1", "pselect", "pChannel"),
+    "gate.extension": ("spacing", "5.4", "cp", "Gate"),
+    "select.contact_enclosure.n": ("enclosure", "4.3", "nselect", "ca"),
+    "select.contact_enclosure.p": ("enclosure", "4.3", "pselect", "ca"),
+    "metal1.contact_enclosure": ("enclosure", "7.3", "metal1", "ca"),
+    "nwell.active_enclosure": ("spacing", "1.3", "nwell", None),
+    "nwell.min_width": ("width", "1.1", "nwell", None),
+    "via12.cut_size": ("width", "8.1", "via", None),
+    "via12.cut_spacing": ("spacing", "8.2", "via", None),
+    "via12.lower_enclosure": ("enclosure", "8.3", "metal1", "via"),
+    "via12.upper_enclosure": ("enclosure", "9.3", "metal2", "via"),
+    "via12.poly_spacing": ("spacing", "8.5", "poly", "via"),
+    "via12.active_spacing": ("spacing", "8.5", "active", "via"),
+    "via23.cut_size": ("width", "14.1", "via2", None),
+    "via23.cut_spacing": ("spacing", "14.2", "via2", None),
+    "via23.lower_enclosure": ("enclosure", "14.3", "metal2", "via2"),
+    "via23.upper_enclosure": ("enclosure", "15.3", "metal3", "via2"),
+    "metal.M1.min_width": ("width", "7.1", "metal1", None),
+    "metal.M1.min_spacing": ("spacing", "7.2", "metal1", None),
+    "metal.M2.min_width": ("width", "9.1", "metal2", None),
+    "metal.M2.min_spacing": ("spacing", "9.2", "metal2", None),
+    "metal.M3.min_width": ("width", "15.1", "metal3", None),
+    "metal.M3.min_spacing": ("spacing", "15.2", "metal3", None),
+}
+
+
 
 class ProfileError(ValueError):
     """Raised when a profile cannot satisfy a PCell contract."""
@@ -57,6 +107,19 @@ class Profile:
 
     def has_feature(self, name: str) -> bool:
         return bool(self.features.get(name, False))
+
+    def has_layer(self, name: str) -> bool:
+        """True when the profile defines this layer and does not mark it unavailable.
+
+        Profiles differ in how they express availability: the generated SCMOS
+        layer files carry an explicit ``available`` boolean, while hand-written
+        ones (e.g. xh035) simply omit the key.  An absent key therefore means
+        "defined and usable", and only an explicit ``false`` excludes a layer.
+        """
+        entry = self.layers.get(name)
+        if entry is None:
+            return False
+        return entry.get("available", True) is not False
 
     def layer_info(self, name: str):
         if name not in self.layers:
@@ -183,65 +246,89 @@ class Technology:
 
     def __init__(self, profile: Profile):
         self.profile = profile
-        self.contact_size = self._rule("width", "6.1", "ca", None)
-        self.contact_spacing = self._rule("spacing", "6.3", "ca", None)
-        self.active_min = self._rule("width", "2.1", "active", None)
-        self.poly_min = self._rule("width", "3.1", "poly", None)
-        self.poly_spacing = self._rule("spacing", "3.2", "poly", None)
-        self.poly_contact_spacing = self._rule(
-            "spacing", "5.5.b", "cp", "poly"
-        )
-        self.poly_contact_enc = self._rule(
-            "enclosure", "5.2.b", "poly", "cp"
-        )
-        self.active_contact_enc = self._rule(
-            "enclosure", "6.2.b", "active", "ca"
-        )
-        self.select_active_enc = self._rule(
-            "enclosure", "4.2", "nselect", "active"
-        )
+
+        def sem(key: str) -> float:
+            """Resolve a semantic rule through the profile's stdcell rule_map.
+
+            A profile may map these keys onto its own rule ids and layer names
+            (see SEMANTIC_RULE_MAP); profiles without a map fall back to the
+            SCMOS-shaped ids, which is what the historical decks use.  This is
+            the same lookup common/stdcell/technology.py performs, so PCells and
+            stdcells now agree on a profile's rule table instead of PCells
+            bypassing the map and demanding SCMOS ids.
+            """
+            return profile.semantic_rule(key, SEMANTIC_RULE_MAP[key])
+
+        def optional(key: str) -> float | None:
+            """Resolve a rule the source deck may intentionally omit.
+
+            The CDK Diva deck waives rule 5.5.b (poly contact to poly spacing)
+            for HP_AMOS14TB / HP_CMOS26G / TSMC_CMOS025 and documents that it
+            "is only actually required for hpcmos10 processes".  A missing rule
+            here is a source-level waiver, not missing evidence, so callers fall
+            back to the governing general rule rather than inventing a number.
+            """
+            try:
+                return sem(key)
+            except ProfileError:
+                return None
+
+        self.contact_size = sem("contact.cut_size")
+        self.contact_spacing = sem("contact.cut_spacing")
+        self.active_min = sem("active.min_width")
+        self.poly_min = sem("poly.min_width")
+        self.poly_spacing = sem("poly.min_spacing")
+        # 5.5.b is waived for the techs listed above; when it is, the ordinary
+        # poly spacing (3.2) governs the same poly-edge-to-contact distance.
+        self.poly_contact_spacing = optional("poly.contact_spacing")
+        if self.poly_contact_spacing is None:
+            self.poly_contact_spacing = self.poly_spacing
+        self.poly_contact_enc = sem("poly.contact_enclosure")
+        self.active_contact_enc = sem("active.contact_enclosure")
+        self.select_active_enc = sem("select.active_enclosure.n")
         self.select_channel_enc = max(
-            self._rule("enclosure", "4.1", "nselect", "nChannel"),
-            self._rule("enclosure", "4.1", "pselect", "pChannel"),
+            sem("select.channel_enclosure.n"),
+            sem("select.channel_enclosure.p"),
         )
-        self.gate_extension = self._rule(
-            "spacing", "5.4", "cp", "Gate"
-        )
-        self.select_contact_enc = self._rule(
-            "enclosure", "4.3", "nselect", "ca"
-        )
-        self.metal_contact_enc = self._rule(
-            "enclosure", "7.3", "metal1", "ca"
-        )
-        self.nwell_active_enc = self._rule(
-            "spacing", "1.3", "nwell", None
-        )
+        self.gate_extension = sem("gate.extension")
+        self.select_contact_enc = sem("select.contact_enclosure.n")
+        self.metal_contact_enc = sem("metal1.contact_enclosure")
+        self.nwell_active_enc = sem("nwell.active_enclosure")
         self.nwell_contact_enc = self.nwell_active_enc
-        self.nwell_min_width = self._rule(
-            "width", "1.1", "nwell", None
-        )
-        self.via_size = self._rule("width", "8.1", "via", None)
-        self.via_spacing = self._rule("spacing", "8.2", "via", None)
-        self.via_lower_enc = self._rule(
-            "enclosure", "8.3", "metal1", "via"
-        )
-        self.via_upper_enc = self._rule(
-            "enclosure", "9.3", "metal2", "via"
-        )
-        self.via2_size = self._rule("width", "14.1", "via2", None)
-        self.via2_spacing = self._rule("spacing", "14.2", "via2", None)
-        self.via2_lower_enc = self._rule(
-            "enclosure", "14.3", "metal2", "via2"
-        )
-        self.via2_upper_enc = self._rule(
-            "enclosure", "15.3", "metal3", "via2"
-        )
-        self.poly_elec_enc = self._rule(
-            "enclosure", "11.3", "poly", "CapacitorElec"
-        )
-        self.cap_elec_min = self._rule(
-            "width", "11.1", "CapacitorElec", None
-        )
+        self.nwell_min_width = sem("nwell.min_width")
+        self.via_size = sem("via12.cut_size")
+        self.via_spacing = sem("via12.cut_spacing")
+        self.via_lower_enc = sem("via12.lower_enclosure")
+        self.via_upper_enc = sem("via12.upper_enclosure")
+        # via2/via23 only exist when the stack has a third metal.  Mirror the
+        # metal4-gated via3 reads below and common/stdcell/technology.py, which
+        # already guards these with `if metal3 else None`.  Reading them
+        # unconditionally made every 2-metal profile fail registration with
+        # "no active width rule 14.1 for via2/".
+        if profile.has_feature("metal3Available"):
+            self.via2_size = sem("via23.cut_size")
+            self.via2_spacing = sem("via23.cut_spacing")
+            self.via2_lower_enc = sem("via23.lower_enclosure")
+            self.via2_upper_enc = sem("via23.upper_enclosure")
+        else:
+            self.via2_size = None
+            self.via2_spacing = None
+            self.via2_lower_enc = None
+            self.via2_upper_enc = None
+        # The elec-over-poly capacitor rules are only needed when the profile
+        # actually declares cap_elec.  Being elec-capable is not enough: cnm25
+        # ships an electrode layer but declares a PiP capacitor instead and
+        # carries no CapacitorElec rules.
+        if "cap_elec" in profile.pcells and profile.has_feature("elecAvailable"):
+            self.poly_elec_enc = self._rule(
+                "enclosure", "11.3", "poly", "CapacitorElec"
+            )
+            self.cap_elec_min = self._rule(
+                "width", "11.1", "CapacitorElec", None
+            )
+        else:
+            self.poly_elec_enc = None
+            self.cap_elec_min = None
         if profile.has_feature("metal4Available"):
             self.via3_size = self._rule("width", "28.1", "via3", None)
             self.via3_spacing = self._rule("spacing", "28.2", "via3", None)
@@ -1066,29 +1153,40 @@ class SiliconcraftLibrary(_Library):
         profile_name = self.profile.profile_dir.name
         suffix = f"_{variant}" if variant is not None else ""
         self.description = f"siliconcraft {profile_name}{suffix} analog PCells"
-        self.layout().register_pcell("nmos", MosPCell(self.tech, "n"))
-        self.layout().register_pcell("pmos", MosPCell(self.tech, "p"))
+        # Only register PCells the profile actually declares in pcells.yaml.
+        # Registering unconditionally made profiles with no contract (e.g.
+        # tr1um) fail with KeyError('nmos') inside MosPCell, which reads the
+        # declared contract, and made run_pcells.py create_cell() return None.
+        declared = self.profile.pcells
+        for name, polarity in (("nmos", "n"), ("pmos", "p")):
+            if name in declared:
+                self.layout().register_pcell(name, MosPCell(self.tech, polarity))
         for name, polarity in (("nmosm", "n"), ("pmosm", "p")):
-            if name in self.profile.pcells:
+            if name in declared:
                 self.layout().register_pcell(name, MosPCell(self.tech, polarity, name))
-        self.layout().register_pcell("ntap", TapPCell(self.tech, "n"))
-        self.layout().register_pcell("ptap", TapPCell(self.tech, "p"))
-        if self.profile.has_feature("metal3Available"):
+        for name, polarity in (("ntap", "n"), ("ptap", "p")):
+            if name in declared:
+                self.layout().register_pcell(name, TapPCell(self.tech, polarity))
+        # via12 only spans metal1->metal2, so it exists on every process with a
+        # second metal; gating it on metal3Available wrongly denied it to 2-metal
+        # profiles.  via23 needs the third metal, via34 the fourth.
+        if "via12" in declared and self.profile.has_layer("metal2"):
             self.layout().register_pcell("via12", ViaPCell(self.tech, "via12"))
+        if "via23" in declared and self.profile.has_feature("metal3Available"):
             self.layout().register_pcell("via23", ViaPCell(self.tech, "via23"))
-        if self.profile.has_feature("metal4Available"):
+        if "via34" in declared and self.profile.has_feature("metal4Available"):
             self.layout().register_pcell("via34", ViaPCell(self.tech, "via34"))
         for name in ("rp2", "rph", "rdiffn", "rdiffp", "rnwell"):
-            if name in self.profile.pcells:
+            if name in declared:
                 self.layout().register_pcell(name, ResistorPCell(self.tech, name))
-        for name, spec in self.profile.pcells.items():
+        for name, spec in declared.items():
             if spec.get("kind") == "diode":
                 self.layout().register_pcell(
                     name, JunctionDiodePCell(self.tech, name)
                 )
-        if "cap_pip" in self.profile.pcells:
+        if "cap_pip" in declared:
             self.layout().register_pcell("cap_pip", PiPCapPCell(self.tech))
-        elif "cap_elec" in self.profile.pcells and self.profile.has_feature("elecAvailable"):
+        elif "cap_elec" in declared and self.profile.has_feature("elecAvailable"):
             self.layout().register_pcell("cap_elec", ElectricalCapPCell(self.tech))
         self.register(
             library_name or f"siliconcraft_{profile_name}{suffix}"

@@ -62,37 +62,37 @@ gds_policy:
 # Canonical (canonical_name is the siliconcraft logical layer used by the
 # profile's layers.yaml and the DRC/LVS/recognition decks).
 layers:
-  - {logical_name: nwell,        gds_layer: 42, cif: CWN,  role: well,    status: core}
-  - {logical_name: pwell,        gds_layer: 41, cif: CWP,  role: well,    status: unused_nwell_process}
-  - {logical_name: active,       gds_layer: 43, cif: CAA,  role: active,  status: core}
-  - {logical_name: tactive,      gds_layer: 60, cif: CTA,  role: active,  status: tsmc_specific}
-  - {logical_name: pselect,      gds_layer: 44, cif: CSP,  role: select,  status: core}
-  - {logical_name: nselect,      gds_layer: 45, cif: CSN,  role: select,  status: core}
-  - {logical_name: poly,         gds_layer: 46, cif: CPG,  role: gate,    status: core}
-  - {logical_name: elec,         gds_layer: 56, cif: CEL,  role: gate,    status: poly2_electrode}
-  - {logical_name: cc,           gds_layer: 25, cif: [CCG, CCC, CCA, CCP, CCE], role: cut, status: canonical_contact}
-  - {logical_name: metal1,       gds_layer: 49, cif: [CMF, CM1], role: metal, status: core}
-  - {logical_name: via,          gds_layer: 50, cif: [CVA, CV1], role: cut,   status: core}
-  - {logical_name: metal2,       gds_layer: 51, cif: [CMS, CM2], role: metal, status: core}
-  - {logical_name: via2,         gds_layer: 61, cif: [CVS, CV2], role: cut,   status: core}
-  - {logical_name: metal3,       gds_layer: 62, cif: [CMT, CM3], role: metal, status: core}
-  - {logical_name: via3,         gds_layer: 30, cif: [CVT, CV3], role: cut,   status: core}
-  - {logical_name: metal4,       gds_layer: 31, cif: [CMQ, CM4], role: metal, status: core}
-  - {logical_name: glass,        gds_layer: 52, cif: COG,  role: pad,     status: overglass}
-  - {logical_name: pad,          gds_layer: 26, cif: XP,   role: pad,     status: non_fab_annotation}
-  - {logical_name: polycap,      gds_layer: 28, cif: CPC,  role: capacitor, status: unavailable_this_option}
-  - {logical_name: sblock,       gds_layer: 29, cif: CSB,  role: misc,    status: unavailable_this_option}
-  - {logical_name: highres,      gds_layer: 34, cif: CHR,  role: resistor, status: unavailable_this_option}
-  - {logical_name: metalcap,     gds_layer: 35, cif: CTM,  role: capacitor, status: unavailable_this_option}
-  - {logical_name: ccd,          gds_layer: 57, cif: CCD,  role: active,  status: unavailable_this_option}
-  - {logical_name: pbase,        gds_layer: 58, cif: CBA,  role: misc,    status: unavailable_this_option}
-  - {logical_name: cwell,        gds_layer: 59, cif: CWC,  role: well,    status: unavailable_this_option}
-  - {logical_name: open,         gds_layer: 23, cif: COP,  role: misc,    status: mems_only}
-  - {logical_name: pstop,        gds_layer: 24, cif: CPS,  role: misc,    status: mems_only}
-  - {logical_name: metal5,       gds_layer: 33, cif: [CMP, CM5], role: metal, status: unavailable_this_option}
-  - {logical_name: metal6,       gds_layer: 37, cif: CM6,  role: metal,  status: unavailable_this_option}
-  - {logical_name: via4,         gds_layer: 32, cif: [CVQ, CV4], role: cut, status: unavailable_this_option}
-  - {logical_name: via5,         gds_layer: 36, cif: CV5,  role: cut,    status: unavailable_this_option}
+  - {logical: nwell,        gds_layer: 42, cif: CWN,  role: well,    status: core}
+  - {logical: pwell,        gds_layer: 41, cif: CWP,  role: well,    status: unused_nwell_process}
+  - {logical: active,       gds_layer: 43, cif: CAA,  role: active,  status: core}
+  - {logical: tactive,      gds_layer: 60, cif: CTA,  role: active,  status: tsmc_specific}
+  - {logical: pselect,      gds_layer: 44, cif: CSP,  role: select,  status: core}
+  - {logical: nselect,      gds_layer: 45, cif: CSN,  role: select,  status: core}
+  - {logical: poly,         gds_layer: 46, cif: CPG,  role: gate,    status: core}
+  - {logical: elec,         gds_layer: 56, cif: CEL,  role: gate,    status: poly2_electrode}
+  - {logical: cc,           gds_layer: 25, cif: [CCG, CCC, CCA, CCP, CCE], role: cut, status: canonical_contact}
+  - {logical: metal1,       gds_layer: 49, cif: [CMF, CM1], role: metal, status: core}
+  - {logical: via,          gds_layer: 50, cif: [CVA, CV1], role: cut,   status: core}
+  - {logical: metal2,       gds_layer: 51, cif: [CMS, CM2], role: metal, status: core}
+  - {logical: via2,         gds_layer: 61, cif: [CVS, CV2], role: cut,   status: core}
+  - {logical: metal3,       gds_layer: 62, cif: [CMT, CM3], role: metal, status: core}
+  - {logical: via3,         gds_layer: 30, cif: [CVT, CV3], role: cut,   status: core}
+  - {logical: metal4,       gds_layer: 31, cif: [CMQ, CM4], role: metal, status: core}
+  - {logical: glass,        gds_layer: 52, cif: COG,  role: pad,     status: overglass}
+  - {logical: pad,          gds_layer: 26, cif: XP,   role: pad,     status: non_fab_annotation}
+  - {logical: polycap,      gds_layer: 28, cif: CPC,  role: capacitor, status: unavailable_this_option}
+  - {logical: sblock,       gds_layer: 29, cif: CSB,  role: misc,    status: unavailable_this_option}
+  - {logical: highres,      gds_layer: 34, cif: CHR,  role: resistor, status: unavailable_this_option}
+  - {logical: metalcap,     gds_layer: 35, cif: CTM,  role: capacitor, status: unavailable_this_option}
+  - {logical: ccd,          gds_layer: 57, cif: CCD,  role: active,  status: unavailable_this_option}
+  - {logical: pbase,        gds_layer: 58, cif: CBA,  role: misc,    status: unavailable_this_option}
+  - {logical: cwell,        gds_layer: 59, cif: CWC,  role: well,    status: unavailable_this_option}
+  - {logical: open,         gds_layer: 23, cif: COP,  role: misc,    status: mems_only}
+  - {logical: pstop,        gds_layer: 24, cif: CPS,  role: misc,    status: mems_only}
+  - {logical: metal5,       gds_layer: 33, cif: [CMP, CM5], role: metal, status: unavailable_this_option}
+  - {logical: metal6,       gds_layer: 37, cif: CM6,  role: metal,  status: unavailable_this_option}
+  - {logical: via4,         gds_layer: 32, cif: [CVQ, CV4], role: cut, status: unavailable_this_option}
+  - {logical: via5,         gds_layer: 36, cif: CV5,  role: cut,    status: unavailable_this_option}
 
 # The SCMOS spec defines dedicated contact layers that a unified CONTACT layer
 # may replace.  The CDK stream map folds all four onto one Cadence layer `cc`;

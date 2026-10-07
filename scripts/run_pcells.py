@@ -62,11 +62,17 @@ def main(argv=None):
                     db(220.0, layout.dbu), db(20.0, layout.dbu))
         )
 
-    variants = [
+    # Seed the regression set with the base PCells, but only those the profile
+    # actually declares in pcells.yaml.  Profiles without a contract register
+    # nothing, and layout.create_cell() returns None for an unregistered name.
+    base_variants = (
         ("nmos", {"nf": 1, "m": 1, "w_um": 1.5, "l_um": 0.6}),
         ("pmos", {"nf": 1, "m": 1, "w_um": 1.5, "l_um": 0.6}),
         ("ntap", {"rows": 1, "columns": 1}),
         ("ptap", {"rows": 1, "columns": 1}),
+    )
+    variants = [
+        (name, params) for name, params in base_variants if name in profile.pcells
     ]
     for name, spec in profile.pcells.items():
         if name in {cell_name for cell_name, _ in variants}:
