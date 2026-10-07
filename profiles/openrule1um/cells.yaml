@@ -136,11 +136,11 @@ stdcell:
   #         = 4.0 + 2*2.0 = 8.0
   #   gap   = max(active.min_width, metal.M1.min_spacing) = max(1.0, 1.0) = 1.0
   #   rail  = max(active.min_width, metal.M1.min_width)   = max(1.0, 1.0) = 1.0
-  row_heights_um: {n: 5.0, p: 8.0}
-  row_gap_um: 1.0
+  row_heights_um: {n: 6.0, p: 8.0}
+  row_gap_um: 1.5
   rail_margin_um: 0.0
-  site_height_um: 14.0
-  source_height_um: 14.0
+  site_height_um: 15.5
+  source_height_um: 15.5
   orientations:
     even_row: R0
     odd_row: MX
