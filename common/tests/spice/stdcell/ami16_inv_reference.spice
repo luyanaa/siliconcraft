@@ -1,0 +1,8 @@
+* Reference schematic for the generated AMI16 INV DRC/LVS fixture.
+* Flat netlist, matching the authoritative extractor's output:
+*   m1 Y A VSS VSS ami16N w=4 l=1.6 ...
+*   m2 Y A VDD SUBS ami16P w=4 l=1.6 ...
+* Note the PMOS bulk terminal is SUBS (the substrate), not VDD.
+M0 Y A VSS VSS ami16N W=4 L=1.6
+M1 Y A VDD SUBS ami16P W=4 L=1.6
+.end

@@ -1,0 +1,7 @@
+* Reference schematic for the generated AMS C35 INV DRC/LVS fixture.
+* Flat netlist, matching the authoritative extractor's output:
+*   m1 Y A VSS VSS c35N w=1.5 l=0.4 ...
+*   m2 Y A VDD VDD c35P w=1.5 l=0.4 ...
+M0 Y A VSS VSS c35N W=1.5 L=0.4
+M1 Y A VDD VDD c35P W=1.5 L=0.4
+.end
