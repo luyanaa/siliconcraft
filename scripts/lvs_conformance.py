@@ -40,8 +40,26 @@ def main():
         results[deck] = (summary, spice)
 
     def device_lines(path):
-        return sorted(l for l in Path(path).read_text().splitlines()
-                      if l and not l.startswith("*"))
+        """Electrical content of each device line, ignoring instance names.
+
+        The reference and authoritative extraction paths assign device instance
+        names independently (the reference path even reuses `m1` for two
+        different MOS devices), so the leading instance token carries no
+        connectivity meaning and must not decide conformance.  Real LVS matches
+        devices by topology and parameters, so compare everything after the
+        instance name: device type, terminals, and parameters.  Net names are
+        retained, so connectivity differences still fail.
+        """
+        lines = []
+        for line in Path(path).read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("*") or line.startswith("."):
+                continue
+            fields = line.split(None, 1)
+            if len(fields) < 2:
+                continue
+            lines.append(fields[1])
+        return sorted(lines)
 
     ref_lines = device_lines(results["reference"][1])
     auth_lines = device_lines(results["authoritative"][1])

@@ -46,6 +46,18 @@ def main(argv=None):
     profile_dir = ROOT / "profiles" / profile_name
     profile = Profile(profile_dir, variant=variant)
     validate_profile_gds_map(profile_dir)
+    # A profile may declare that it has no PCell engine at all (ls1u ships
+    # `engine: unavailable` with an empty `pcells:` list and a pending backlog).
+    # That is a declared absence, not a failure: building the library would read
+    # rules no SCMOS-shaped PCell can use, so report and stop cleanly.
+    if not profile.pcells:
+        engine = (profile.pcells_doc.get("engine") or "unavailable")
+        pending = profile.pcells_doc.get("pending") or []
+        print(
+            f"[run_pcells] profile={profile_name} pcells=0 engine={engine} "
+            f"pending={len(pending)} (no PCell contract declared)"
+        )
+        return 0
     suffix = f"_{variant}" if variant is not None else ""
     library_name = f"siliconcraft_{profile_name}{suffix}"
     register_profile(profile_dir, library_name, variant=variant)
