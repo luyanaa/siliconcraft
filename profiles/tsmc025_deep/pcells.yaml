@@ -1,0 +1,84 @@
+# profiles/tsmc025_deep/pcells.yaml — KLayout analog PCell contract
+#
+# Geometry is generated in microns and snapped to meta.grid_um.  Layer names
+# resolve through layers.yaml; rule values resolve through
+# rules.stdcell.rule_map, which states each rule as the CDK lambda multiple.
+# Magic extraction is intentionally outside this contract.
+#
+# Scope: core MOS, taps, and the via ladder this option supports.  The option
+# stops at M5 with metal4/metal5 available, so via12/via23/via34 are exposed but
+# via45 is not.  There is no electrode (elec) layer, so no elec-over-poly
+# capacitor; HV/LDMOS devices are not exposed because no public compact-model
+# card exists for them.
+# Default/minimum sizes follow meta.min_width_um (0.36) and
+# meta.min_channel_um (0.24).
+
+pcells:
+  nmos:
+    kind: mos4
+    polarity: n
+    canonical_device: nmos_core
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 0.36, min: 0.36}
+      l_um: {type: float, default: 0.24, min: 0.24}
+  pmos:
+    kind: mos4
+    polarity: p
+    canonical_device: pmos_core
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 0.36, min: 0.36}
+      l_um: {type: float, default: 0.24, min: 0.24}
+  ntap:
+    kind: tap
+    polarity: n
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  ptap:
+    kind: tap
+    polarity: p
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via12:
+    kind: via
+    cut: via
+    lower: metal1
+    upper: metal2
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via23:
+    kind: via
+    cut: via2
+    lower: metal2
+    upper: metal3
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via34:
+    kind: via
+    cut: via3
+    lower: metal3
+    upper: metal4
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
