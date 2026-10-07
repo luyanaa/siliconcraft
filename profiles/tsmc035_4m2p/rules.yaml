@@ -26,3 +26,60 @@ rules:
   grid:
     x: 0.1
     y: 0.1
+  # Semantic rule map for the stdcell and PCell geometry consumers.
+  #
+  # This profile's DRC authority is the shared lambda-based reference deck
+  # (engine: scmos_reference, a port of the CDK techfile/divaDRC.rul), which
+  # states every rule as a lambda multiple rather than an absolute value.  The
+  # entries below therefore record the CDK lambda multiple and the CDK rule id
+  # instead of a baked micron number, so each value stays traceable to its
+  # source.  Multiples are the SUBM branch of the reference deck
+  # (deep=false, submicron=true, metal4Available=true) and lambda is 0.20um;
+  # e.g. active.min_width = 3 * 0.20 = 0.60um, which is exactly this profile's
+  # declared meta.min_width_um, and contact.cut_size = 2 * 0.20 = 0.40um, which
+  # matches meta.min_channel_um.
+  stdcell:
+    rule_map:
+      contact.cut_size: {lambda_multiple: 2.0, cdk_rule: "6.1"}
+      contact.cut_spacing: {lambda_multiple: 3.0, cdk_rule: "6.3"}
+      active.min_width: {lambda_multiple: 3.0, cdk_rule: "2.1"}
+      poly.min_width: {lambda_multiple: 2.0, cdk_rule: "3.1"}
+      poly.min_spacing: {lambda_multiple: 3.0, cdk_rule: "3.2"}
+      poly.contact_spacing: {lambda_multiple: 5.0, cdk_rule: "5.5.b"}
+      poly.contact_enclosure: {lambda_multiple: 1.0, cdk_rule: "5.2.b"}
+      active.contact_enclosure: {lambda_multiple: 1.0, cdk_rule: "6.2.b"}
+      active.contact_gate_spacing: {lambda_multiple: 2.0, cdk_rule: "6.4"}
+      select.active_enclosure.n: {lambda_multiple: 2.0, cdk_rule: "4.2"}
+      select.active_enclosure.p: {lambda_multiple: 2.0, cdk_rule: "4.2"}
+      select.channel_enclosure.n: {lambda_multiple: 3.0, cdk_rule: "4.1"}
+      select.channel_enclosure.p: {lambda_multiple: 3.0, cdk_rule: "4.1"}
+      gate.extension: {lambda_multiple: 2.0, cdk_rule: "5.4"}
+      select.contact_enclosure.n: {lambda_multiple: 1.0, cdk_rule: "4.3"}
+      select.contact_enclosure.p: {lambda_multiple: 1.0, cdk_rule: "4.3"}
+      metal1.contact_enclosure: {lambda_multiple: 1.0, cdk_rule: "7.3"}
+      nwell.active_enclosure: {lambda_multiple: 6.0, cdk_rule: "1.3"}
+      nwell.min_width: {lambda_multiple: 12.0, cdk_rule: "1.1"}
+      via12.cut_size: {lambda_multiple: 2.0, cdk_rule: "8.1"}
+      via12.cut_spacing: {lambda_multiple: 3.0, cdk_rule: "8.2"}
+      via12.lower_enclosure: {lambda_multiple: 1.0, cdk_rule: "8.3"}
+      via12.upper_enclosure: {lambda_multiple: 1.0, cdk_rule: "9.3"}
+      via23.cut_size: {lambda_multiple: 2.0, cdk_rule: "14.1"}
+      via23.cut_spacing: {lambda_multiple: 3.0, cdk_rule: "14.2"}
+      via23.lower_enclosure: {lambda_multiple: 1.0, cdk_rule: "14.3"}
+      via23.upper_enclosure: {lambda_multiple: 1.0, cdk_rule: "15.3"}
+      via34.cut_size: {lambda_multiple: 2.0, cdk_rule: "21.1"}
+      via34.cut_spacing: {lambda_multiple: 3.0, cdk_rule: "21.2"}
+      via34.lower_enclosure: {lambda_multiple: 1.0, cdk_rule: "21.3"}
+      # metal4 enclosure of via3 is 1.0 lambda only when a fifth metal exists;
+      # this option stops at M4, so the deck's 2.0 lambda branch applies.
+      via34.upper_enclosure: {lambda_multiple: 2.0, cdk_rule: "22.3"}
+      # Electrode (elec) capacitor, SUBM branch: the CDK deck uses 7 lambda for
+      # the electrode width and 5 lambda for the poly enclosure.
+      capacitor.electrode_width: {lambda_multiple: 7.0, cdk_rule: "11.1"}
+      capacitor.poly_enclosure: {lambda_multiple: 5.0, cdk_rule: "11.3"}
+      metal.M1.min_width: {lambda_multiple: 3.0, cdk_rule: "7.1"}
+      metal.M1.min_spacing: {lambda_multiple: 3.0, cdk_rule: "7.2"}
+      metal.M2.min_width: {lambda_multiple: 3.0, cdk_rule: "9.1"}
+      metal.M2.min_spacing: {lambda_multiple: 3.0, cdk_rule: "9.2"}
+      metal.M3.min_width: {lambda_multiple: 3.0, cdk_rule: "15.1"}
+      metal.M3.min_spacing: {lambda_multiple: 3.0, cdk_rule: "15.2"}

@@ -30,6 +30,21 @@ rules:
     x: 0.025
     y: 0.025
 
+  # Semantic map for the stdcell/PCell geometry consumers.
+  #
+  # Rule numbering is process-specific: this table (ENG-183 Rev 5.0 / SCMOS_SUBM
+  # abstraction) numbers the via3 rules 28.1/28.2/28.3/29.3, whereas the CDK
+  # Diva deck used by the TSMC profiles numbers them 21.1/21.2/21.3/22.3.  The
+  # shared engine's fallback is the CDK numbering, so this profile declares its
+  # own ids here rather than forcing either table to be renumbered.
+  # E1 applies: VIA1/VIA2/VIA3 are fixed 0.50um, tighter than SCMOS 2lambda.
+  stdcell:
+    rule_map:
+      via34.cut_size: {group: width, id: "28.1", layer: via3}
+      via34.cut_spacing: {group: spacing, id: "28.2", layer: via3}
+      via34.lower_enclosure: {group: enclosure, id: "28.3", layer: metal3, layer2: via3}
+      via34.upper_enclosure: {group: enclosure, id: "29.3", layer: metal4, layer2: via3}
+
   width:
     - { id: "1.1", layer: nwell, value_um: 2.4, condition: "scmos_subm", source: "SCMOS 12lambda; native NW.W.1 1.7", note: "conservative" }
     - { id: "2.1", layer: active, value_um: 0.6, source: "SCMOS 3lambda; native OD.W.1 0.4", note: "conservative" }

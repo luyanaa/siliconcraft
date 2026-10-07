@@ -71,6 +71,17 @@ SEMANTIC_RULE_MAP = {
     "via23.cut_spacing": ("spacing", "14.2", "via2", None),
     "via23.lower_enclosure": ("enclosure", "14.3", "metal2", "via2"),
     "via23.upper_enclosure": ("enclosure", "15.3", "metal3", "via2"),
+    # via3/via34.  The CDK Diva deck numbers these 21.1/21.2/21.3/22.3 (see also
+    # common/drc/scmos_reference.py); an earlier revision of the PCell adapter
+    # used 28.1/28.2/28.3/29.3, which no source defines, so every metal4 profile
+    # failed with "no active width rule 28.1 for via3/".
+    "via34.cut_size": ("width", "21.1", "via3", None),
+    "via34.cut_spacing": ("spacing", "21.2", "via3", None),
+    "via34.lower_enclosure": ("enclosure", "21.3", "metal3", "via3"),
+    "via34.upper_enclosure": ("enclosure", "22.3", "metal4", "via3"),
+    # Electrode (elec) capacitor rules; only read when cap_elec is declared.
+    "capacitor.electrode_width": ("width", "11.1", "CapacitorElec", None),
+    "capacitor.poly_enclosure": ("enclosure", "11.3", "poly", "CapacitorElec"),
     "metal.M1.min_width": ("width", "7.1", "metal1", None),
     "metal.M1.min_spacing": ("spacing", "7.2", "metal1", None),
     "metal.M2.min_width": ("width", "9.1", "metal2", None),
@@ -211,6 +222,13 @@ class Profile:
         if spec is not None:
             if "value_um" in spec:
                 return float(spec["value_um"])
+            if "lambda_multiple" in spec:
+                # Profiles whose DRC authority is the shared lambda-based
+                # reference deck (common/drc/scmos_reference.py, a port of the
+                # CDK Diva deck) state the rule as the CDK lambda multiple
+                # rather than a baked micron value, so the number stays tied to
+                # its source.  spec["cdk_rule"] records the CDK rule id.
+                return float(spec["lambda_multiple"]) * self.lambda_um
             try:
                 return self.rule_value(
                     str(spec["group"]),
@@ -320,24 +338,16 @@ class Technology:
         # ships an electrode layer but declares a PiP capacitor instead and
         # carries no CapacitorElec rules.
         if "cap_elec" in profile.pcells and profile.has_feature("elecAvailable"):
-            self.poly_elec_enc = self._rule(
-                "enclosure", "11.3", "poly", "CapacitorElec"
-            )
-            self.cap_elec_min = self._rule(
-                "width", "11.1", "CapacitorElec", None
-            )
+            self.poly_elec_enc = sem("capacitor.poly_enclosure")
+            self.cap_elec_min = sem("capacitor.electrode_width")
         else:
             self.poly_elec_enc = None
             self.cap_elec_min = None
         if profile.has_feature("metal4Available"):
-            self.via3_size = self._rule("width", "28.1", "via3", None)
-            self.via3_spacing = self._rule("spacing", "28.2", "via3", None)
-            self.via3_lower_enc = self._rule(
-                "enclosure", "28.3", "metal3", "via3"
-            )
-            self.via3_upper_enc = self._rule(
-                "enclosure", "29.3", "metal4", "via3"
-            )
+            self.via3_size = sem("via34.cut_size")
+            self.via3_spacing = sem("via34.cut_spacing")
+            self.via3_lower_enc = sem("via34.lower_enclosure")
+            self.via3_upper_enc = sem("via34.upper_enclosure")
 
     def _rule(
         self,

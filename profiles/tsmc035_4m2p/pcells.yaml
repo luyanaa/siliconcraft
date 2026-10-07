@@ -1,0 +1,97 @@
+# profiles/tsmc035_4m2p/pcells.yaml — KLayout analog PCell contract
+#
+# Geometry is generated in microns and snapped to meta.grid_um.  Layer names
+# resolve through layers.yaml; rule values resolve through
+# rules.stdcell.rule_map, which states each rule as the CDK lambda multiple
+# (this profile's DRC authority is the shared lambda-based reference deck).
+# Magic extraction is intentionally outside this contract.
+#
+# Scope: the TSMC_CMOS035_4M2P (SCN4ME_SUBM) core set.  The 4M/2P option ships
+# M1-M4 with via/via2/via3, an electrode (elec) layer for poly2 capacitors, and
+# thick-active (tactive) for HV devices.  HV devices and POLY2 transistors are
+# NOT exposed as PCells: the CDK records that TSMC 0.35u poly2 builds
+# capacitors "but not transistors", and no public TSMC 0.35 HV compact-model
+# card exists, so there is no device contract to bind them to.
+# Default/minimum sizes follow meta.min_width_um (0.6) and meta.min_channel_um
+# (0.4); the capacitor default is the same 21*lambda abstraction used by the
+# ami06 contract (21 * 0.2 = 4.2 um).
+
+pcells:
+  nmos:
+    kind: mos4
+    polarity: n
+    canonical_device: nmos_core
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 0.6, min: 0.6}
+      l_um: {type: float, default: 0.4, min: 0.4}
+  pmos:
+    kind: mos4
+    canonical_device: pmos_core
+    polarity: p
+    terminals:
+      - D
+      - G
+      - S
+      - B
+    parameters:
+      nf: {type: int, default: 1, min: 1}
+      m: {type: int, default: 1, min: 1}
+      w_um: {type: float, default: 0.6, min: 0.6}
+      l_um: {type: float, default: 0.4, min: 0.4}
+  ntap:
+    kind: tap
+    polarity: n
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  ptap:
+    kind: tap
+    polarity: p
+    terminals:
+      - B
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via12:
+    kind: via
+    cut: via
+    lower: metal1
+    upper: metal2
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via23:
+    kind: via
+    cut: via2
+    lower: metal2
+    upper: metal3
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  via34:
+    kind: via
+    cut: via3
+    lower: metal3
+    upper: metal4
+    parameters:
+      rows: {type: int, default: 1, min: 1}
+      columns: {type: int, default: 1, min: 1}
+  cap_elec:
+    kind: capacitor
+    top: elec
+    bottom: poly
+    terminals:
+      - TOP
+      - BOTTOM
+    parameters:
+      width_um: {type: float, default: 4.2, min: 4.2}
+      height_um: {type: float, default: 4.2, min: 4.2}
