@@ -1,0 +1,78 @@
+# profiles/openrule1um/devices/bindings.yaml
+#
+# Process binding for the process-independent common MOS contract.
+#
+# The model names come from the profile's own library,
+# profiles/openrule1um/models/openrule1um.lib, which declares built-in devices
+# rather than subcircuits:
+#
+#   .MODEL or1_nmos NMOS
+#   .MODEL or1_pmos PMOS
+#
+# so the representation is `primitive` with the SPICE instance prefix `m`, the
+# same shape ami06 uses for its built-in cards.
+#
+# Terminal recognition follows the profile's own LVS deck
+# (reference/lvs/lvs.lylvs, via devices.yaml):
+#   nmos_channel: "active - nwell - pactive"
+#   pmos_channel: "active & nwell - nactive"
+#   substrate:    "global SUBSTRATE"
+# OpenRule1um is a twin-well process: NMOS sits in pwell, PMOS in nwell.
+schema_version: 1
+profile: openrule1um
+canonical_source: "../../../common/devices/canonical/mos.yaml"
+bindings:
+  nmos_core:
+    canonical_variant: nmos_core
+    layout:
+      gate_types: nfet
+      terminal_types: "ndiff,ndc"
+      substrate_types: pwell
+      substrate_node: vss
+      implant: narea
+    simulation:
+      representation: primitive
+      name: or1_nmos
+      prefix: m
+      model_library: "../models/openrule1um.lib"
+      parameter_map:
+        w: w
+        l: l
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+    lvs:
+      extracted_class: or1_nmos
+      netgen_class: or1_nmos
+      permutable:
+        -
+          - d
+          - s
+  pmos_core:
+    canonical_variant: pmos_core
+    layout:
+      gate_types: pfet
+      terminal_types: "pdiff,pdc"
+      substrate_types: nwell
+      substrate_node: vdd
+      implant: parea
+    simulation:
+      representation: primitive
+      name: or1_pmos
+      prefix: m
+      model_library: "../models/openrule1um.lib"
+      parameter_map:
+        w: w
+        l: l
+        ad: ad
+        as: as
+        pd: pd
+        ps: ps
+    lvs:
+      extracted_class: or1_pmos
+      netgen_class: or1_pmos
+      permutable:
+        -
+          - d
+          - s

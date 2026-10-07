@@ -28,6 +28,22 @@ meta:
     capacitorAvailable: true
     diodeAvailable: true
     padAvailable: true
+  # The stdcell consumers speak SCMOS logical names; map them onto this
+  # process's own.  The deck calls 19/0 `narea` and 18/0 `parea`, the profile
+  # calls the same streams `nactive` / `pactive`.  Contact/via logical names
+  # already match.
+  stdcell_physical_layers:
+    NSELECT: nactive
+    PSELECT: pactive
+    CC: contact
+    CP: contact
+    VIA12: via1
+    VIA23: via2
+  # Single n-well: the NMOS sits in the substrate, so no pwell layer exists and
+  # well_n is deliberately absent (the row builder then draws wells only on the
+  # p side).
+  stdcell_layers:
+    well_p: nwell
   license: "Apache-2.0 (upstream OpenRule1um; preserve per-file notices)"
   sources:
     - "https://github.com/mineda-support/OpenRule1um@85dbacfb05351c5116158f4d8e0d5c995d3b4ad1"

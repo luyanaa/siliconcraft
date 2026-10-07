@@ -181,3 +181,43 @@ lambda_rule:
     replacement_required: false
     acceptance: "grid-aligned, lambda-rule legal, and LVS/model bindings remain intact"
 rules: {}
+
+rules:
+  stdcell:
+    rule_map:
+      # --- FEOL ---
+      contact.cut_size:              {value_um: 1.0, source: "SCMOS 6.1 2L; native dcont cut 1.0"}
+      contact.cut_spacing:           {value_um: 1.0, source: "SCMOS 6.3 2L; native drc.lydrc:115 dm_dcn.space(1.0)"}
+      active.min_width:              {value_um: 1.0, source: "native drc.lydrc:135 diff.width(1.0) tighter than SCMOS 2.1 3L=1.5"}
+      poly.min_width:                {value_um: 1.0, source: "SCMOS 3.1 2L; native drc.lydrc:136 pol.width(1.0)"}
+      poly.min_spacing:              {value_um: 1.0, source: "SCMOS 3.2 2L; native drc.lydrc:92 pol.space(1.0)"}
+      poly.contact_enclosure:        {value_um: 0.5, source: "SCMOS 5.2.b 1L; native pcont poly 2.0 vs cut 1.0"}
+      active.contact_enclosure:      {value_um: 0.5, source: "SCMOS 6.2.b 1L; native dcont diff 2.0 vs cut 1.0"}
+      active.contact_gate_spacing:   {value_um: 0.5, source: "native drc.lydrc:96 mos.separation(dm_dcn,0.5) tighter than SCMOS 6.4 2L=1.0"}
+      select.active_enclosure.n:     {value_um: 0.5, source: "native drc.lydrc:153 narea.enclosing(diff,0.5) tighter than SCMOS 4.2 2L=1.0"}
+      select.active_enclosure.p:     {value_um: 0.5, source: "native drc.lydrc:152 parea.enclosing(diff,0.5) tighter than SCMOS 4.2 2L=1.0"}
+      select.channel_enclosure.n:    {value_um: 1.5, source: "SCMOS 4.1 3L; no native counterpart"}
+      select.channel_enclosure.p:    {value_um: 1.5, source: "SCMOS 4.1 3L; no native counterpart"}
+      gate.extension:                {value_um: 1.0, source: "SCMOS 5.4 2L; native drc.lydrc:157 pol.enclosing(diff,1.0)"}
+      select.contact_enclosure.n:    {value_um: 0.5, source: "SCMOS 4.3 1L; no native counterpart"}
+      select.contact_enclosure.p:    {value_um: 0.5, source: "SCMOS 4.3 1L; no native counterpart"}
+      metal1.contact_enclosure:      {value_um: 0.5, source: "SCMOS 7.3 1L; native dcont ml1 2.0 vs cut 1.0"}
+      nwell.active_enclosure:        {value_um: 2.0, source: "native drc.lydrc:150 nwl.enclosing(pdiff,2.0) tighter than SCMOS 1.3 6L=3.0"}
+      nwell.min_width:               {value_um: 4.0, source: "native drc.lydrc:131 nwl.width(4.0) tighter than SCMOS 1.1 10L=5.0"}
+      # --- BEOL: native outright (domains.beol.envelope: none) ---
+      metal.M1.min_width:            {value_um: 1.0, source: "native drc.lydrc:137 ml1.width(1.0)"}
+      metal.M1.min_spacing:          {value_um: 1.0, source: "native drc.lydrc:99 ml1.space(1.0)"}
+      metal.M2.min_width:            {value_um: 1.0, source: "native drc.lydrc:138 ml2.width(1.0)"}
+      metal.M2.min_spacing:          {value_um: 1.0, source: "native drc.lydrc:100 ml2.space(1.0)"}
+      metal.M3.min_width:            {value_um: 1.0, source: "native drc.lydrc:139 ml3.width(1.0)"}
+      metal.M3.min_spacing:          {value_um: 1.0, source: "native drc.lydrc:101 ml3.space(1.0)"}
+      via12.cut_size:                {value_um: 1.0, source: "native Via cell via1 cut 1.0"}
+      via12.cut_spacing:             {value_um: 0.5, source: "native drc.lydrc:104 dm_via1.space(0.5) tighter than SCMOS 8.2 3L=1.5"}
+      via12.lower_enclosure:         {value_um: 0.5, source: "SCMOS 8.3 1L; native Via ml1 2.0 vs cut 1.0"}
+      via12.upper_enclosure:         {value_um: 0.5, source: "SCMOS 9.3 1L; native Via ml2 2.0 vs cut 1.0"}
+      via12.poly_spacing:            {value_um: 1.0, source: "SCMOS 8.5 2L; no native counterpart"}
+      via12.active_spacing:          {value_um: 1.0, source: "SCMOS 8.5 2L; no native counterpart"}
+      via23.cut_size:                {value_um: 1.0, source: "native Via2 cell cut 1.0"}
+      via23.cut_spacing:             {value_um: 0.5, source: "native drc.lydrc:105 dm_via2.space(0.5) tighter than SCMOS 14.2 3L=1.5"}
+      via23.lower_enclosure:         {value_um: 0.5, source: "SCMOS 14.3 1L"}
+      via23.upper_enclosure:         {value_um: 1.0, source: "SCMOS 15.3 2L"}
