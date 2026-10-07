@@ -57,13 +57,13 @@ jobs:
           python3 scripts/run_xschem.py --profile $p || exit 1; done'
       - name: Run siliconcraft AMI06 conformance gate
         run: >
-          nix-shell -p klayout netgen magic-vlsi ngspice tk python3 --run
+          nix-shell -p klayout netgen-lvs magic-vlsi ngspice tk python3 --run
           "python3 scripts/run_ci.py --profile ami06"
       - name: Run AMI06 stdcell geometry, PEX, and LEF gates
         # Separate step from run_ci.py so a failure here is attributable; this
         # chain was previously unreachable because it hung off run_ci.py with &&.
         run: >
-          nix-shell -p klayout netgen magic-vlsi ngspice tk python3 --run
+          nix-shell -p klayout netgen-lvs magic-vlsi ngspice tk python3 --run
           "python3 scripts/run_stdcell_inv_gate.py --profile ami06 &&
           python3 scripts/run_stdcell_gate.py --profile ami06
           --architecture two_metal_classic --cell nand2_drc
@@ -85,7 +85,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@v9
       - name: Run source-reference and native PEX gates
         run: >
-          nix-shell -p klayout magic-vlsi netgen ngspice tk python3 --run
+          nix-shell -p klayout magic-vlsi netgen-lvs ngspice tk python3 --run
           "python3 scripts/run_pex_ci.py"
       - name: Run L0 RF workbench
         run: >
